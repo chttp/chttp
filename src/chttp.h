@@ -36,7 +36,7 @@ struct chttp_dpage {
 	char				data[];
 };
 
-struct chttp_context {
+struct chttp_ctx {
 	unsigned int			magic;
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
 
@@ -52,26 +52,29 @@ struct chttp_context {
 	char				_data[];
 };
 
-struct chttp_context_default {
-	struct chttp_context		context;
+struct chttp_context {
+	struct chttp_ctx		ctx;
 
 	char				_data[CHTTP_DPAGE_DEFAULT];
 };
 
 struct chttp_context_small {
-	struct chttp_context		context;
+	struct chttp_ctx		ctx;
 
 	char				_data[CHTTP_DPAGE_SMALL];
 };
 
 struct chttp_context_large {
-	struct chttp_context		context;
+	struct chttp_ctx		ctx;
 
 	char				_data[CHTTP_DPAGE_LARGE];
 };
 
 struct chttp_context *chttp_context_alloc();
-struct chttp_context *chttp_context_alloc_size(size_t buffer_size);
-void chttp_context_free(struct chttp_context *ctx);
+void chttp_context_init(struct chttp_context*);
+struct chttp_context *chttp_context_init_small(struct chttp_context_small*);
+struct chttp_context *chttp_context_init_large(struct chttp_context_large*);
+void chttp_context_free(struct chttp_context*);
+void context_debug(struct chttp_context*);
 
 #endif  /* _CHTTP_H_INCLUDED_ */
