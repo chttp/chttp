@@ -6,14 +6,13 @@
 #ifndef _CHTTP_H_INCLUDED_
 #define _CHTTP_H_INCLUDED_
 
-#include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define CHTTP_VERSION			"0.1.0"
 
 #define CHTTP_DPAGE_DEFAULT		2048
-#define CHTTP_DPAGE_SMALL		512
-#define CHTTP_DPAGE_LARGE		8192
+#define CHTTP_DPAGE_MIN			512
 
 enum chttp_version {
 	CHTTP_VERSION_DEFAULT = 0,
@@ -36,7 +35,7 @@ struct chttp_dpage {
 	char				data[];
 };
 
-struct chttp_ctx {
+struct chttp_context {
 	unsigned int			magic;
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
 
@@ -49,32 +48,17 @@ struct chttp_ctx {
 
 	unsigned int			free:1;
 
-	char				_data[];
+	uint8_t				_data[CHTTP_DPAGE_DEFAULT];
 };
 
-struct chttp_context {
-	struct chttp_ctx		ctx;
-
-	char				_data[CHTTP_DPAGE_DEFAULT];
-};
-
-struct chttp_context_small {
-	struct chttp_ctx		ctx;
-
-	char				_data[CHTTP_DPAGE_SMALL];
-};
-
-struct chttp_context_large {
-	struct chttp_ctx		ctx;
-
-	char				_data[CHTTP_DPAGE_LARGE];
-};
+#define CHTTP_CTX_SIZE			(sizeof(struct chttp_context) - CHTTP_DPAGE_DEFAULT)
 
 struct chttp_context *chttp_context_alloc();
 void chttp_context_init(struct chttp_context*);
-struct chttp_context *chttp_context_init_small(struct chttp_context_small*);
-struct chttp_context *chttp_context_init_large(struct chttp_context_large*);
+struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_free(struct chttp_context*);
 void context_debug(struct chttp_context*);
+
+void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
 
 #endif  /* _CHTTP_H_INCLUDED_ */

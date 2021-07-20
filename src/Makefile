@@ -8,7 +8,8 @@ INCLUDES= \
 	chttp.h
 
 SOURCE= \
-	chttp_context.c
+	chttp_context.c \
+	chttp_dpage.c
 
 CLIENT= \
 	chttp_client.c

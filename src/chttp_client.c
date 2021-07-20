@@ -10,8 +10,7 @@
 int
 main(int argc, char **argv) {
 	struct chttp_context *context, scontext;
-	struct chttp_context_small scontext_small;
-	struct chttp_context_large scontext_large;
+	char ctx_buf[2000];
 
 	printf("chttp client %s\n", CHTTP_VERSION);
 
@@ -25,13 +24,8 @@ main(int argc, char **argv) {
 	context_debug(&scontext);
 	chttp_context_free(&scontext);
 
-	// static small
-	context = chttp_context_init_small(&scontext_small);
-	context_debug(context);
-	chttp_context_free(context);
-
-	// static large
-	context = chttp_context_init_large(&scontext_large);
+	// custom
+	context = chttp_context_init_buf(ctx_buf, sizeof(ctx_buf));
 	context_debug(context);
 	chttp_context_free(context);
 
