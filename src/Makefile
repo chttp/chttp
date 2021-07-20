@@ -9,7 +9,8 @@ INCLUDES= \
 
 SOURCE= \
 	chttp_context.c \
-	chttp_dpage.c
+	chttp_dpage.c \
+	chttp_utils.c
 
 CLIENT= \
 	chttp_client.c

@@ -7,27 +7,26 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
-static struct chttp_context *context_alloc_size(size_t buffer_size);
-static void context_init_size(struct chttp_context *ctx, size_t dpage_size);
+static struct chttp_context *_context_alloc_size(size_t buffer_size);
+static void _context_init_size(struct chttp_context *ctx, size_t dpage_size);
 
 struct chttp_context *
 chttp_context_alloc()
 {
-	return (context_alloc_size(CHTTP_DPAGE_DEFAULT));
+	return (_context_alloc_size(CHTTP_DPAGE_DEFAULT));
 }
 
 static struct chttp_context *
-context_alloc_size(size_t dpage_size)
+_context_alloc_size(size_t dpage_size)
 {
 	struct chttp_context *ctx;
 
 	ctx = malloc(CHTTP_CTX_SIZE + dpage_size);
 	assert(ctx);
 
-	context_init_size(ctx, dpage_size);
+	_context_init_size(ctx, dpage_size);
 
 	ctx->free = 1;
 
@@ -35,7 +34,7 @@ context_alloc_size(size_t dpage_size)
 }
 
 static void
-context_init_size(struct chttp_context *ctx, size_t dpage_size)
+_context_init_size(struct chttp_context *ctx, size_t dpage_size)
 {
 	memset(ctx, 0, CHTTP_CTX_SIZE);
 
@@ -52,7 +51,7 @@ chttp_context_init(struct chttp_context *ctx)
 {
 	assert(ctx);
 
-	context_init_size(ctx, CHTTP_DPAGE_DEFAULT);
+	_context_init_size(ctx, CHTTP_DPAGE_DEFAULT);
 }
 
 struct chttp_context *
@@ -65,7 +64,7 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 
 	ctx = buffer;
 
-	context_init_size(ctx, buffer_len - CHTTP_CTX_SIZE);
+	_context_init_size(ctx, buffer_len - CHTTP_CTX_SIZE);
 
 	return (ctx);
 }
@@ -73,51 +72,15 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 void
 chttp_context_free(struct chttp_context *ctx)
 {
-	struct chttp_dpage *data, *next;
-
 	assert(ctx);
 	assert(ctx->magic == CHTTP_CTX_MAGIC);
 
-	next = ctx->data;
-
-	while (next) {
-		assert(next->magic == CHTTP_DPAGE_MAGIC);
-
-		data = next;
-		next = data->next;
-
-		data->magic = 0;
-
-		if (data->free) {
-			free(data);
-		}
-	}
+	chttp_dpage_free(ctx->data);
 
 	ctx->magic = 0;
+	ctx->data = NULL;
 
 	if (ctx->free) {
 		free(ctx);
-	}
-}
-
-void
-context_debug(struct chttp_context *ctx)
-{
-	struct chttp_dpage *data;
-
-	printf("sizeof(struct chttp_ctx)=%zu\n", CHTTP_CTX_SIZE);
-	printf("sizeof(struct chttp_dpage)=%zu\n", sizeof(struct chttp_dpage));
-
-	assert(ctx);
-	assert(ctx->magic == CHTTP_CTX_MAGIC);
-
-	printf("chttp_ctx free=%d\n", ctx->free);
-
-	data = ctx->data;
-
-	while (data) {
-		assert(data->magic == CHTTP_DPAGE_MAGIC);
-		printf("\tchttp_dpage free=%d length=%zu\n", data->free, data->length);
-		data = data->next;
 	}
 }

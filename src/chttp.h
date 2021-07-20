@@ -54,11 +54,15 @@ struct chttp_context {
 #define CHTTP_CTX_SIZE			(sizeof(struct chttp_context) - CHTTP_DPAGE_DEFAULT)
 
 struct chttp_context *chttp_context_alloc();
-void chttp_context_init(struct chttp_context*);
+void chttp_context_init(struct chttp_context *ctx);
 struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
-void chttp_context_free(struct chttp_context*);
-void context_debug(struct chttp_context*);
+void chttp_context_free(struct chttp_context *ctx);
 
+void chttp_dpage_alloc(struct chttp_context *ctx, size_t dpage_size);
 void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
+void chttp_dpage_free(struct chttp_dpage *data);
+
+void chttp_context_debug(struct chttp_context *ctx);
+void chttp_dpage_debug(struct chttp_dpage *data);
 
 #endif  /* _CHTTP_H_INCLUDED_ */

@@ -14,19 +14,25 @@ main(int argc, char **argv) {
 
 	printf("chttp client %s\n", CHTTP_VERSION);
 
+	printf("sizeof(struct chttp_ctx)=%zu\n", CHTTP_CTX_SIZE);
+	printf("sizeof(struct chttp_dpage)=%zu\n", sizeof(struct chttp_dpage));
+
 	// dynamic
 	context = chttp_context_alloc();
-	context_debug(context);
+	chttp_dpage_alloc(context, 1024);
+	chttp_context_debug(context);
 	chttp_context_free(context);
 
 	// static
 	chttp_context_init(&scontext);
-	context_debug(&scontext);
+	chttp_dpage_alloc(&scontext, 1024);
+	chttp_context_debug(&scontext);
 	chttp_context_free(&scontext);
 
 	// custom
 	context = chttp_context_init_buf(ctx_buf, sizeof(ctx_buf));
-	context_debug(context);
+	chttp_dpage_alloc(context, 1024);
+	chttp_context_debug(context);
 	chttp_context_free(context);
 
 	return (0);
