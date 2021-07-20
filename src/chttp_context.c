@@ -5,7 +5,6 @@
 
 #include "chttp.h"
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -72,8 +71,7 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 void
 chttp_context_free(struct chttp_context *ctx)
 {
-	assert(ctx);
-	assert(ctx->magic == CHTTP_CTX_MAGIC);
+	chttp_context_ok(ctx);
 
 	chttp_dpage_free(ctx->data);
 

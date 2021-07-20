@@ -10,6 +10,7 @@ INCLUDES= \
 SOURCE= \
 	chttp_context.c \
 	chttp_dpage.c \
+	chttp_header.c \
 	chttp_utils.c
 
 CLIENT= \

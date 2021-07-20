@@ -19,19 +19,24 @@ main(int argc, char **argv) {
 
 	// dynamic
 	context = chttp_context_alloc();
-	chttp_dpage_alloc(context, 1024);
+
+	chttp_set_version(context, CHTTP_VERSION_1_1);
+	chttp_set_method(context, "POST");
+	chttp_set_url(context, "/abc");
+
 	chttp_context_debug(context);
 	chttp_context_free(context);
 
 	// static
 	chttp_context_init(&scontext);
-	chttp_dpage_alloc(&scontext, 1024);
+	chttp_set_url(&scontext, "/123");
 	chttp_context_debug(&scontext);
 	chttp_context_free(&scontext);
 
 	// custom
 	context = chttp_context_init_buf(ctx_buf, sizeof(ctx_buf));
 	chttp_dpage_alloc(context, 1024);
+	chttp_set_url(context, "/");
 	chttp_context_debug(context);
 	chttp_context_free(context);
 
