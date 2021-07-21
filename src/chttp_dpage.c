@@ -8,10 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct chttp_dpage *_dpage_get(struct chttp_context *ctx, size_t bytes);
-
-void
-chttp_dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
+static struct chttp_dpage *
+_dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 {
 	struct chttp_dpage *data, *curr;
 
@@ -32,15 +30,17 @@ chttp_dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 		ctx->data = data;
 	} else {
 		curr = ctx->data;
-		curr->locked = 1;
 
 		while (curr->next) {
 			curr = curr->next;
-			curr->locked = 1;
 		}
 
 		curr->next = data;
 	}
+
+	ctx->last = data;
+
+	return (data);
 }
 
 void
@@ -55,54 +55,48 @@ chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size)
 	data->length = dpage_size - sizeof(struct chttp_dpage);
 }
 
-static struct chttp_dpage *
-_dpage_get(struct chttp_context *ctx, size_t bytes)
+struct chttp_dpage *
+chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 {
 	struct chttp_dpage *data;
+	size_t dpage_size;
 
 	chttp_context_ok(ctx);
 
-	data = ctx->data;
+	if (ctx->last) {
+		assert(ctx->last->magic == CHTTP_DPAGE_MAGIC);
+		assert(ctx->last->offset <= ctx->last->length);
 
-	while (data) {
-		assert(data->magic == CHTTP_DPAGE_MAGIC);
-		assert(data->offset <= data->length);
-
-		if (bytes <= (data->length - data->offset) && !data->locked) {
-			return (data);
+		if (bytes <= (ctx->last->length - ctx->last->offset)) {
+			return (ctx->last);
 		}
-
-		data = data->next;
 	}
 
-	return (NULL);
+	dpage_size = CHTTP_DPAGE_MIN_SIZE;
+
+	if (bytes >= dpage_size) {
+		dpage_size += bytes;
+		assert(dpage_size >= bytes);
+	}
+
+	data = _dpage_alloc(ctx, dpage_size);
+	assert(data == ctx->last);
+
+	return (data);
 }
 
 void
 chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len)
 {
 	struct chttp_dpage *data;
-	size_t dpage_size;
 
 	chttp_context_ok(ctx);
 	assert(buffer_len < (1<<20)); // 1MB
 
-	data = _dpage_get(ctx, buffer_len);
-
-	if (!data) {
-		dpage_size = CHTTP_DPAGE_MIN_SIZE;
-
-		while (buffer_len > dpage_size) {
-			dpage_size *= 2;
-		}
-
-		chttp_dpage_alloc(ctx, dpage_size);
-		data = _dpage_get(ctx, buffer_len);
-		assert(data);
-	}
-
+	data = chttp_dpage_get(ctx, buffer_len);
+	assert(data);
 	assert(buffer_len <= data->length);
-	assert(buffer_len + data->offset <= data->length);
+	assert(data->offset + buffer_len <= data->length);
 
 	memcpy(&data->data[data->offset], (uint8_t*)buffer, buffer_len);
 

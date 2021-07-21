@@ -28,6 +28,12 @@ main(int argc, char **argv) {
 	chttp_add_header(context, "header3", "....??????");
 
 	chttp_context_debug(context);
+
+	chttp_delete_header(context, "header1");
+	chttp_delete_header(context, "header2");
+
+	chttp_context_debug(context);
+
 	chttp_context_free(context);
 
 	// static
@@ -38,7 +44,6 @@ main(int argc, char **argv) {
 
 	// custom
 	context = chttp_context_init_buf(ctx_buf, sizeof(ctx_buf));
-	chttp_dpage_alloc(context, 1024);
 	chttp_set_url(context, "/");
 	chttp_context_debug(context);
 	chttp_context_free(context);

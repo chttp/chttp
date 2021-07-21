@@ -6,6 +6,7 @@
 #include "chttp.h"
 
 #include <string.h>
+#include <bits/string_fortified.h>
 
 static void _setup_request(struct chttp_context *ctx);
 
@@ -92,6 +93,8 @@ _setup_request(struct chttp_context *ctx)
 void
 chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 {
+	size_t name_len, value_len;
+
 	chttp_context_ok(ctx);
 	assert(name && *name);
 	assert(value);
@@ -100,8 +103,84 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 		chttp_ABORT("invalid state, headers must be set last before sending");
 	}
 
-	chttp_dpage_append(ctx, name, strlen(name));
+	name_len = strlen(name);
+	value_len = strlen(value);
+
+	(void)chttp_dpage_get(ctx, name_len + 2 + value_len + 2);
+
+	chttp_dpage_append(ctx, name, name_len);
 	chttp_dpage_append(ctx, ": ", 2);
-	chttp_dpage_append(ctx, value, strlen(value));
+	chttp_dpage_append(ctx, value, value_len);
 	chttp_dpage_append(ctx, "\r\n", 2);
+}
+
+void
+chttp_delete_header(struct chttp_context *ctx, const char *name)
+{
+	struct chttp_dpage *data;
+	size_t name_len, i, start, mid, end, tail;
+	int first;
+
+	chttp_context_ok(ctx);
+	assert(name && *name);
+
+	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
+		chttp_ABORT("invalid state, headers must be deleted last before sending");
+	}
+
+	data = ctx->data;
+	name_len = strlen(name);
+	first = 0;
+
+	while (data) {
+		for (i = 0; i < data->offset; i++) {
+			start = i;
+			mid = 0;
+
+			while (i < data->offset && data->data[i] != '\n') {
+				if (data->data[i] == ':') {
+					mid = i;
+				}
+				i++;
+			}
+
+			end = i;
+
+			if (end == data->offset) {
+				assert(!first);
+				break;
+			}
+
+			assert(end > start);
+			assert(data->data[end] == '\n');
+			assert(data->data[end - 1] == '\r');
+
+			if (!first) {
+				first = 1;
+				continue;
+			}
+
+			assert(mid);
+
+			if ((mid - start) != name_len ||
+			    strncmp((char*)&data->data[start], name, name_len)) {
+				continue;
+			}
+
+			// Shift the tail up the dpage
+			tail = data->offset - end - 1;
+			assert(tail < data->offset);
+
+			if (tail) {
+				memmove(&data->data[start], &data->data[end + 1], tail);
+			}
+
+			data->offset -= (end - start) + 1;
+			assert(data->offset < data->length);
+
+			return;
+		}
+
+		data = data->next;
+	}
 }

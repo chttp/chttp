@@ -15,8 +15,8 @@ chttp_context_debug(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	printf("chttp_ctx free=%u state=%d version=%d\n",
-	    ctx->free, ctx->state, ctx->version);
+	printf("chttp_ctx free=%u state=%d version=%d last=%p\n",
+	    ctx->free, ctx->state, ctx->version, ctx->last);
 
 	chttp_dpage_debug(ctx->data);
 }
@@ -27,8 +27,8 @@ chttp_dpage_debug(struct chttp_dpage *data)
 	while (data) {
 		assert(data->magic == CHTTP_DPAGE_MAGIC);
 
-		printf("\tchttp_dpage free=%u locked=%u length=%zu offset=%zu\n",
-		    data->free, data->locked, data->length, data->offset);
+		printf("\tchttp_dpage free=%u length=%zu offset=%zu ptr=%p\n",
+		    data->free, data->length, data->offset, data);
 
 		if (data->offset) {
 			_print_hex(data->data, data->offset);

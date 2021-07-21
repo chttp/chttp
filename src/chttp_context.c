@@ -41,6 +41,8 @@ _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 
 	if (dpage_size) {
 		ctx->data = (struct chttp_dpage*)ctx->_data;
+		ctx->last = ctx->data;
+
 		chttp_dpage_init(ctx->data, dpage_size);
 	}
 }

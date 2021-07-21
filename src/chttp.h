@@ -46,7 +46,6 @@ struct chttp_dpage {
 	size_t				offset;
 
 	unsigned int			free:1;
-	unsigned int			locked:1;
 
 	uint8_t				data[];
 };
@@ -59,6 +58,7 @@ struct chttp_context {
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
 
 	struct chttp_dpage		*data;
+	struct chttp_dpage		*last;
 
 	enum chttp_state		state;
 	enum chttp_version		version;
@@ -76,8 +76,8 @@ void chttp_context_init(struct chttp_context *ctx);
 struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_free(struct chttp_context *ctx);
 
-void chttp_dpage_alloc(struct chttp_context *ctx, size_t dpage_size);
 void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
+struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
 void chttp_dpage_free(struct chttp_dpage *data);
 
@@ -85,6 +85,7 @@ void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);
 void chttp_set_url(struct chttp_context *ctx, const char *url);
 void chttp_add_header(struct chttp_context *ctx, const char *name, const char *value);
+void chttp_delete_header(struct chttp_context *ctx, const char *name);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);
