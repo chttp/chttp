@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct chttp_dpage *_dpage_get(struct chttp_context *ctx, size_t bytes);
+static struct chttp_dpage *_dpage_get(struct chttp_context *ctx, size_t bytes);
 
 void
 chttp_dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
@@ -16,7 +16,10 @@ chttp_dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 	struct chttp_dpage *data, *curr;
 
 	chttp_context_ok(ctx);
-	assert(dpage_size >= sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN);
+
+	dpage_size += sizeof(struct chttp_dpage);
+
+	assert(dpage_size > sizeof(struct chttp_dpage));
 
 	data = malloc(dpage_size);
 	assert(data);
@@ -32,8 +35,8 @@ chttp_dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 		curr->locked = 1;
 
 		while (curr->next) {
-			curr->locked = 1;
 			curr = curr->next;
+			curr->locked = 1;
 		}
 
 		curr->next = data;
@@ -44,16 +47,15 @@ void
 chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size)
 {
 	assert(data);
-	assert(dpage_size >= sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN);
+	assert(dpage_size > sizeof(struct chttp_dpage));
 
 	memset(data, 0, sizeof(struct chttp_dpage));
 
 	data->magic = CHTTP_DPAGE_MAGIC;
 	data->length = dpage_size - sizeof(struct chttp_dpage);
-	data->available = data->length;
 }
 
-struct chttp_dpage *
+static struct chttp_dpage *
 _dpage_get(struct chttp_context *ctx, size_t bytes)
 {
 	struct chttp_dpage *data;
@@ -64,9 +66,9 @@ _dpage_get(struct chttp_context *ctx, size_t bytes)
 
 	while (data) {
 		assert(data->magic == CHTTP_DPAGE_MAGIC);
-		assert(data->available <= data->length);
+		assert(data->offset <= data->length);
 
-		if (bytes < data->available && !data->locked) {
+		if (bytes <= (data->length - data->offset) && !data->locked) {
 			return (data);
 		}
 
@@ -88,7 +90,7 @@ chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_
 	data = _dpage_get(ctx, buffer_len);
 
 	if (!data) {
-		dpage_size = CHTTP_DPAGE_DEFAULT;
+		dpage_size = CHTTP_DPAGE_MIN_SIZE;
 
 		while (buffer_len > dpage_size) {
 			dpage_size *= 2;
@@ -99,10 +101,12 @@ chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_
 		assert(data);
 	}
 
-	assert(data->available >= buffer_len);
-	memcpy(&data->data[data->length - data->available], (uint8_t*)buffer, buffer_len);
+	assert(buffer_len <= data->length);
+	assert(buffer_len + data->offset <= data->length);
 
-	data->available -= buffer_len;
+	memcpy(&data->data[data->offset], (uint8_t*)buffer, buffer_len);
+
+	data->offset += buffer_len;
 }
 
 void

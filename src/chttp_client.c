@@ -23,6 +23,9 @@ main(int argc, char **argv) {
 	chttp_set_version(context, CHTTP_VERSION_1_1);
 	chttp_set_method(context, "POST");
 	chttp_set_url(context, "/abc");
+	chttp_add_header(context, "header1", "abc123");
+	chttp_add_header(context, "header2", "XYZZZZ");
+	chttp_add_header(context, "header3", "....??????");
 
 	chttp_context_debug(context);
 	chttp_context_free(context);

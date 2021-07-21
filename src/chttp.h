@@ -15,9 +15,6 @@
 #define	CHTTP_DEFAULT_METHOD		"GET"
 #define CHTTP_DEFAULT_VERSION		CHTTP_VERSION_1_1
 
-#define CHTTP_DPAGE_DEFAULT		2048
-#define CHTTP_DPAGE_MIN			512
-
 enum chttp_state {
 	CHTTP_STATE_NONE = 0,
 	CHTTP_STATE_INIT_METHOD,
@@ -46,13 +43,16 @@ struct chttp_dpage {
 	struct chttp_dpage		*next;
 
 	size_t				length;
-	size_t				available;
+	size_t				offset;
 
 	unsigned int			free:1;
 	unsigned int			locked:1;
 
 	uint8_t				data[];
 };
+
+#define CHTTP_DPAGE_MIN_SIZE		2048
+#define CHTTP_DPAGE_SIZE		(sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN_SIZE)
 
 struct chttp_context {
 	unsigned int			magic;
@@ -66,10 +66,10 @@ struct chttp_context {
 
 	unsigned int			free:1;
 
-	uint8_t				_data[CHTTP_DPAGE_DEFAULT];
+	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
 
-#define CHTTP_CTX_SIZE			(sizeof(struct chttp_context) - CHTTP_DPAGE_DEFAULT)
+#define CHTTP_CTX_SIZE			(sizeof(struct chttp_context) - CHTTP_DPAGE_SIZE)
 
 struct chttp_context *chttp_context_alloc();
 void chttp_context_init(struct chttp_context *ctx);
@@ -84,6 +84,7 @@ void chttp_dpage_free(struct chttp_dpage *data);
 void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);
 void chttp_set_url(struct chttp_context *ctx, const char *url);
+void chttp_add_header(struct chttp_context *ctx, const char *name, const char *value);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);

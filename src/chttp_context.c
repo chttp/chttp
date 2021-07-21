@@ -14,7 +14,7 @@ static void _context_init_size(struct chttp_context *ctx, size_t dpage_size);
 struct chttp_context *
 chttp_context_alloc()
 {
-	return (_context_alloc_size(CHTTP_DPAGE_DEFAULT));
+	return (_context_alloc_size(CHTTP_DPAGE_SIZE));
 }
 
 static struct chttp_context *
@@ -50,7 +50,7 @@ chttp_context_init(struct chttp_context *ctx)
 {
 	assert(ctx);
 
-	_context_init_size(ctx, CHTTP_DPAGE_DEFAULT);
+	_context_init_size(ctx, CHTTP_DPAGE_SIZE);
 }
 
 struct chttp_context *
@@ -59,7 +59,7 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 	struct chttp_context *ctx;
 
 	assert(buffer);
-	assert(buffer_len >= CHTTP_CTX_SIZE + sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN);
+	assert(buffer_len > CHTTP_CTX_SIZE + sizeof(struct chttp_dpage));
 
 	ctx = buffer;
 

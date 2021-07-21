@@ -8,11 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static void _print_hex(uint8_t *buffer, size_t buffer_len);
+
 void
 chttp_context_debug(struct chttp_context *ctx)
 {
-	assert(ctx);
-	assert(ctx->magic == CHTTP_CTX_MAGIC);
+	chttp_context_ok(ctx);
 
 	printf("chttp_ctx free=%u state=%d version=%d\n",
 	    ctx->free, ctx->state, ctx->version);
@@ -26,15 +27,48 @@ chttp_dpage_debug(struct chttp_dpage *data)
 	while (data) {
 		assert(data->magic == CHTTP_DPAGE_MAGIC);
 
-		printf("\tchttp_dpage free=%u locked=%u length=%zu available=%zu\n",
-		    data->free, data->locked, data->length, data->available);
+		printf("\tchttp_dpage free=%u locked=%u length=%zu offset=%zu\n",
+		    data->free, data->locked, data->length, data->offset);
 
-		if (data->available < data->length) {
-			printf("\t> '%.*s'\n", (int)(data->length - data->available), data->data);
+		if (data->offset) {
+			_print_hex(data->data, data->offset);
 		}
 
 		data = data->next;
 	}
+}
+
+static void
+_print_hex(uint8_t *buffer, size_t buffer_len)
+{
+	size_t i;
+
+	assert(buffer);
+
+	printf("\t> ");
+
+	for (i = 0; i < buffer_len; i++) {
+		if (buffer[i] >= ' ' && buffer[i] <= '~') {
+			printf("%c", buffer[i]);
+			continue;
+		}
+
+		switch(buffer[i]) {
+			case '\r':
+				printf("\\r");
+				break;
+			case '\n':
+				printf("\\n\n\t> ");
+				break;
+			case '\\':
+				printf("\\\\");
+				break;
+			default:
+				printf("\\0x%x", buffer[i]);
+		}
+	}
+
+	printf("\n");
 }
 
 void
