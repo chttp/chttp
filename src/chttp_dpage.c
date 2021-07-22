@@ -16,7 +16,6 @@ _dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 	chttp_context_ok(ctx);
 
 	dpage_size += sizeof(struct chttp_dpage);
-
 	assert(dpage_size > sizeof(struct chttp_dpage));
 
 	data = malloc(dpage_size);

@@ -24,8 +24,10 @@ main(int argc, char **argv) {
 	chttp_set_method(context, "POST");
 	chttp_set_url(context, "/abc");
 	chttp_add_header(context, "header1", "abc123");
+	chttp_add_header(context, "header1", "duplicate");
 	chttp_add_header(context, "header2", "XYZZZZ");
-	chttp_add_header(context, "header3", "....??????");
+	chttp_add_header(context, "header1", "again, why");
+	chttp_add_header(context, "header3", "very, imortant; information");
 
 	chttp_context_debug(context);
 
@@ -38,13 +40,19 @@ main(int argc, char **argv) {
 
 	// static
 	chttp_context_init(&scontext);
-	chttp_set_url(&scontext, "/123");
+	chttp_set_url(&scontext, "/");
+	chttp_add_header(&scontext, "a", "1");
+	chttp_add_header(&scontext, "a", "1");
+	chttp_context_debug(&scontext);
+	chttp_delete_header(&scontext, "x");
+	chttp_delete_header(&scontext, "a");
+	chttp_add_header(&scontext, "x", "2");
 	chttp_context_debug(&scontext);
 	chttp_context_free(&scontext);
 
 	// custom
 	context = chttp_context_init_buf(ctx_buf, sizeof(ctx_buf));
-	chttp_set_url(context, "/");
+	chttp_set_url(context, "/123");
 	chttp_context_debug(context);
 	chttp_context_free(context);
 

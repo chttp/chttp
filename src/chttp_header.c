@@ -6,7 +6,6 @@
 #include "chttp.h"
 
 #include <string.h>
-#include <bits/string_fortified.h>
 
 static void _setup_request(struct chttp_context *ctx);
 
@@ -178,7 +177,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 			data->offset -= (end - start) + 1;
 			assert(data->offset < data->length);
 
-			return;
+			i = start - 1;
 		}
 
 		data = data->next;
