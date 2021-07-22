@@ -5,17 +5,16 @@
 
 #include "chttp.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <string.h>
+#include <sys/types.h>
 
 //temp
 #include <arpa/inet.h>
 #include <stdio.h>
 
 void
-chttp_dns_resolve(struct chttp_context *ctx, const char *host, int port)
+chttp_dns_lookup(struct chttp_context *ctx, const char *host)
 {
 	struct addrinfo *ai_res_list, *ai_res;
 	struct addrinfo hints;
@@ -25,7 +24,6 @@ chttp_dns_resolve(struct chttp_context *ctx, const char *host, int port)
 
 	chttp_context_ok(ctx);
 	assert(host && *host);
-	assert(port > 0);
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -42,11 +40,11 @@ chttp_dns_resolve(struct chttp_context *ctx, const char *host, int port)
 	for (ai_res = ai_res_list; ai_res; ai_res = ai_res->ai_next) {
 		switch(ai_res->ai_addr->sa_family) {
 			case AF_INET:
-				inet_ntop(AF_INET, &(((struct sockaddr_in *)ai_res->ai_addr)->sin_addr),
+				inet_ntop(AF_INET, &(((struct sockaddr_in*)ai_res->ai_addr)->sin_addr),
 				    tmp, sizeof(tmp));
 				break;
 			case AF_INET6:
-				inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)ai_res->ai_addr)->sin6_addr),
+				inet_ntop(AF_INET6, &(((struct sockaddr_in6*)ai_res->ai_addr)->sin6_addr),
 				    tmp, sizeof(tmp));
 				break;
 			default:

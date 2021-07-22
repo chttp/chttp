@@ -34,5 +34,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 
 	_finalize_request(ctx, host);
 
-	chttp_dns_resolve(ctx, host, port);
+	chttp_dns_lookup(ctx, host);
+
+	// ...
 }

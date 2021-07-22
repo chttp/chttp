@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/socket.h>
 
 #define CHTTP_VERSION			"0.1.0"
 
@@ -92,7 +93,10 @@ void chttp_delete_header(struct chttp_context *ctx, const char *name);
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 
-void chttp_dns_resolve(struct chttp_context *ctx, const char *host, int port);
+void chttp_dns_lookup(struct chttp_context *ctx, const char *host);
+void chttp_dns_cache_lookup();
+
+int chttp_tcp_connect(const struct sockaddr *sa);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);

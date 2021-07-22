@@ -5,10 +5,14 @@ LIBFLAGS=
 RM=rm -f
 
 INCLUDES= \
-	chttp.h
+	chttp.h \
+	data/tree.h
 
 SOURCE= \
-	dns/chttp_resolve.c \
+	dns/chttp_dns_lookup.c \
+	dns/chttp_dns_cache.c \
+	tcp/chttp_tcp.c \
+	tcp/chttp_tcp_pool.c \
 	chttp_action.c \
 	chttp_context.c \
 	chttp_dpage.c \
@@ -39,4 +43,4 @@ libchttp.a:		$(OBJS)
 			$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-			$(RM) *.o *.so *.a chttp_client
+			$(RM) *.o dns/*.o *.so *.a chttp_client
