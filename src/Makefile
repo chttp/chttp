@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O3 -Wall -g -fPIC
+CFLAGS=-O3 -Wall -g -fPIC -I.
 LDFLAGS=-shared
 LIBFLAGS=
 RM=rm -f
@@ -8,6 +8,8 @@ INCLUDES= \
 	chttp.h
 
 SOURCE= \
+	dns/chttp_resolve.c \
+	chttp_action.c \
 	chttp_context.c \
 	chttp_dpage.c \
 	chttp_header.c \

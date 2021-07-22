@@ -14,6 +14,7 @@
 
 #define	CHTTP_DEFAULT_METHOD		"GET"
 #define CHTTP_DEFAULT_VERSION		CHTTP_VERSION_1_1
+#define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
 
 enum chttp_state {
 	CHTTP_STATE_NONE = 0,
@@ -33,7 +34,8 @@ enum chttp_version {
 
 enum chttp_error {
 	CHTTP_ERR_NONE = 0,
-	CHTTP_ERR_INIT
+	CHTTP_ERR_INIT,
+	CHTTP_ERR_DNS
 };
 
 struct chttp_dpage {
@@ -65,6 +67,7 @@ struct chttp_context {
 	enum chttp_error		error;
 
 	unsigned int			free:1;
+	unsigned int			has_host:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -86,6 +89,10 @@ void chttp_set_method(struct chttp_context *ctx, const char *method);
 void chttp_set_url(struct chttp_context *ctx, const char *url);
 void chttp_add_header(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_delete_header(struct chttp_context *ctx, const char *name);
+
+void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
+
+void chttp_dns_resolve(struct chttp_context *ctx, const char *host, int port);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);

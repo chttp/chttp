@@ -87,6 +87,8 @@ _setup_request(struct chttp_context *ctx)
 	}
 
 	ctx->state = CHTTP_STATE_INIT_HEADER;
+
+	chttp_add_header(ctx, "User-Agent", CHTTP_USER_AGENT);
 }
 
 void
@@ -100,6 +102,10 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 
 	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
 		chttp_ABORT("invalid state, headers must be set last before sending");
+	}
+
+	if (!strncasecmp(name, "host", 4)) {
+		ctx->has_host = 1;
 	}
 
 	name_len = strlen(name);
@@ -125,6 +131,10 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 
 	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
 		chttp_ABORT("invalid state, headers must be deleted last before sending");
+	}
+
+	if (!strncasecmp(name, "host", 4)) {
+		ctx->has_host = 0;
 	}
 
 	data = ctx->data;
