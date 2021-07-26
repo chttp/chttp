@@ -9,21 +9,52 @@
 #include <string.h>
 #include <sys/types.h>
 
-//temp
-#include <arpa/inet.h>
-#include <stdio.h>
+void
+_dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
+{
+	assert(addr_dest);
+	assert(ai_src);
+	assert(ai_src->ai_addr);
+
+	addr_dest->magic = 0;
+	addr_dest->sock = -1;
+
+	switch (ai_src->ai_addr->sa_family) {
+		case AF_INET:
+			addr_dest->len = sizeof(struct sockaddr_in);
+			addr_dest->sa4.sin_port = htonl(port);
+			break;
+		case AF_INET6:
+			addr_dest->len = sizeof(struct sockaddr_in6);
+			addr_dest->sa6.sin6_port = htonl(port);
+			break;
+		default:
+			return;
+	}
+
+	addr_dest->magic = CHTTP_ADDR_MAGIC;
+
+	memcpy(&addr_dest->sa, ai_src->ai_addr, addr_dest->len);
+
+	if (addr_dest->sa.sa_family == AF_INET) {
+		addr_dest->sa4.sin_port = htons(port);
+	} else {
+		assert(addr_dest->sa.sa_family == AF_INET6);
+		addr_dest->sa6.sin6_port = htons(port);
+	}
+}
 
 void
-chttp_dns_lookup(struct chttp_context *ctx, const char *host)
+chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port)
 {
-	struct addrinfo *ai_res_list, *ai_res;
+	struct addrinfo *ai_res_list;
 	struct addrinfo hints;
 	int ret;
 
-	char tmp[128];
-
 	chttp_context_ok(ctx);
 	assert(host && *host);
+
+	//chttp_dns_cache_lookup(host);
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -31,14 +62,18 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host)
 
 	ret = getaddrinfo(host, NULL, &hints, &ai_res_list);
 
-	printf("*** ret %d\n", ret);
-
 	if (ret) {
 		ctx->error = CHTTP_ERR_DNS;
+		return;
 	}
 
+	//chttp_dns_cache_store(host, port);
+
+	/*
+	struct addrinfo *ai_res;
+	char tmp[128];
 	for (ai_res = ai_res_list; ai_res; ai_res = ai_res->ai_next) {
-		switch(ai_res->ai_addr->sa_family) {
+		switch (ai_res->ai_addr->sa_family) {
 			case AF_INET:
 				inet_ntop(AF_INET, &(((struct sockaddr_in*)ai_res->ai_addr)->sin_addr),
 				    tmp, sizeof(tmp));
@@ -52,6 +87,14 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host)
 				break;
 		}
 		printf("*** found %s\n", tmp);
+	}
+	*/
+
+	// Always use the first address entry on a fresh lookup
+	_dns_addr_copy(&ctx->addr, ai_res_list, port);
+
+	if (!ctx->addr.magic) {
+		ctx->error = CHTTP_ERR_DNS;
 	}
 
 	freeaddrinfo(ai_res_list);

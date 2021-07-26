@@ -43,4 +43,4 @@ libchttp.a:		$(OBJS)
 			$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-			$(RM) *.o dns/*.o *.so *.a chttp_client
+			$(RM) *.o dns/*.o tcp/*.o *.so *.a chttp_client

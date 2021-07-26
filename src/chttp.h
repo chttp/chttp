@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 
 #define CHTTP_VERSION			"0.1.0"
@@ -21,6 +22,8 @@ enum chttp_state {
 	CHTTP_STATE_NONE = 0,
 	CHTTP_STATE_INIT_METHOD,
 	CHTTP_STATE_INIT_HEADER,
+	CHTTP_STATE_CONNECTING,
+	CHTTP_STATE_CONNECTED,
 	CHTTP_STATE_SENT
 };
 
@@ -36,7 +39,8 @@ enum chttp_version {
 enum chttp_error {
 	CHTTP_ERR_NONE = 0,
 	CHTTP_ERR_INIT,
-	CHTTP_ERR_DNS
+	CHTTP_ERR_DNS,
+	CHTTP_ERR_CONNECT
 };
 
 struct chttp_dpage {
@@ -56,6 +60,21 @@ struct chttp_dpage {
 #define CHTTP_DPAGE_MIN_SIZE		2048
 #define CHTTP_DPAGE_SIZE		(sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN_SIZE)
 
+struct chttp_addr {
+	unsigned int			magic;
+#define CHTTP_ADDR_MAGIC		0x8A7CEC19
+
+	socklen_t			len;
+
+	int				sock;
+
+	union {
+		struct sockaddr		sa;
+		struct sockaddr_in	sa4;
+		struct sockaddr_in6	sa6;
+	};
+};
+
 struct chttp_context {
 	unsigned int			magic;
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
@@ -63,12 +82,15 @@ struct chttp_context {
 	struct chttp_dpage		*data;
 	struct chttp_dpage		*last;
 
+	struct chttp_addr		addr;
+
 	enum chttp_state		state;
 	enum chttp_version		version;
 	enum chttp_error		error;
 
 	unsigned int			free:1;
 	unsigned int			has_host:1;
+	unsigned int			event_based:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -93,10 +115,11 @@ void chttp_delete_header(struct chttp_context *ctx, const char *name);
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 
-void chttp_dns_lookup(struct chttp_context *ctx, const char *host);
+void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();
 
-int chttp_tcp_connect(const struct sockaddr *sa);
+void chttp_tcp_connect(struct chttp_context *ctx);
+void chttp_tcp_close(struct chttp_context *ctx);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);

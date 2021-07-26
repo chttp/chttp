@@ -5,45 +5,84 @@
 
 #include "chttp.h"
 
+#include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
 
-int
-chttp_tcp_connect(const struct sockaddr *sa)
+void
+_tcp_set_nonblocking(int sock)
 {
-	int s, val;
-	socklen_t s_len;
+	int val, ret;
 
-	switch(sa->sa_family) {
-		case AF_INET:
-			s_len = sizeof(struct sockaddr_in);
-			break;
-		case AF_INET6:
-			s_len = sizeof(struct sockaddr_in6);
-			break;
-		default:
-			return (-1);
-	}
+	val = 1;
+	ret = ioctl(sock, FIONBIO, &val);
+	(void)ret;
+}
 
-	s = socket(sa->sa_family, SOCK_STREAM, 0);
+void
+_tcp_set_blocking(int sock)
+{
+	int val, ret;
 
-	if (s < 0) {
-		return (s);
+	val = 0;
+	ret = ioctl(sock, FIONBIO, &val);
+	(void)ret;
+}
+
+void
+chttp_tcp_connect(struct chttp_context *ctx)
+{
+	struct chttp_addr *addr;
+	int val;
+
+	chttp_context_ok(ctx);
+
+	addr = &ctx->addr;
+
+	assert(addr->magic == CHTTP_ADDR_MAGIC);
+	assert(addr->sock == -1);
+
+	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
+
+	if (addr->sock < 0) {
+		ctx->error = CHTTP_ERR_CONNECT;
+		return;
 	}
 
 	val = 1;
-	assert(setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val)));
-
+	setsockopt(addr->sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 	val = 1;
-	assert(setsockopt(s, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val)));
+	setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
 
-	val = connect(s, sa, s_len);
-
-	if (val) {
-		return (-1);
-	}
+	val = connect(addr->sock, &addr->sa, addr->len);
 
 	// TODO non blocking timeout (EINPROGRESS)
 
-	return (s);
+	if (val) {
+		chttp_tcp_close(ctx);
+
+		ctx->error = CHTTP_ERR_CONNECT;
+
+		return;
+	}
+
+	return;
+}
+
+void
+chttp_tcp_close(struct chttp_context *ctx)
+{
+	struct chttp_addr *addr;
+
+	chttp_context_ok(ctx);
+
+	addr = &ctx->addr;
+
+	assert(addr->magic == CHTTP_ADDR_MAGIC);
+	assert(addr->sock >= 0);
+
+	assert(close(addr->sock) == 0);
+
+	addr->sock = -1;
 }
