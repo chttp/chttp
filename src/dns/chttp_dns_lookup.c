@@ -22,25 +22,26 @@ _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 	switch (ai_src->ai_addr->sa_family) {
 		case AF_INET:
 			addr_dest->len = sizeof(struct sockaddr_in);
-			addr_dest->sa4.sin_port = htonl(port);
 			break;
 		case AF_INET6:
 			addr_dest->len = sizeof(struct sockaddr_in6);
-			addr_dest->sa6.sin6_port = htonl(port);
 			break;
 		default:
 			return;
 	}
 
 	addr_dest->magic = CHTTP_ADDR_MAGIC;
-
 	memcpy(&addr_dest->sa, ai_src->ai_addr, addr_dest->len);
 
-	if (addr_dest->sa.sa_family == AF_INET) {
-		addr_dest->sa4.sin_port = htons(port);
-	} else {
-		assert(addr_dest->sa.sa_family == AF_INET6);
-		addr_dest->sa6.sin6_port = htons(port);
+	switch (addr_dest->sa.sa_family) {
+		case AF_INET:
+			addr_dest->sa4.sin_port = htons(port);
+			break;
+		case AF_INET6:
+			addr_dest->sa6.sin6_port = htons(port);
+			break;
+		default:
+			chttp_ABORT("Incorrect address type");
 	}
 }
 

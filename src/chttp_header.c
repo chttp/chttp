@@ -14,12 +14,12 @@ chttp_set_version(struct chttp_context *ctx, enum chttp_version version)
 {
 	chttp_context_ok(ctx);
 
-	if (version >= _CHTTP_VERSION_ERROR) {
+	if (version >= _CHTTP_H_VERSION_ERROR) {
 		chttp_ABORT("invalid version");
 	}
 
 	// TODO
-	if (version >= CHTTP_VERSION_2_0) {
+	if (version >= CHTTP_H_VERSION_2_0) {
 		chttp_ABORT("HTTP2+ not supported");
 	}
 
@@ -42,8 +42,8 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 
 	chttp_dpage_append(ctx, method, strlen(method));
 
-	if (ctx->version == CHTTP_VERSION_DEFAULT) {
-		ctx->version = CHTTP_DEFAULT_VERSION;
+	if (ctx->version == CHTTP_H_VERSION_DEFAULT) {
+		ctx->version = CHTTP_DEFAULT_H_VERSION;
 	}
 
 	ctx->state = CHTTP_STATE_INIT_METHOD;
@@ -76,10 +76,10 @@ _setup_request(struct chttp_context *ctx)
 	assert(ctx->state == CHTTP_STATE_INIT_METHOD);
 
 	switch(ctx->version) {
-		case CHTTP_VERSION_1_0:
+		case CHTTP_H_VERSION_1_0:
 			chttp_dpage_append(ctx, " HTTP/1.0\r\n", 11);
 			break;
-		case CHTTP_VERSION_1_1:
+		case CHTTP_H_VERSION_1_1:
 			chttp_dpage_append(ctx, " HTTP/1.1\r\n", 11);
 			break;
 		default:

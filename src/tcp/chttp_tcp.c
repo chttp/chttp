@@ -82,7 +82,7 @@ chttp_tcp_close(struct chttp_context *ctx)
 	assert(addr->magic == CHTTP_ADDR_MAGIC);
 	assert(addr->sock >= 0);
 
-	assert(close(addr->sock) == 0);
+	assert_zero(close(addr->sock));
 
 	addr->sock = -1;
 }

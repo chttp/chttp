@@ -15,8 +15,10 @@
 #define CHTTP_VERSION			"0.1.0"
 
 #define	CHTTP_DEFAULT_METHOD		"GET"
-#define CHTTP_DEFAULT_VERSION		CHTTP_VERSION_1_1
+#define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
 #define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
+
+#define assert_zero(expr)		assert(!(expr))
 
 enum chttp_state {
 	CHTTP_STATE_NONE = 0,
@@ -28,12 +30,12 @@ enum chttp_state {
 };
 
 enum chttp_version {
-	CHTTP_VERSION_DEFAULT = 0,
-	CHTTP_VERSION_1_0,
-	CHTTP_VERSION_1_1,
-	CHTTP_VERSION_2_0,
-	CHTTP_VERSION_3_0,
-	_CHTTP_VERSION_ERROR
+	CHTTP_H_VERSION_DEFAULT = 0,
+	CHTTP_H_VERSION_1_0,
+	CHTTP_H_VERSION_1_1,
+	CHTTP_H_VERSION_2_0,
+	CHTTP_H_VERSION_3_0,
+	_CHTTP_H_VERSION_ERROR
 };
 
 enum chttp_error {

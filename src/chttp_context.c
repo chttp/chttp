@@ -39,7 +39,7 @@ _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 
 	ctx->magic = CHTTP_CTX_MAGIC;
 
-	if (dpage_size) {
+	if (dpage_size > sizeof(struct chttp_dpage)) {
 		ctx->data = (struct chttp_dpage*)ctx->_data;
 		ctx->last = ctx->data;
 
@@ -61,7 +61,7 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 	struct chttp_context *ctx;
 
 	assert(buffer);
-	assert(buffer_len > CHTTP_CTX_SIZE + sizeof(struct chttp_dpage));
+	assert(buffer_len >= CHTTP_CTX_SIZE);
 
 	ctx = buffer;
 

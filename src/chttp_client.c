@@ -10,7 +10,7 @@
 int
 main(int argc, char **argv) {
 	struct chttp_context *context, scontext;
-	char ctx_buf[2000];
+	char ctx_buf[2000], ctx_buf2[CHTTP_CTX_SIZE + 1];
 
 	printf("chttp client %s\n", CHTTP_VERSION);
 
@@ -20,7 +20,7 @@ main(int argc, char **argv) {
 	// dynamic
 	context = chttp_context_alloc();
 
-	chttp_set_version(context, CHTTP_VERSION_1_1);
+	chttp_set_version(context, CHTTP_H_VERSION_1_1);
 	chttp_set_method(context, "POST");
 	chttp_set_url(context, "/abc");
 	chttp_add_header(context, "header1", "abc123");
@@ -54,7 +54,13 @@ main(int argc, char **argv) {
 
 	// custom
 	context = chttp_context_init_buf(ctx_buf, sizeof(ctx_buf));
-	chttp_set_url(context, "/123");
+	chttp_set_url(context, "/123-custom");
+	chttp_context_debug(context);
+	chttp_context_free(context);
+
+	// custom2
+	context = chttp_context_init_buf(ctx_buf2, sizeof(ctx_buf2));
+	chttp_set_url(context, "/123-nodpage");
 	chttp_context_debug(context);
 	chttp_context_free(context);
 
