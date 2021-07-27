@@ -38,6 +38,10 @@ main(int argc, char **argv) {
 
 	chttp_send(context, "ec2.rezsoft.org", 80, 0);
 
+	chttp_recv(context);
+
+	chttp_context_debug(context);
+
 	chttp_context_free(context);
 
 	// static

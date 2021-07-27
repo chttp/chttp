@@ -11,7 +11,7 @@
 static struct chttp_dpage *
 _dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 {
-	struct chttp_dpage *data, *curr;
+	struct chttp_dpage *data;
 
 	chttp_context_ok(ctx);
 
@@ -28,13 +28,10 @@ _dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 	if (!ctx->data) {
 		ctx->data = data;
 	} else {
-		curr = ctx->data;
+		chttp_dpage_ok(ctx->last);
+		assert_zero(ctx->last->next);
 
-		while (curr->next) {
-			curr = curr->next;
-		}
-
-		curr->next = data;
+		ctx->last->next = data;
 	}
 
 	ctx->last = data;
@@ -54,6 +51,20 @@ chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size)
 	data->length = dpage_size - sizeof(struct chttp_dpage);
 }
 
+void
+chttp_dpage_reset(struct chttp_context *ctx)
+{
+	struct chttp_dpage *data;
+
+	chttp_context_ok(ctx);
+
+	for (data = ctx->data; data; data = data->next) {
+		chttp_dpage_ok(data);
+
+		data->offset = 0;
+	}
+}
+
 struct chttp_dpage *
 chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 {
@@ -63,7 +74,7 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 	chttp_context_ok(ctx);
 
 	if (ctx->last) {
-		assert(ctx->last->magic == CHTTP_DPAGE_MAGIC);
+		chttp_dpage_ok(ctx->last);
 		assert(ctx->last->offset <= ctx->last->length);
 
 		if (bytes <= (ctx->last->length - ctx->last->offset)) {
@@ -93,7 +104,7 @@ chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_
 	assert(buffer_len < (1<<20)); // 1MB
 
 	data = chttp_dpage_get(ctx, buffer_len);
-	assert(data);
+	chttp_dpage_ok(data);
 	assert(buffer_len <= data->length);
 	assert(data->offset + buffer_len <= data->length);
 
@@ -108,7 +119,7 @@ chttp_dpage_free(struct chttp_dpage *data)
 	struct chttp_dpage *curr;
 
 	while (data) {
-		assert(data->magic == CHTTP_DPAGE_MAGIC);
+		chttp_dpage_ok(data);
 
 		curr = data;
 		data = curr->next;

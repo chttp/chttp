@@ -50,6 +50,8 @@ chttp_tcp_connect(struct chttp_context *ctx)
 		return;
 	}
 
+	ctx->state = CHTTP_STATE_CONNECTING;
+
 	val = 1;
 	setsockopt(addr->sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 	val = 1;
@@ -67,22 +69,18 @@ chttp_tcp_connect(struct chttp_context *ctx)
 		return;
 	}
 
+	ctx->state = CHTTP_STATE_CONNECTED;
+
 	return;
 }
 
 void
 chttp_tcp_close(struct chttp_context *ctx)
 {
-	struct chttp_addr *addr;
-
 	chttp_context_ok(ctx);
+	chttp_addr_ok(ctx);
 
-	addr = &ctx->addr;
+	assert_zero(close(ctx->addr.sock));
 
-	assert(addr->magic == CHTTP_ADDR_MAGIC);
-	assert(addr->sock >= 0);
-
-	assert_zero(close(addr->sock));
-
-	addr->sock = -1;
+	ctx->addr.sock = -1;
 }

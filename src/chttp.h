@@ -26,7 +26,8 @@ enum chttp_state {
 	CHTTP_STATE_INIT_HEADER,
 	CHTTP_STATE_CONNECTING,
 	CHTTP_STATE_CONNECTED,
-	CHTTP_STATE_SENT
+	CHTTP_STATE_SENT,
+	CHTTP_STATE_DONE
 };
 
 enum chttp_version {
@@ -105,6 +106,7 @@ struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_free(struct chttp_context *ctx);
 
 void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
+void chttp_dpage_reset(struct chttp_context *ctx);
 struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
 void chttp_dpage_free(struct chttp_dpage *data);
@@ -116,6 +118,7 @@ void chttp_add_header(struct chttp_context *ctx, const char *name, const char *v
 void chttp_delete_header(struct chttp_context *ctx, const char *name);
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
+void chttp_recv(struct chttp_context *ctx);
 
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();
@@ -130,9 +133,18 @@ void chttp_do_abort(const char *function, const char *file, int line, const char
 #define chttp_context_ok(ctx)						\
 	do {								\
 		assert(ctx);						\
-		assert(ctx->magic == CHTTP_CTX_MAGIC);			\
+		assert((ctx)->magic == CHTTP_CTX_MAGIC);			\
 	} while (0)
-
+#define chttp_dpage_ok(data)						\
+	do {								\
+		assert(data);						\
+		assert((data)->magic == CHTTP_DPAGE_MAGIC);		\
+	} while (0)
+#define chttp_addr_ok(ctx)						\
+	do {								\
+		assert((ctx)->addr.magic == CHTTP_ADDR_MAGIC);		\
+		assert((ctx)->addr.sock >= 0);				\
+	} while (0)
 #define chttp_ABORT(reason)						\
 	do {								\
 		chttp_do_abort(__func__, __FILE__, __LINE__, reason);	\

@@ -137,11 +137,12 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 		ctx->has_host = 0;
 	}
 
-	data = ctx->data;
 	name_len = strlen(name);
 	first = 0;
 
-	while (data) {
+	for (data = ctx->data; data; data = data->next) {
+		chttp_dpage_ok(data);
+
 		for (i = 0; i < data->offset; i++) {
 			start = i;
 			mid = 0;
@@ -156,7 +157,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 			end = i;
 
 			if (end == data->offset) {
-				assert(!first);
+				assert_zero(first);
 				break;
 			}
 
@@ -189,7 +190,5 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 
 			i = start - 1;
 		}
-
-		data = data->next;
 	}
 }

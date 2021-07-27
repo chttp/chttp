@@ -24,6 +24,9 @@ _finalize_request(struct chttp_context *ctx, const char *host)
 void
 chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 {
+	struct chttp_dpage *data;
+	int ret;
+
 	chttp_context_ok(ctx);
 	assert(host && *host);
 	assert(port > 0);
@@ -46,5 +49,44 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 		return;
 	}
 
+	assert(ctx->state == CHTTP_STATE_CONNECTED);
+	chttp_addr_ok(ctx);
+
+	// TODO use writev()
+
+	for (data = ctx->data; data; data = data->next) {
+		chttp_dpage_ok(data);
+
+		if (!data->offset) {
+			continue;
+		}
+
+		ret = send(ctx->addr.sock, data->data, data->offset, MSG_NOSIGNAL);
+		assert(ret == data->offset);
+	}
+
+	ctx->state = CHTTP_STATE_SENT;
+}
+
+void
+chttp_recv(struct chttp_context *ctx)
+{
+	int ret;
+
+	chttp_context_ok(ctx);
+
+	if (ctx->state != CHTTP_STATE_SENT) {
+		chttp_ABORT("invalid state, request must be setup before sending");
+	}
+
+	chttp_dpage_reset(ctx);
+
+	chttp_dpage_ok(ctx->data);
+
+	ret = recv(ctx->addr.sock, ctx->data->data, ctx->data->length, 0);
+	ctx->data->offset = ret;
+
 	chttp_tcp_close(ctx);
+
+	ctx->state = CHTTP_STATE_DONE;
 }

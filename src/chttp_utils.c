@@ -25,7 +25,7 @@ void
 chttp_dpage_debug(struct chttp_dpage *data)
 {
 	while (data) {
-		assert(data->magic == CHTTP_DPAGE_MAGIC);
+		chttp_dpage_ok(data);
 
 		printf("\tchttp_dpage free=%u length=%zu offset=%zu ptr=%p\n",
 		    data->free, data->length, data->offset, data);
