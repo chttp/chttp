@@ -27,6 +27,8 @@ enum chttp_state {
 	CHTTP_STATE_CONNECTING,
 	CHTTP_STATE_CONNECTED,
 	CHTTP_STATE_SENT,
+	CHTTP_STATE_RESP_HEADERS,
+	CHTTP_STATE_RESP_BODY,
 	CHTTP_STATE_DONE
 };
 
@@ -83,7 +85,9 @@ struct chttp_context {
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
 
 	struct chttp_dpage		*data;
-	struct chttp_dpage		*last;
+	struct chttp_dpage		*data_last;
+
+	uint8_t				*resp_last;
 
 	struct chttp_addr		addr;
 
@@ -116,6 +120,7 @@ void chttp_set_method(struct chttp_context *ctx, const char *method);
 void chttp_set_url(struct chttp_context *ctx, const char *url);
 void chttp_add_header(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_delete_header(struct chttp_context *ctx, const char *name);
+void chttp_parse_resp(struct chttp_context *ctx);
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 void chttp_recv(struct chttp_context *ctx);

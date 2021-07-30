@@ -28,13 +28,13 @@ _dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 	if (!ctx->data) {
 		ctx->data = data;
 	} else {
-		chttp_dpage_ok(ctx->last);
-		assert_zero(ctx->last->next);
+		chttp_dpage_ok(ctx->data_last);
+		assert_zero(ctx->data_last->next);
 
-		ctx->last->next = data;
+		ctx->data_last->next = data;
 	}
 
-	ctx->last = data;
+	ctx->data_last = data;
 
 	return (data);
 }
@@ -60,8 +60,11 @@ chttp_dpage_reset(struct chttp_context *ctx)
 
 	for (data = ctx->data; data; data = data->next) {
 		chttp_dpage_ok(data);
-
 		data->offset = 0;
+	}
+
+	if (ctx->data) {
+		ctx->data_last = ctx->data;
 	}
 }
 
@@ -73,12 +76,12 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 
 	chttp_context_ok(ctx);
 
-	if (ctx->last) {
-		chttp_dpage_ok(ctx->last);
-		assert(ctx->last->offset <= ctx->last->length);
+	if (ctx->data_last) {
+		chttp_dpage_ok(ctx->data_last);
+		assert(ctx->data_last->offset <= ctx->data_last->length);
 
-		if (bytes <= (ctx->last->length - ctx->last->offset)) {
-			return (ctx->last);
+		if (bytes <= (ctx->data_last->length - ctx->data_last->offset)) {
+			return (ctx->data_last);
 		}
 	}
 
@@ -90,7 +93,7 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 	}
 
 	data = _dpage_alloc(ctx, dpage_size);
-	assert(data == ctx->last);
+	assert(data == ctx->data_last);
 
 	return (data);
 }

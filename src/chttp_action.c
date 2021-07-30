@@ -52,8 +52,6 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 	assert(ctx->state == CHTTP_STATE_CONNECTED);
 	chttp_addr_ok(ctx);
 
-	// TODO use writev()
-
 	for (data = ctx->data; data; data = data->next) {
 		chttp_dpage_ok(data);
 
@@ -81,10 +79,22 @@ chttp_recv(struct chttp_context *ctx)
 
 	chttp_dpage_reset(ctx);
 
-	chttp_dpage_ok(ctx->data);
+	chttp_dpage_ok(ctx->data_last);
 
-	ret = recv(ctx->addr.sock, ctx->data->data, ctx->data->length, 0);
+	ret = recv(ctx->addr.sock, ctx->data_last->data, ctx->data_last->length, 0);
+
+	if (ret <= 0) {
+		// TODO other errors
+		chttp_tcp_close(ctx);
+		ctx->state = CHTTP_STATE_DONE;
+
+		return;
+	}
+
 	ctx->data->offset = ret;
+	ctx->state = CHTTP_STATE_RESP_HEADERS;
+
+	chttp_parse_resp(ctx);
 
 	chttp_tcp_close(ctx);
 

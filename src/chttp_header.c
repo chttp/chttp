@@ -192,3 +192,9 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 		}
 	}
 }
+
+void
+chttp_parse_resp(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+}

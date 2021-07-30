@@ -16,7 +16,7 @@ chttp_context_debug(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 
 	printf("chttp_ctx free=%u state=%d error=%d version=%d last=%p\n",
-	    ctx->free, ctx->state, ctx->error, ctx->version, ctx->last);
+	    ctx->free, ctx->state, ctx->error, ctx->version, ctx->data_last);
 
 	chttp_dpage_debug(ctx->data);
 }
