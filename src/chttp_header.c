@@ -7,6 +7,9 @@
 
 #include <string.h>
 
+// tmp
+#include <stdio.h>
+
 static void _setup_request(struct chttp_context *ctx);
 
 void
@@ -194,7 +197,166 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 }
 
 void
+_parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
+{
+	struct chttp_dpage *data;
+	size_t len;
+
+	chttp_context_ok(ctx);
+	chttp_dpage_ok(ctx->data_last);
+	assert_zero(ctx->status);
+
+	data = ctx->data_last;
+	len = end - start;
+
+	assert(strlen((char*)&data->data[start]) == len);
+
+	if (len < 14) {
+		ctx->error = CHTTP_ERR_RESP_PARSE;
+		return;
+	}
+
+	if (strncmp((char*)&data->data[start], "HTTP/1.", 7)) {
+		ctx->error = CHTTP_ERR_RESP_PARSE;
+		return;
+	}
+
+	start = 7;
+
+	if (data->data[start] == '0') {
+		ctx->version = CHTTP_H_VERSION_1_0;
+	} else if (data->data[start] == '1') {
+		ctx->version = CHTTP_H_VERSION_1_1;
+	} else {
+		ctx->error = CHTTP_ERR_RESP_PARSE;
+		return;
+	}
+
+	start++;
+
+	if (data->data[start] != ' ' ||
+	    data->data[start + 1] < '0' || data->data[start + 1] > '9' ||
+	    data->data[start + 2] < '0' || data->data[start + 2] > '9' ||
+	    data->data[start + 3] < '0' || data->data[start + 3] > '9') {
+		ctx->error = CHTTP_ERR_RESP_PARSE;
+		return;
+	}
+
+	ctx->status = (data->data[start + 1] - '0') * 100;
+	ctx->status += (data->data[start + 2] - '0') * 10;
+	ctx->status += data->data[start + 3] - '0';
+
+	start += 4;
+
+	if (ctx->status == 0 || data->data[start] != ' ') {
+		ctx->error = CHTTP_ERR_RESP_PARSE;
+		return;
+	}
+
+	start++;
+	assert(start == 13);
+
+	while (start < end) {
+		if (data->data[start] < ' ' || data->data[start] > '~') {
+			ctx->error = CHTTP_ERR_RESP_PARSE;
+			return;
+		}
+		start++;
+	}
+
+	return;
+}
+
+void
 chttp_parse_resp(struct chttp_context *ctx)
 {
+	struct chttp_dpage *data;
+	size_t i, start, end, leftover;
+	int first = 0;
+
 	chttp_context_ok(ctx);
+	assert(ctx->state == CHTTP_STATE_RESP_HEADERS);
+	chttp_dpage_ok(ctx->data_last);
+
+	data = ctx->data_last;
+
+	// First parse
+	if (!ctx->resp_last) {
+		assert(data == ctx->data);
+		assert(data->offset);
+		assert_zero(ctx->status);
+
+		ctx->resp_last = data->data;
+		first = 1;
+	} else if (ctx->resp_last == ctx->data->data) {
+		first = 1;
+	}
+
+	i = ctx->resp_last - data->data;
+	assert(i < data->offset);
+
+	for (; i < data->offset; i++) {
+		start = i;
+
+		while (i < data->offset && data->data[i] != '\n') {
+			i++;
+		}
+
+		end = i;
+
+		// Incomplete line
+		if (data->data[end] != '\n') {
+			assert(end == data->offset);
+			break;
+		}
+
+		if (end == start || data->data[end - 1] != '\r') {
+			ctx->error = CHTTP_ERR_RESP_PARSE;
+			return;
+		}
+
+		data->data[end - 1] = '\0';
+
+		if (first) {
+			_parse_resp_status(ctx, start, end - 1);
+			first = 0;
+		} else if (start + 1 == end) {
+			ctx->state = CHTTP_STATE_RESP_BODY;
+
+			if (end + 1 < data->offset) {
+				ctx->resp_last = &data->data[end + 1];
+			} else {
+				ctx->resp_last = NULL;
+			}
+
+			return;
+		}
+
+		printf("XXX line: %s\n", &data->data[start]);
+
+		ctx->resp_last = &data->data[end + 1];
+	}
+
+	start = ctx->resp_last - data->data;
+	assert(start <= data->offset);
+
+	leftover = data->offset - start;
+
+	// Incomplete line
+	if (leftover) {
+		chttp_dpage_get(ctx, leftover + 128);
+
+		// Move over to a new dpage
+		if (ctx->data_last != data) {
+			assert(leftover < ctx->data_last->length);
+			assert_zero(ctx->data_last->offset);
+
+			printf("XX* moving fragment to new dpage\n");
+
+			chttp_dpage_append(ctx, ctx->resp_last, leftover);
+
+			data->offset -= leftover;
+			ctx->resp_last = ctx->data_last->data;
+		}
+	}
 }

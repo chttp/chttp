@@ -69,6 +69,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 void
 chttp_recv(struct chttp_context *ctx)
 {
+	struct chttp_dpage *data;
 	int ret;
 
 	chttp_context_ok(ctx);
@@ -77,24 +78,35 @@ chttp_recv(struct chttp_context *ctx)
 		chttp_ABORT("invalid state, request must be setup before sending");
 	}
 
-	chttp_dpage_reset(ctx);
-
-	chttp_dpage_ok(ctx->data_last);
-
-	ret = recv(ctx->addr.sock, ctx->data_last->data, ctx->data_last->length, 0);
-
-	if (ret <= 0) {
-		// TODO other errors
-		chttp_tcp_close(ctx);
-		ctx->state = CHTTP_STATE_DONE;
-
-		return;
-	}
-
-	ctx->data->offset = ret;
 	ctx->state = CHTTP_STATE_RESP_HEADERS;
 
-	chttp_parse_resp(ctx);
+	chttp_dpage_reset(ctx);
+
+	do {
+		data = ctx->data_last;
+		chttp_dpage_ok(data);
+		assert(data->offset < data->length);
+
+		ret = recv(ctx->addr.sock, data->data + data->offset,
+		    data->length - data->offset, 0);
+
+		if (ret <= 0) {
+			// TODO other errors
+			chttp_tcp_close(ctx);
+			ctx->state = CHTTP_STATE_DONE;
+
+			return;
+		}
+
+		data->offset += ret;
+		assert(data->offset <= data->length);
+
+		chttp_parse_resp(ctx);
+
+		if (ctx->error) {
+			break;
+		}
+	} while (ctx->state == CHTTP_STATE_RESP_HEADERS);
 
 	chttp_tcp_close(ctx);
 

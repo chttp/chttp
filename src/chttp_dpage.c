@@ -76,13 +76,19 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 
 	chttp_context_ok(ctx);
 
-	if (ctx->data_last) {
-		chttp_dpage_ok(ctx->data_last);
-		assert(ctx->data_last->offset <= ctx->data_last->length);
+	data = ctx->data_last;
 
-		if (bytes <= (ctx->data_last->length - ctx->data_last->offset)) {
-			return (ctx->data_last);
+	while (data) {
+		chttp_dpage_ok(data);
+		assert(data->offset <= data->length);
+
+		ctx->data_last = data;
+
+		if (bytes <= (data->length - data->offset)) {
+			return (data);
 		}
+
+		data = data->next;
 	}
 
 	dpage_size = CHTTP_DPAGE_MIN_SIZE;
@@ -104,7 +110,7 @@ chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_
 	struct chttp_dpage *data;
 
 	chttp_context_ok(ctx);
-	assert(buffer_len < (1<<20)); // 1MB
+	assert(buffer_len < (1024 * 1024)); // 1MB
 
 	data = chttp_dpage_get(ctx, buffer_len);
 	chttp_dpage_ok(data);

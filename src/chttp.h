@@ -18,8 +18,6 @@
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
 #define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
 
-#define assert_zero(expr)		assert(!(expr))
-
 enum chttp_state {
 	CHTTP_STATE_NONE = 0,
 	CHTTP_STATE_INIT_METHOD,
@@ -45,7 +43,8 @@ enum chttp_error {
 	CHTTP_ERR_NONE = 0,
 	CHTTP_ERR_INIT,
 	CHTTP_ERR_DNS,
-	CHTTP_ERR_CONNECT
+	CHTTP_ERR_CONNECT,
+	CHTTP_ERR_RESP_PARSE
 };
 
 struct chttp_dpage {
@@ -95,6 +94,8 @@ struct chttp_context {
 	enum chttp_version		version;
 	enum chttp_error		error;
 
+	int				status;
+
 	unsigned int			free:1;
 	unsigned int			has_host:1;
 	unsigned int			event_based:1;
@@ -135,10 +136,12 @@ void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
 
+#define assert_zero(expr)						\
+	assert(!(expr))
 #define chttp_context_ok(ctx)						\
 	do {								\
 		assert(ctx);						\
-		assert((ctx)->magic == CHTTP_CTX_MAGIC);			\
+		assert((ctx)->magic == CHTTP_CTX_MAGIC);		\
 	} while (0)
 #define chttp_dpage_ok(data)						\
 	do {								\
@@ -151,8 +154,6 @@ void chttp_do_abort(const char *function, const char *file, int line, const char
 		assert((ctx)->addr.sock >= 0);				\
 	} while (0)
 #define chttp_ABORT(reason)						\
-	do {								\
-		chttp_do_abort(__func__, __FILE__, __LINE__, reason);	\
-	} while (0)
+	chttp_do_abort(__func__, __FILE__, __LINE__, reason);
 
 #endif  /* _CHTTP_H_INCLUDED_ */
