@@ -14,7 +14,7 @@ static void _context_init_size(struct chttp_context *ctx, size_t dpage_size);
 struct chttp_context *
 chttp_context_alloc()
 {
-	return (_context_alloc_size(CHTTP_DPAGE_SIZE));
+	return (_context_alloc_size(chttp_dpage_size(0)));
 }
 
 static struct chttp_context *

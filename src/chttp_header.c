@@ -7,9 +7,6 @@
 
 #include <string.h>
 
-// tmp
-#include <stdio.h>
-
 static void _setup_request(struct chttp_context *ctx);
 
 void
@@ -305,10 +302,11 @@ chttp_parse_resp(struct chttp_context *ctx)
 		end = i;
 
 		// Incomplete line
-		if (data->data[end] != '\n') {
-			assert(end == data->offset);
+		if (end == data->offset) {
 			break;
 		}
+
+		assert(data->data[end] == '\n');
 
 		if (end == start || data->data[end - 1] != '\r') {
 			ctx->error = CHTTP_ERR_RESP_PARSE;
@@ -332,8 +330,6 @@ chttp_parse_resp(struct chttp_context *ctx)
 			return;
 		}
 
-		printf("XXX line: %s\n", &data->data[start]);
-
 		ctx->resp_last = &data->data[end + 1];
 	}
 
@@ -344,19 +340,27 @@ chttp_parse_resp(struct chttp_context *ctx)
 
 	// Incomplete line
 	if (leftover) {
-		chttp_dpage_get(ctx, leftover + 128);
+		// TODO this 1...
+		chttp_dpage_get(ctx, leftover + 1);
 
 		// Move over to a new dpage
 		if (ctx->data_last != data) {
 			assert(leftover < ctx->data_last->length);
 			assert_zero(ctx->data_last->offset);
 
-			printf("XX* moving fragment to new dpage\n");
-
 			chttp_dpage_append(ctx, ctx->resp_last, leftover);
 
 			data->offset -= leftover;
 			ctx->resp_last = ctx->data_last->data;
+			data = ctx->data_last;
 		}
+	}
+
+	// Make sure we have an available dpage
+	chttp_dpage_get(ctx, 1);
+
+	if (ctx->data_last != data) {
+		chttp_dpage_ok(ctx->data_last);
+		ctx->resp_last = ctx->data_last->data;
 	}
 }

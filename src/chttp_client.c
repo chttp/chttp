@@ -17,11 +17,13 @@ main(int argc, char **argv) {
 	printf("sizeof(struct chttp_ctx)=%zu\n", CHTTP_CTX_SIZE);
 	printf("sizeof(struct chttp_dpage)=%zu\n", sizeof(struct chttp_dpage));
 
+	_DEBUG_CHTTP_DPAGE_MIN_SIZE = 12;
+
 	// dynamic
 	context = chttp_context_alloc();
 
 	chttp_set_version(context, CHTTP_H_VERSION_1_1);
-	chttp_set_method(context, "POST");
+	chttp_set_method(context, "GET");
 	chttp_set_url(context, "/abc");
 	chttp_add_header(context, "header1", "abc123");
 	chttp_add_header(context, "header1", "duplicate");

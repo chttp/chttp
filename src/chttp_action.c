@@ -12,11 +12,10 @@ _finalize_request(struct chttp_context *ctx, const char *host)
 	assert(host && *host);
 	assert(ctx->state == CHTTP_STATE_INIT_HEADER);
 
-	if (!ctx->has_host) {
+	if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
 		chttp_add_header(ctx, "Host", host);
+		assert(ctx->has_host);
 	}
-
-	assert(ctx->has_host);
 
 	chttp_dpage_append(ctx, "\r\n", 2);
 }

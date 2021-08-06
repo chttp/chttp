@@ -110,11 +110,13 @@ void chttp_context_init(struct chttp_context *ctx);
 struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_free(struct chttp_context *ctx);
 
+size_t chttp_dpage_size(int min);
 void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
 void chttp_dpage_reset(struct chttp_context *ctx);
 struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
 void chttp_dpage_free(struct chttp_dpage *data);
+extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 
 void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);

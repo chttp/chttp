@@ -8,6 +8,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE = 0;
+
+size_t
+chttp_dpage_size(int min)
+{
+	if (min) {
+		if (_DEBUG_CHTTP_DPAGE_MIN_SIZE) {
+			return _DEBUG_CHTTP_DPAGE_MIN_SIZE;
+		} else {
+			return CHTTP_DPAGE_MIN_SIZE;
+		}
+	} else {
+		if (_DEBUG_CHTTP_DPAGE_MIN_SIZE) {
+			return (sizeof(struct chttp_dpage) + _DEBUG_CHTTP_DPAGE_MIN_SIZE);
+		} else {
+			return CHTTP_DPAGE_SIZE;
+		}
+	}
+}
+
 static struct chttp_dpage *
 _dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 {
@@ -91,7 +111,7 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 		data = data->next;
 	}
 
-	dpage_size = CHTTP_DPAGE_MIN_SIZE;
+	dpage_size = chttp_dpage_size(1);
 
 	if (bytes >= dpage_size) {
 		dpage_size += bytes;
