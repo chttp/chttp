@@ -17,7 +17,7 @@ main(int argc, char **argv) {
 	printf("sizeof(struct chttp_ctx)=%zu\n", CHTTP_CTX_SIZE);
 	printf("sizeof(struct chttp_dpage)=%zu\n", sizeof(struct chttp_dpage));
 
-	_DEBUG_CHTTP_DPAGE_MIN_SIZE = 12;
+	//_DEBUG_CHTTP_DPAGE_MIN_SIZE = 12;
 
 	// dynamic
 	context = chttp_context_alloc();
@@ -44,6 +44,11 @@ main(int argc, char **argv) {
 
 	chttp_context_debug(context);
 
+	printf("XXX server: '%s'\n", chttp_get_header(context, "server"));
+	printf("XXX date: '%s'\n", chttp_get_header(context, "DATE"));
+	printf("XXX _reason: '%s'\n", chttp_get_header(context, CHTTP_HEADER_REASON));
+	printf("XXX abc: '%s'\n", chttp_get_header(context, "abc"));
+
 	chttp_context_free(context);
 
 	// static
@@ -55,6 +60,9 @@ main(int argc, char **argv) {
 	chttp_delete_header(&scontext, "x");
 	chttp_delete_header(&scontext, "a");
 	chttp_add_header(&scontext, "x", "2");
+	chttp_context_debug(&scontext);
+	chttp_send(&scontext, "textglass.org", 80, 0);
+	chttp_recv(&scontext);
 	chttp_context_debug(&scontext);
 	chttp_context_free(&scontext);
 

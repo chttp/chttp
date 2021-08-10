@@ -7,6 +7,8 @@
 
 #include <string.h>
 
+const char *CHTTP_HEADER_REASON	 = "_REASON";
+
 static void _setup_request(struct chttp_context *ctx);
 
 void
@@ -138,7 +140,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 	}
 
 	name_len = strlen(name);
-	first = 0;
+	first = 1;
 
 	for (data = ctx->data; data; data = data->next) {
 		chttp_dpage_ok(data);
@@ -148,7 +150,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 			mid = 0;
 
 			while (i < data->offset && data->data[i] != '\n') {
-				if (data->data[i] == ':') {
+				if (!mid && data->data[i] == ':') {
 					mid = i;
 				}
 				i++;
@@ -157,7 +159,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 			end = i;
 
 			if (end == data->offset) {
-				assert_zero(first);
+				assert(first);
 				break;
 			}
 
@@ -165,15 +167,15 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 			assert(data->data[end] == '\n');
 			assert(data->data[end - 1] == '\r');
 
-			if (!first) {
-				first = 1;
+			if (first) {
+				first = 0;
 				continue;
 			}
 
 			assert(mid);
 
 			if ((mid - start) != name_len ||
-			    strncmp((char*)&data->data[start], name, name_len)) {
+			    strncasecmp((char*)&data->data[start], name, name_len)) {
 				continue;
 			}
 
@@ -296,6 +298,11 @@ chttp_parse_resp(struct chttp_context *ctx)
 		start = i;
 
 		while (i < data->offset && data->data[i] != '\n') {
+			if ((data->data[i] < ' ' && data->data[i] != '\r') ||
+			    data->data[i] > '~') {
+				ctx->error = CHTTP_ERR_RESP_PARSE;
+				return;
+			}
 			i++;
 		}
 
@@ -317,6 +324,11 @@ chttp_parse_resp(struct chttp_context *ctx)
 
 		if (first) {
 			_parse_resp_status(ctx, start, end - 1);
+
+			if (ctx->error) {
+				return;
+			}
+
 			first = 0;
 		} else if (start + 1 == end) {
 			ctx->state = CHTTP_STATE_RESP_BODY;
@@ -363,4 +375,80 @@ chttp_parse_resp(struct chttp_context *ctx)
 		chttp_dpage_ok(ctx->data_last);
 		ctx->resp_last = ctx->data_last->data;
 	}
+}
+
+const char *
+chttp_get_header(struct chttp_context *ctx, const char *name)
+{
+	struct chttp_dpage *data;
+	size_t name_len, i, start, mid, end;
+	int first;
+
+	chttp_context_ok(ctx);
+	assert(name && *name);
+
+	if (ctx->state != CHTTP_STATE_RESP_BODY) {
+		chttp_ABORT("invalid state, headers must be read after receiving");
+	}
+
+	name_len = strlen(name);
+	first = 1;
+
+	for (data = ctx->data; data; data = data->next) {
+		chttp_dpage_ok(data);
+
+		for (i = 0; i < data->offset; i++) {
+			start = i;
+			mid = 0;
+
+			while (i < data->offset && data->data[i] != '\0') {
+				if (!mid && data->data[i] == ':') {
+					mid = i;
+				}
+				i++;
+			}
+
+			end = i;
+
+			assert(end != data->offset);
+			assert(data->data[end + 1] == '\n');
+			i++;
+
+			if (end == start) {
+				return NULL;
+			}
+
+			if (first && name == CHTTP_HEADER_REASON) {
+				assert(data == ctx->data);
+				assert_zero(start);
+				assert(end >= 14);
+				return ((char*)data->data + 13);
+			}
+
+			if (first) {
+				first = 0;
+				continue;
+			}
+
+			if (!mid) {
+				continue;
+			}
+
+			if ((mid - start) != name_len ||
+			    strncasecmp((char*)&data->data[start], name, name_len)) {
+				continue;
+			}
+
+			// Found a match
+			mid++;
+
+			while (mid < end && data->data[mid] == ' ') {
+				mid++;
+			}
+
+			return ((char*)data->data + mid);
+		}
+	}
+
+	return NULL;
 }

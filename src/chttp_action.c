@@ -39,12 +39,14 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 	chttp_dns_lookup(ctx, host, port);
 
 	if (ctx->error) {
+		ctx->state = CHTTP_STATE_DONE;
 		return;
 	}
 
 	chttp_tcp_connect(ctx);
 
 	if (ctx->error) {
+		ctx->state = CHTTP_STATE_DONE;
 		return;
 	}
 
@@ -59,7 +61,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 		}
 
 		ret = send(ctx->addr.sock, data->data, data->offset, MSG_NOSIGNAL);
-		assert(ret == data->offset);
+		assert(ret == data->offset); // TODO partial send
 	}
 
 	ctx->state = CHTTP_STATE_SENT;
@@ -103,11 +105,18 @@ chttp_recv(struct chttp_context *ctx)
 		chttp_parse_resp(ctx);
 
 		if (ctx->error) {
-			break;
+			chttp_tcp_close(ctx);
+			ctx->state = CHTTP_STATE_DONE;
+
+			return;
 		}
 	} while (ctx->state == CHTTP_STATE_RESP_HEADERS);
 
-	chttp_tcp_close(ctx);
+	assert_zero(ctx->error);
 
-	ctx->state = CHTTP_STATE_DONE;
+	ctx->state = CHTTP_STATE_RESP_BODY;
+
+	// get the length
+
+	chttp_tcp_close(ctx);
 }

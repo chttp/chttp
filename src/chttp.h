@@ -95,6 +95,7 @@ struct chttp_context {
 	enum chttp_error		error;
 
 	int				status;
+	long				length;
 
 	unsigned int			free:1;
 	unsigned int			has_host:1;
@@ -124,6 +125,8 @@ void chttp_set_url(struct chttp_context *ctx, const char *url);
 void chttp_add_header(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_delete_header(struct chttp_context *ctx, const char *name);
 void chttp_parse_resp(struct chttp_context *ctx);
+const char *chttp_get_header(struct chttp_context *ctx, const char *name);
+extern const char *CHTTP_HEADER_REASON;
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 void chttp_recv(struct chttp_context *ctx);
