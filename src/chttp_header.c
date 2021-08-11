@@ -106,14 +106,14 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 		chttp_ABORT("invalid state, headers must be set last before sending");
 	}
 
-	if (!strncasecmp(name, "host", 4)) {
+	if (!strcasecmp(name, "host")) {
 		ctx->has_host = 1;
 	}
 
 	name_len = strlen(name);
 	value_len = strlen(value);
 
-	(void)chttp_dpage_get(ctx, name_len + 2 + value_len + 2);
+	chttp_dpage_get(ctx, name_len + 2 + value_len + 2);
 
 	chttp_dpage_append(ctx, name, name_len);
 	chttp_dpage_append(ctx, ": ", 2);
@@ -135,7 +135,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 		chttp_ABORT("invalid state, headers must be deleted last before sending");
 	}
 
-	if (!strncasecmp(name, "host", 4)) {
+	if (!strcasecmp(name, "host")) {
 		ctx->has_host = 0;
 	}
 
@@ -419,7 +419,6 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 			}
 
 			if (first && name == CHTTP_HEADER_REASON) {
-				assert(data == ctx->data);
 				assert_zero(start);
 				assert(end >= 14);
 				return ((char*)data->data + 13);

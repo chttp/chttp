@@ -75,6 +75,12 @@ chttp_context_free(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
+	if (ctx->state != CHTTP_STATE_DONE) {
+		chttp_finish(ctx);
+	}
+
+	assert(ctx->state == CHTTP_STATE_DONE);
+
 	chttp_dpage_free(ctx->data);
 
 	ctx->magic = 0;

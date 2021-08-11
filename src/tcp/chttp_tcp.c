@@ -63,7 +63,6 @@ chttp_tcp_connect(struct chttp_context *ctx)
 
 	if (val) {
 		chttp_tcp_close(ctx);
-
 		ctx->error = CHTTP_ERR_CONNECT;
 
 		return;
@@ -79,6 +78,7 @@ chttp_tcp_close(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 	chttp_addr_ok(ctx);
+	assert(ctx->addr.sock >= 0);
 
 	assert_zero(close(ctx->addr.sock));
 

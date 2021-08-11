@@ -18,6 +18,15 @@
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
 #define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
 
+enum chttp_version {
+	CHTTP_H_VERSION_DEFAULT = 0,
+	CHTTP_H_VERSION_1_0,
+	CHTTP_H_VERSION_1_1,
+	CHTTP_H_VERSION_2_0,
+	CHTTP_H_VERSION_3_0,
+	_CHTTP_H_VERSION_ERROR
+};
+
 enum chttp_state {
 	CHTTP_STATE_NONE = 0,
 	CHTTP_STATE_INIT_METHOD,
@@ -28,15 +37,6 @@ enum chttp_state {
 	CHTTP_STATE_RESP_HEADERS,
 	CHTTP_STATE_RESP_BODY,
 	CHTTP_STATE_DONE
-};
-
-enum chttp_version {
-	CHTTP_H_VERSION_DEFAULT = 0,
-	CHTTP_H_VERSION_1_0,
-	CHTTP_H_VERSION_1_1,
-	CHTTP_H_VERSION_2_0,
-	CHTTP_H_VERSION_3_0,
-	_CHTTP_H_VERSION_ERROR
 };
 
 enum chttp_error {
@@ -100,6 +100,8 @@ struct chttp_context {
 	unsigned int			free:1;
 	unsigned int			has_host:1;
 	unsigned int			event_based:1;
+	unsigned int			close:1;
+	unsigned int			chunked:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -130,6 +132,9 @@ extern const char *CHTTP_HEADER_REASON;
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 void chttp_recv(struct chttp_context *ctx);
+void chttp_finish(struct chttp_context *ctx);
+
+void chttp_body_length(struct chttp_context *ctx);
 
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();

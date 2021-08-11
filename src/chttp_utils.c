@@ -15,10 +15,10 @@ chttp_context_debug(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	printf("chttp_ctx state=%d error=%d version=%d data_last=%p resp_last=%p "
-	    "status=%d free=%u has_host=%u\n",
+	printf("chttp_ctx state=%d error=%d version=%d data_last=%p resp_last=%p\n"
+	    "\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u\n",
 	    ctx->state, ctx->error, ctx->version, ctx->data_last, ctx->resp_last,
-	    ctx->status, ctx->free, ctx->has_host);
+	    ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked);
 
 	chttp_dpage_debug(ctx->data);
 }

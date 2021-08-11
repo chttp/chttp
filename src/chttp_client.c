@@ -47,6 +47,12 @@ main(int argc, char **argv) {
 	printf("XXX server: '%s'\n", chttp_get_header(context, "server"));
 	printf("XXX date: '%s'\n", chttp_get_header(context, "DATE"));
 	printf("XXX _reason: '%s'\n", chttp_get_header(context, CHTTP_HEADER_REASON));
+	printf("XXX content-type: '%s'\n", chttp_get_header(context, "content-type"));
+	printf("XXX content-length: '%s'\n", chttp_get_header(context, "content-length"));
+	printf("XXX content-encoding: '%s'\n", chttp_get_header(context,
+	    "content-encoding"));
+	printf("XXX transfer-encoding: '%s'\n", chttp_get_header(context,
+	    "transfer-encoding"));
 	printf("XXX abc: '%s'\n", chttp_get_header(context, "abc"));
 
 	chttp_context_free(context);
@@ -63,6 +69,16 @@ main(int argc, char **argv) {
 	chttp_context_debug(&scontext);
 	chttp_send(&scontext, "textglass.org", 80, 0);
 	chttp_recv(&scontext);
+	printf("XXX server: '%s'\n", chttp_get_header(&scontext, "server"));
+	printf("XXX date: '%s'\n", chttp_get_header(&scontext, "DATE"));
+	printf("XXX _reason: '%s'\n", chttp_get_header(&scontext, CHTTP_HEADER_REASON));
+	printf("XXX content-type: '%s'\n", chttp_get_header(&scontext, "content-type"));
+	printf("XXX content-length: '%s'\n", chttp_get_header(&scontext, "content-length"));
+	printf("XXX content-encoding: '%s'\n", chttp_get_header(&scontext,
+	    "content-encoding"));
+	printf("XXX transfer-encoding: '%s'\n", chttp_get_header(&scontext,
+	    "transfer-encoding"));
+	printf("XXX abc: '%s'\n", chttp_get_header(&scontext, "abc"));
 	chttp_context_debug(&scontext);
 	chttp_context_free(&scontext);
 

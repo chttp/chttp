@@ -39,14 +39,14 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 	chttp_dns_lookup(ctx, host, port);
 
 	if (ctx->error) {
-		ctx->state = CHTTP_STATE_DONE;
+		chttp_finish(ctx);
 		return;
 	}
 
 	chttp_tcp_connect(ctx);
 
 	if (ctx->error) {
-		ctx->state = CHTTP_STATE_DONE;
+		chttp_finish(ctx);
 		return;
 	}
 
@@ -105,9 +105,7 @@ chttp_recv(struct chttp_context *ctx)
 		chttp_parse_resp(ctx);
 
 		if (ctx->error) {
-			chttp_tcp_close(ctx);
-			ctx->state = CHTTP_STATE_DONE;
-
+			chttp_finish(ctx);
 			return;
 		}
 	} while (ctx->state == CHTTP_STATE_RESP_HEADERS);
@@ -116,7 +114,17 @@ chttp_recv(struct chttp_context *ctx)
 
 	ctx->state = CHTTP_STATE_RESP_BODY;
 
-	// get the length
+	chttp_body_length(ctx);
+}
 
-	chttp_tcp_close(ctx);
+void
+chttp_finish(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+
+	if (ctx->state >= CHTTP_STATE_CONNECTED && ctx->state <= CHTTP_STATE_RESP_BODY) {
+		chttp_tcp_close(ctx);
+	}
+
+	ctx->state = CHTTP_STATE_DONE;
 }

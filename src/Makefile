@@ -14,6 +14,7 @@ SOURCE= \
 	tcp/chttp_tcp.c \
 	tcp/chttp_tcp_pool.c \
 	chttp_action.c \
+	chttp_body.c \
 	chttp_context.c \
 	chttp_dpage.c \
 	chttp_header.c \
