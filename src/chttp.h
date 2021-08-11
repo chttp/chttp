@@ -129,6 +129,8 @@ void chttp_add_header(struct chttp_context *ctx, const char *name, const char *v
 void chttp_delete_header(struct chttp_context *ctx, const char *name);
 void chttp_parse_resp(struct chttp_context *ctx);
 const char *chttp_get_header(struct chttp_context *ctx, const char *name);
+int chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
+    int has_return, int *binary);
 extern const char *CHTTP_HEADER_REASON;
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
@@ -141,6 +143,7 @@ void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();
 
 void chttp_tcp_connect(struct chttp_context *ctx);
+void chttp_tcp_read(struct chttp_context *ctx);
 void chttp_tcp_close(struct chttp_context *ctx);
 
 void chttp_context_debug(struct chttp_context *ctx);

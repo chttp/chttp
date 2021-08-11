@@ -21,6 +21,19 @@ chttp_context_debug(struct chttp_context *ctx)
 	    ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked);
 
 	chttp_dpage_debug(ctx->data);
+
+	if (ctx->state == CHTTP_STATE_RESP_BODY) {
+		printf("\tHEADER _reason: '%s'\n", chttp_get_header(ctx, CHTTP_HEADER_REASON));
+		printf("\tHEADER server: '%s'\n", chttp_get_header(ctx, "server"));
+		printf("\tHEADER date: '%s'\n", chttp_get_header(ctx, "DATE"));
+		printf("\tHEADER content-type: '%s'\n", chttp_get_header(ctx, "content-type"));
+		printf("\tHEADER content-length: '%s'\n", chttp_get_header(ctx, "content-length"));
+		printf("\tHEADER content-encoding: '%s'\n", chttp_get_header(ctx,
+		"content-encoding"));
+		printf("\tHEADER transfer-encoding: '%s'\n", chttp_get_header(ctx,
+		"transfer-encoding"));
+		printf("\tHEADER abc: '%s'\n", chttp_get_header(ctx, "abc"));
+	}
 }
 
 void

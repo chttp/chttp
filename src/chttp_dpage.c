@@ -185,7 +185,9 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 
 	if (ctx->data_last != data) {
 		chttp_dpage_ok(ctx->data_last);
+		assert_zero(ctx->data_last->offset);
 		assert_zero(leftover);
+
 		ctx->resp_last = ctx->data_last->data;
 	}
 }

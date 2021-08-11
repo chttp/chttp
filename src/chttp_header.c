@@ -121,9 +121,9 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 	chttp_dpage_append(ctx, "\r\n", 2);
 }
 
-static int
-_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
-    int *binary)
+int
+chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
+    int has_return, int *binary)
 {
 	chttp_dpage_ok(data);
 	assert(start < data->offset);
@@ -156,7 +156,9 @@ _find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
 		return -1;
 	}
 
-	if (data->data[start - 1] != '\r' && data->data[start - 1] != '\0') {
+	if (has_return && data->data[start - 1] != '\r') {
+		return 1;
+	} else if (!has_return && data->data[start - 1] != '\0') {
 		return 1;
 	}
 
@@ -190,7 +192,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 		chttp_dpage_ok(data);
 
 		for (start = 0; start < data->offset; start++) {
-			error = _find_endline(data, start, &mid, &end, NULL);
+			error = chttp_find_endline(data, start, &mid, &end, 1, NULL);
 
 			if (error) {
 				assert(first);
@@ -325,14 +327,14 @@ chttp_parse_resp(struct chttp_context *ctx)
 	assert(start < data->offset);
 
 	for (; start < data->offset; start++) {
-		error = _find_endline(data, start, NULL, &end, &binary);
+		error = chttp_find_endline(data, start, NULL, &end, 1, &binary);
 
 		// Incomplete line
 		if (error == -1) {
 			break;
 		}
 
-		if (error || binary || data->data[end - 1] != '\r') {
+		if (error || binary) {
 			ctx->error = CHTTP_ERR_RESP_PARSE;
 			return;
 		}
@@ -387,10 +389,9 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 		chttp_dpage_ok(data);
 
 		for (start = 0; start < data->offset; start++) {
-			assert_zero(_find_endline(data, start, &mid, &end, NULL));
+			assert_zero(chttp_find_endline(data, start, &mid, &end, 0, NULL));
 
 			end--;
-			assert(data->data[end] == '\0');
 
 			if (end == start) {
 				return NULL;

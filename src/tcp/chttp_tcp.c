@@ -74,6 +74,31 @@ chttp_tcp_connect(struct chttp_context *ctx)
 }
 
 void
+chttp_tcp_read(struct chttp_context *ctx)
+{
+	int ret;
+
+	chttp_context_ok(ctx);
+	chttp_addr_ok(ctx);
+
+	chttp_dpage_ok(ctx->data_last);
+	assert(ctx->data_last->offset < ctx->data_last->length);
+
+	ret = recv(ctx->addr.sock, ctx->data_last->data + ctx->data_last->offset,
+		ctx->data_last->length - ctx->data_last->offset, 0);
+
+	if (ret <= 0) {
+		// TODO other errors
+		chttp_finish(ctx);
+
+		return;
+	}
+
+	ctx->data_last->offset += ret;
+	assert(ctx->data_last->offset <= ctx->data_last->length);
+}
+
+void
 chttp_tcp_close(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
