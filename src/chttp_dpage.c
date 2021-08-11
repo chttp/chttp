@@ -143,6 +143,54 @@ chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_
 }
 
 void
+chttp_dpage_shift_full(struct chttp_context *ctx)
+{
+	struct chttp_dpage *data;
+	size_t start, leftover;
+
+	chttp_context_ok(ctx);
+	assert(ctx->resp_last);
+
+	data = ctx->data_last;
+
+	chttp_dpage_ok(data);
+
+	if (data->offset < data->length) {
+		return;
+	}
+
+	start = ctx->resp_last - data->data;
+	assert(start <= data->offset);
+
+	leftover = data->offset - start;
+
+	// Incomplete line
+	if (leftover) {
+		chttp_dpage_get(ctx, leftover + 1);
+
+		// Move over to a new dpage
+		assert(ctx->data_last != data);
+		assert(leftover < ctx->data_last->length);
+		assert_zero(ctx->data_last->offset);
+
+		chttp_dpage_append(ctx, ctx->resp_last, leftover);
+
+		data->offset -= leftover;
+		ctx->resp_last = ctx->data_last->data;
+		data = ctx->data_last;
+	}
+
+	// Make sure we have an available dpage
+	chttp_dpage_get(ctx, 1);
+
+	if (ctx->data_last != data) {
+		chttp_dpage_ok(ctx->data_last);
+		assert_zero(leftover);
+		ctx->resp_last = ctx->data_last->data;
+	}
+}
+
+void
 chttp_dpage_free(struct chttp_dpage *data)
 {
 	struct chttp_dpage *curr;

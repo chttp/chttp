@@ -118,6 +118,7 @@ void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
 void chttp_dpage_reset(struct chttp_context *ctx);
 struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
+void chttp_dpage_shift_full(struct chttp_context *ctx);
 void chttp_dpage_free(struct chttp_dpage *data);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 

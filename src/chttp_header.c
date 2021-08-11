@@ -121,12 +121,56 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 	chttp_dpage_append(ctx, "\r\n", 2);
 }
 
+static int
+_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
+    int *binary)
+{
+	chttp_dpage_ok(data);
+	assert(start < data->offset);
+	assert(end);
+
+	*end = 0;
+
+	if (mid) {
+		*mid = 0;
+	}
+	if (binary) {
+		*binary = 0;
+	}
+
+	if (data->data[start] == '\n') {
+		return 1;
+	}
+
+	while (start < data->offset && data->data[start] != '\n') {
+		if (mid && !*mid && data->data[start] == ':') {
+			*mid = start;
+		} else if (binary && ((data->data[start] < ' ' && data->data[start] != '\r') ||
+		    data->data[start] > '~')) {
+			*binary = 1;
+		}
+		start++;
+	}
+
+	if (start == data->offset) {
+		return -1;
+	}
+
+	if (data->data[start - 1] != '\r' && data->data[start - 1] != '\0') {
+		return 1;
+	}
+
+	*end = start;
+
+	return 0;
+}
+
 void
 chttp_delete_header(struct chttp_context *ctx, const char *name)
 {
 	struct chttp_dpage *data;
-	size_t name_len, i, start, mid, end, tail;
-	int first;
+	size_t name_len, start, mid, end, tail;
+	int first, error;
 
 	chttp_context_ok(ctx);
 	assert(name && *name);
@@ -145,37 +189,23 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 	for (data = ctx->data; data; data = data->next) {
 		chttp_dpage_ok(data);
 
-		for (i = 0; i < data->offset; i++) {
-			start = i;
-			mid = 0;
+		for (start = 0; start < data->offset; start++) {
+			error = _find_endline(data, start, &mid, &end, NULL);
 
-			while (i < data->offset && data->data[i] != '\n') {
-				if (!mid && data->data[i] == ':') {
-					mid = i;
-				}
-				i++;
-			}
-
-			end = i;
-
-			if (end == data->offset) {
+			if (error) {
 				assert(first);
 				break;
 			}
 
-			assert(end > start);
-			assert(data->data[end] == '\n');
-			assert(data->data[end - 1] == '\r');
-
 			if (first) {
 				first = 0;
+				start = end;
 				continue;
 			}
 
-			assert(mid);
-
 			if ((mid - start) != name_len ||
 			    strncasecmp((char*)&data->data[start], name, name_len)) {
+				start = end;
 				continue;
 			}
 
@@ -190,7 +220,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 			data->offset -= (end - start) + 1;
 			assert(data->offset < data->length);
 
-			i = start - 1;
+			start--;
 		}
 	}
 }
@@ -270,8 +300,8 @@ void
 chttp_parse_resp(struct chttp_context *ctx)
 {
 	struct chttp_dpage *data;
-	size_t i, start, end, leftover;
-	int first = 0;
+	size_t start, end;
+	int first = 0, binary, error;
 
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_RESP_HEADERS);
@@ -291,31 +321,18 @@ chttp_parse_resp(struct chttp_context *ctx)
 		first = 1;
 	}
 
-	i = ctx->resp_last - data->data;
-	assert(i < data->offset);
+	start = ctx->resp_last - data->data;
+	assert(start < data->offset);
 
-	for (; i < data->offset; i++) {
-		start = i;
-
-		while (i < data->offset && data->data[i] != '\n') {
-			if ((data->data[i] < ' ' && data->data[i] != '\r') ||
-			    data->data[i] > '~') {
-				ctx->error = CHTTP_ERR_RESP_PARSE;
-				return;
-			}
-			i++;
-		}
-
-		end = i;
+	for (; start < data->offset; start++) {
+		error = _find_endline(data, start, NULL, &end, &binary);
 
 		// Incomplete line
-		if (end == data->offset) {
+		if (error == -1) {
 			break;
 		}
 
-		assert(data->data[end] == '\n');
-
-		if (end == start || data->data[end - 1] != '\r') {
+		if (error || binary || data->data[end - 1] != '\r') {
 			ctx->error = CHTTP_ERR_RESP_PARSE;
 			return;
 		}
@@ -343,45 +360,17 @@ chttp_parse_resp(struct chttp_context *ctx)
 		}
 
 		ctx->resp_last = &data->data[end + 1];
+		start = end;
 	}
 
-	start = ctx->resp_last - data->data;
-	assert(start <= data->offset);
-
-	leftover = data->offset - start;
-
-	// Incomplete line
-	if (leftover) {
-		// TODO this 1...
-		chttp_dpage_get(ctx, leftover + 1);
-
-		// Move over to a new dpage
-		if (ctx->data_last != data) {
-			assert(leftover < ctx->data_last->length);
-			assert_zero(ctx->data_last->offset);
-
-			chttp_dpage_append(ctx, ctx->resp_last, leftover);
-
-			data->offset -= leftover;
-			ctx->resp_last = ctx->data_last->data;
-			data = ctx->data_last;
-		}
-	}
-
-	// Make sure we have an available dpage
-	chttp_dpage_get(ctx, 1);
-
-	if (ctx->data_last != data) {
-		chttp_dpage_ok(ctx->data_last);
-		ctx->resp_last = ctx->data_last->data;
-	}
+	chttp_dpage_shift_full(ctx);
 }
 
 const char *
 chttp_get_header(struct chttp_context *ctx, const char *name)
 {
 	struct chttp_dpage *data;
-	size_t name_len, i, start, mid, end;
+	size_t name_len, start, mid, end;
 	int first;
 
 	chttp_context_ok(ctx);
@@ -397,22 +386,11 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 	for (data = ctx->data; data; data = data->next) {
 		chttp_dpage_ok(data);
 
-		for (i = 0; i < data->offset; i++) {
-			start = i;
-			mid = 0;
+		for (start = 0; start < data->offset; start++) {
+			assert_zero(_find_endline(data, start, &mid, &end, NULL));
 
-			while (i < data->offset && data->data[i] != '\0') {
-				if (!mid && data->data[i] == ':') {
-					mid = i;
-				}
-				i++;
-			}
-
-			end = i;
-
-			assert(end != data->offset);
-			assert(data->data[end + 1] == '\n');
-			i++;
+			end--;
+			assert(data->data[end] == '\0');
 
 			if (end == start) {
 				return NULL;
@@ -426,15 +404,18 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 
 			if (first) {
 				first = 0;
+				start = end + 1;
 				continue;
 			}
 
 			if (!mid) {
+				start = end + 1;
 				continue;
 			}
 
 			if ((mid - start) != name_len ||
 			    strncasecmp((char*)&data->data[start], name, name_len)) {
+				start = end + 1;
 				continue;
 			}
 
