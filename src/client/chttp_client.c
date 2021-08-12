@@ -15,7 +15,7 @@ main(int argc, char **argv)
 	char body_buf[100];
 	size_t body_len;
 
-	printf("chttp client %s\n", CHTTP_VERSION);
+	printf("chttp_client %s\n", CHTTP_VERSION);
 
 	printf("sizeof(struct chttp_ctx)=%zu\n", CHTTP_CTX_SIZE);
 	printf("sizeof(struct chttp_dpage)=%zu\n", sizeof(struct chttp_dpage));

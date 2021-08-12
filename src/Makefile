@@ -9,23 +9,33 @@ SOURCE=$(wildcard *.c dns/*.c tcp/*.c)
 OBJS=$(SOURCE:.c=.o)
 CLIENT=$(wildcard client/*.c)
 CLIENT_OBJS=$(CLIENT:.c=.o)
+TEST=$(wildcard test/*.c)
+TEST_INCLUDES=$(wildcard test/*.h)
+TEST_OBJS=$(TEST:.c=.o)
 
-.PHONY: clean lib all
+.PHONY:		clean lib all
 
-all:			chttp_client lib
-lib:			libchttp.so libchttp.a
+all:		chttp_client chttp_test lib
+lib:		libchttp.so libchttp.a
 
-chttp_client:		libchttp.a $(CLIENT_OBJS)
-			$(CC) -o $@ $(CLIENT_OBJS) libchttp.a $(LIBFLAGS)
+chttp_client:	libchttp.a $(CLIENT_OBJS)
+		$(CC) -o $@ $(CLIENT_OBJS) libchttp.a $(LIBFLAGS)
 
-libchttp.so:		$(OBJS)
-			$(CC) $(LDFLAGS) -o $@ $(OBJS)
+chttp_test:	libchttp.a $(TEST_OBJS)
+		$(CC) -o $@ $(TEST_OBJS) libchttp.a $(LIBFLAGS)
 
-libchttp.a:		$(OBJS)
-			ar cr $@ $(OBJS)
+libchttp.so:	$(OBJS)
+		$(CC) $(LDFLAGS) -o $@ $(OBJS)
 
-%.o:			%.c $(INCLUDES)
-			$(CC) $(CFLAGS) -c $< -o $@
+libchttp.a:	$(OBJS)
+		ar cr $@ $(OBJS)
+
+%.o:		%.c $(INCLUDES)
+		$(CC) $(CFLAGS) -c $< -o $@
+
+test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES)
+		$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-			$(RM) *.o dns/*.o tcp/*.o client/*.o *.so *.a chttp_client
+		$(RM) *.o dns/*.o tcp/*.o client/*.o test/*.o \
+		*.so *.a chttp_client chttp_test
