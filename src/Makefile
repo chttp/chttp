@@ -1,3 +1,5 @@
+# CHTTP Makefile (src)
+
 CC=gcc
 CFLAGS=-O3 -Wall -g -fPIC -I.
 LDFLAGS=-shared

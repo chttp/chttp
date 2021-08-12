@@ -1,7 +1,8 @@
 *.o
 *.so
 src/*.a
-src/*_client
+src/chttp_client
+src/chttp_test
 nbproject
 .vscode
-*.code-workspace
+chttp.code-workspace
