@@ -1,20 +1,15 @@
 # CHTTP Makefile
 
-SRC=src
-TEST_CLIENT=chttp_test
-TESTS=tests
-TEST_ALL=test_all.sh
-
 .PHONY:	all test check
 
 all:
-	$(MAKE) -C $(SRC) all
+	$(MAKE) -C src all
 
 %:
-	$(MAKE) -C $(SRC) $@
+	$(MAKE) -C src $@
 
 test:	check
 
 check:
-	$(MAKE) -C $(SRC) $(TEST)
-	cd $(TESTS) && ./$(TEST_ALL)
+	$(MAKE) -C src chttp_test
+	cd tests && ./test_all.sh
