@@ -102,9 +102,11 @@ chttp_finish(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	if (ctx->state >= CHTTP_STATE_CONNECTED && ctx->state <= CHTTP_STATE_RESP_BODY) {
+	if (ctx->state >= CHTTP_STATE_CONNECTED && ctx->state <= CHTTP_STATE_IDLE) {
 		chttp_tcp_close(ctx);
 	}
+
+	chttp_dpage_reset(ctx);
 
 	ctx->state = CHTTP_STATE_DONE;
 }

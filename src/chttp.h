@@ -36,6 +36,7 @@ enum chttp_state {
 	CHTTP_STATE_SENT,
 	CHTTP_STATE_RESP_HEADERS,
 	CHTTP_STATE_RESP_BODY,
+	CHTTP_STATE_IDLE,
 	CHTTP_STATE_DONE
 };
 
@@ -119,6 +120,7 @@ void chttp_dpage_reset(struct chttp_context *ctx);
 struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
 void chttp_dpage_shift_full(struct chttp_context *ctx);
+size_t chttp_dpage_resp_start(struct chttp_context *ctx);
 void chttp_dpage_free(struct chttp_dpage *data);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 
@@ -138,16 +140,19 @@ void chttp_recv(struct chttp_context *ctx);
 void chttp_finish(struct chttp_context *ctx);
 
 void chttp_body_length(struct chttp_context *ctx);
+size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();
 
 void chttp_tcp_connect(struct chttp_context *ctx);
 void chttp_tcp_read(struct chttp_context *ctx);
+size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_tcp_close(struct chttp_context *ctx);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);
+void chttp_print_hex(void *buf, size_t buf_len);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
 
 #define assert_zero(expr)						\

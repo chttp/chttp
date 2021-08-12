@@ -323,8 +323,7 @@ chttp_parse_resp(struct chttp_context *ctx)
 		first = 1;
 	}
 
-	start = ctx->resp_last - data->data;
-	assert(start < data->offset);
+	start = chttp_dpage_resp_start(ctx);
 
 	for (; start < data->offset; start++) {
 		error = chttp_find_endline(data, start, NULL, &end, 1, &binary);

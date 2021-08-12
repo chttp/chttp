@@ -159,9 +159,7 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 		return;
 	}
 
-	start = ctx->resp_last - data->data;
-	assert(start <= data->offset);
-
+	start = chttp_dpage_resp_start(ctx);
 	leftover = data->offset - start;
 
 	// Incomplete line
@@ -190,6 +188,20 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 
 		ctx->resp_last = ctx->data_last->data;
 	}
+}
+
+size_t
+chttp_dpage_resp_start(struct chttp_context *ctx)
+{
+	size_t start;
+
+	chttp_context_ok(ctx);
+	assert(ctx->resp_last);
+
+	start = ctx->resp_last - ctx->data_last->data;
+	assert(start <= ctx->data_last->offset);
+
+	return start;
 }
 
 void

@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void _print_hex(uint8_t *buffer, size_t buffer_len);
-
 void
 chttp_context_debug(struct chttp_context *ctx)
 {
@@ -23,15 +21,18 @@ chttp_context_debug(struct chttp_context *ctx)
 	chttp_dpage_debug(ctx->data);
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
-		printf("\tHEADER _reason: '%s'\n", chttp_get_header(ctx, CHTTP_HEADER_REASON));
+		printf("\tHEADER _reason: '%s'\n",
+			chttp_get_header(ctx, CHTTP_HEADER_REASON));
 		printf("\tHEADER server: '%s'\n", chttp_get_header(ctx, "server"));
 		printf("\tHEADER date: '%s'\n", chttp_get_header(ctx, "DATE"));
-		printf("\tHEADER content-type: '%s'\n", chttp_get_header(ctx, "content-type"));
-		printf("\tHEADER content-length: '%s'\n", chttp_get_header(ctx, "content-length"));
-		printf("\tHEADER content-encoding: '%s'\n", chttp_get_header(ctx,
-		"content-encoding"));
-		printf("\tHEADER transfer-encoding: '%s'\n", chttp_get_header(ctx,
-		"transfer-encoding"));
+		printf("\tHEADER content-type: '%s'\n",
+			chttp_get_header(ctx, "content-type"));
+		printf("\tHEADER content-length: '%s'\n",
+			chttp_get_header(ctx, "content-length"));
+		printf("\tHEADER content-encoding: '%s'\n",
+			chttp_get_header(ctx, "content-encoding"));
+		printf("\tHEADER transfer-encoding: '%s'\n",
+			chttp_get_header(ctx, "transfer-encoding"));
 		printf("\tHEADER abc: '%s'\n", chttp_get_header(ctx, "abc"));
 	}
 }
@@ -46,23 +47,26 @@ chttp_dpage_debug(struct chttp_dpage *data)
 		    data->free, data->length, data->offset, data);
 
 		if (data->offset) {
-			_print_hex(data->data, data->offset);
+			chttp_print_hex(data->data, data->offset);
 		}
 
 		data = data->next;
 	}
 }
 
-static void
-_print_hex(uint8_t *buffer, size_t buffer_len)
+void
+chttp_print_hex(void *buf, size_t buf_len)
 {
+	uint8_t *buffer;
 	size_t i;
 
-	assert(buffer);
+	assert(buf);
+
+	buffer = buf;
 
 	printf("\t> ");
 
-	for (i = 0; i < buffer_len; i++) {
+	for (i = 0; i < buf_len; i++) {
 		if (buffer[i] >= ' ' && buffer[i] <= '~') {
 			printf("%c", buffer[i]);
 			continue;

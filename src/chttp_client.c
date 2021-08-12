@@ -8,9 +8,12 @@
 #include <stdio.h>
 
 int
-main(int argc, char **argv) {
+main(int argc, char **argv)
+{
 	struct chttp_context *context, scontext;
 	char ctx_buf[2000], ctx_buf2[CHTTP_CTX_SIZE + 1];
+	char body_buf[100];
+	size_t body_len;
 
 	printf("chttp client %s\n", CHTTP_VERSION);
 
@@ -30,20 +33,18 @@ main(int argc, char **argv) {
 	chttp_add_header(context, "header2", "XYZZZZ");
 	chttp_add_header(context, "header1", "again, why");
 	chttp_add_header(context, "header3", "very, imortant; information");
-
 	chttp_context_debug(context);
-
 	chttp_delete_header(context, "header1");
 	chttp_delete_header(context, "header2");
-
-	chttp_context_debug(context);
-
 	chttp_send(context, "ec2.rezsoft.org", 80, 0);
-
-	chttp_recv(context);
-
 	chttp_context_debug(context);
-
+	chttp_recv(context);
+	chttp_context_debug(context);
+	do {
+		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
+		printf("***BODY*** (%zu, %d)\n", body_len, context->state);
+		chttp_print_hex(body_buf, body_len);
+	} while (body_len && context->state == CHTTP_STATE_RESP_BODY);
 	chttp_context_free(context);
 
 	// static
@@ -55,10 +56,15 @@ main(int argc, char **argv) {
 	chttp_delete_header(&scontext, "x");
 	chttp_delete_header(&scontext, "a");
 	chttp_add_header(&scontext, "x", "2");
-	chttp_context_debug(&scontext);
 	chttp_send(&scontext, "textglass.org", 80, 0);
+	chttp_context_debug(&scontext);
 	chttp_recv(&scontext);
 	chttp_context_debug(&scontext);
+	do {
+		body_len = chttp_get_body(&scontext, body_buf, sizeof(body_buf));
+		printf("***BODY*** (%zu, %d)\n", body_len, scontext.state);
+		chttp_print_hex(body_buf, body_len);
+	} while (body_len && scontext.state == CHTTP_STATE_RESP_BODY);
 	chttp_context_free(&scontext);
 
 	// custom
