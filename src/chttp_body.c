@@ -245,6 +245,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 					chttp_body_length(ctx);
 				}
 
+				// TODO try to read more?
 				return ret_dpage;
 			}
 

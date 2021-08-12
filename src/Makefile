@@ -4,26 +4,10 @@ LDFLAGS=-shared
 LIBFLAGS=
 RM=rm -f
 
-INCLUDES= \
-	chttp.h \
-	data/tree.h
-
-SOURCE= \
-	dns/chttp_dns_lookup.c \
-	dns/chttp_dns_cache.c \
-	tcp/chttp_tcp.c \
-	tcp/chttp_tcp_pool.c \
-	chttp_action.c \
-	chttp_body.c \
-	chttp_context.c \
-	chttp_dpage.c \
-	chttp_header.c \
-	chttp_utils.c
-
-CLIENT= \
-	chttp_client.c
-
+INCLUDES=$(wildcard *.h data/*.h)
+SOURCE=$(wildcard *.c dns/*.c tcp/*.c)
 OBJS=$(SOURCE:.c=.o)
+CLIENT=$(wildcard client/*.c)
 CLIENT_OBJS=$(CLIENT:.c=.o)
 
 .PHONY: clean lib all
@@ -44,4 +28,4 @@ libchttp.a:		$(OBJS)
 			$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-			$(RM) *.o dns/*.o tcp/*.o *.so *.a chttp_client
+			$(RM) *.o dns/*.o tcp/*.o client/*.o *.so *.a chttp_client
