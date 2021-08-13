@@ -8,17 +8,21 @@
 
 #include "chttp.h"
 #include "test/chttp_test_cmds.h"
+#include "data/tree.h"
 
 #include <stdio.h>
 
-#define CHTTP_TEST_MAX_PARAMS		16
+struct chttp_test_entry {
+	unsigned			magic;
+#define CHTTP_TEST_ENTRY		0x52C66713
 
-struct chttp_test_cmd {
-	const char			*cmd;
+        RB_ENTRY(chttp_test_entry)	entry;
 
-	size_t				param_count;
-	char				*params[CHTTP_TEST_MAX_PARAMS];
+	const char			*name;
+	chttp_test_cmd_f		*func;
 };
+
+RB_HEAD(chttp_test_tree, chttp_test_entry);
 
 struct chttp_test {
 	unsigned int			magic;
@@ -29,6 +33,10 @@ struct chttp_test {
 	int				argc;
 	char				**argv;
 
+	int				verbocity;
+
+	struct chttp_test_tree		cmd_tree;
+
 	char				*cht_file;
 	FILE				*fcht;
 
@@ -38,10 +46,13 @@ struct chttp_test {
 	size_t				line_buf_len;
 	size_t				lines;
 
-	int				verbocity;
-
 	struct chttp_test_cmd		cmd;
 };
+
+void chttp_test_cmds_init(struct chttp_test *test);
+void chttp_test_cmds_setup(struct chttp_test *test);
+struct chttp_test_entry *chttp_test_cmds_get(struct chttp_test *test, const char *name);
+void chttp_test_cmds_free(struct chttp_test *test);
 
 int chttp_test_readline(struct chttp_test *test);
 

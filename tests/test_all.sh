@@ -12,6 +12,10 @@ then
 	exit 1
 fi
 
-${CHTTP_TEST}
+for CHTFILE in $(find * -type f -name "*.cht" | sort)
+do
+	echo "${CHTFILE}"
+	${CHTTP_TEST} ${CHTFILE}
+done
 
 exit 0

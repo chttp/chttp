@@ -21,6 +21,8 @@ _init_test(struct chttp_test *test)
 	test->line_raw = malloc(test->line_raw_len);
 	assert(test->line_raw);
 
+	chttp_test_cmds_init(test);
+
 	chttp_test_ok(test);
 }
 
@@ -51,11 +53,13 @@ int
 main(int argc, char **argv)
 {
 	struct chttp_test test;
+	struct chttp_test_entry *cmd;
 	int i;
 
-	_init_test(&test);
-
 	printf("chttp_test %s\n", CHTTP_VERSION);
+
+	_init_test(&test);
+	chttp_test_cmds_setup(&test);
 
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
@@ -85,8 +89,16 @@ main(int argc, char **argv)
 	}
 
 	while (chttp_test_readline(&test)) {
-		printf("%zu: %s\n", test.lines, test.line_buf);
+		//printf("%zu: %s\n", test.lines, test.line_buf);
+		test.cmd.name = test.line_buf;
+
+		cmd = chttp_test_cmds_get(&test, test.cmd.name);
+		assert(cmd);
+
+		cmd->func(&test.context, &test.cmd);
 	}
+
+	chttp_test_cmds_free(&test);
 
 	_finish_test(&test);
 
