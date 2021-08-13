@@ -25,3 +25,5 @@ typedef void (chttp_test_cmd_f)(struct chttp_text_context *ctx, struct chttp_tes
 #endif /* CHTTP_TEST_CMD */
 
 CHTTP_TEST_CMD(chttp_test)
+
+#undef CHTTP_TEST_CMD

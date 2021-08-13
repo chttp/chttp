@@ -9,9 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO
-#define __unused __attribute__((__unused__))
-
 static int chttp_test_entry_cmp(const struct chttp_test_entry *k1,
     const struct chttp_test_entry *k2);
 
@@ -54,13 +51,9 @@ chttp_test_cmds_setup(struct chttp_test *test)
 {
 	chttp_test_ok(test);
 
-#undef CHTTP_TEST_CMD
 #define CHTTP_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &chttp_test_cmd_##cmd);
 #include "test/chttp_test_cmds.h"
-#undef CHTTP_TEST_CMD
-#define CHTTP_TEST_CMD(cmd)					\
-	chttp_test_cmd_f chttp_test_cmd_##cmd;
 }
 
 struct chttp_test_entry *
@@ -93,7 +86,9 @@ chttp_test_cmds_free(struct chttp_test *test)
 
 	RB_FOREACH_SAFE(entry, chttp_test_tree, &test->cmd_tree, next) {
 		assert(entry->magic == CHTTP_TEST_ENTRY);
+
 		RB_REMOVE(chttp_test_tree, &test->cmd_tree, entry);
+
 		entry->magic = 0;
 		free(entry);
 	}
