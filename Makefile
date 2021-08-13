@@ -1,6 +1,6 @@
 # CHTTP Makefile
 
-.PHONY:	all test check chttp_test
+.PHONY:	all test check
 
 all:
 		$(MAKE) -C src $@

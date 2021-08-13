@@ -10,7 +10,7 @@ all:		check
 FORCE:
 
 chttp_test:
-		$(MAKE) -C ../src chttp_test
+		$(MAKE) -C .. chttp_test
 
 test:		check
 
