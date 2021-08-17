@@ -53,7 +53,7 @@ int
 main(int argc, char **argv)
 {
 	struct chttp_test test;
-	struct chttp_test_entry *cmd;
+	struct chttp_test_entry *cmd_entry;
 	int i;
 
 	printf("chttp_test %s\n", CHTTP_VERSION);
@@ -88,14 +88,25 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	while (chttp_test_readline(&test)) {
-		//printf("%zu: %s\n", test.lines, test.line_buf);
-		test.cmd.name = test.line_buf;
+	while (chttp_test_readline(&test, 0)) {
+		chttp_test_parse_cmd(&test);
 
-		cmd = chttp_test_cmds_get(&test, test.cmd.name);
-		assert(cmd);
+		printf("%zu: %s\n", test.lines - test.lines_multi, test.cmd.name);
 
-		cmd->func(&test.context, &test.cmd);
+		/*
+		for (i = 0; i < test.cmd.param_count; i++) {
+			printf("  %d: %s\n", i + 1, test.cmd.params[i]);
+		}
+		*/
+
+		cmd_entry = chttp_test_cmds_get(&test, test.cmd.name);
+
+		if (!cmd_entry) {
+			printf("ERROR: %s not found\n", test.cmd.name);
+			return 1;
+		}
+
+		cmd_entry->func(&test.context, &test.cmd);
 	}
 
 	chttp_test_cmds_free(&test);

@@ -1,2 +1,2 @@
 # Simple test
-chttp_test
+chttp_test "Simple test"

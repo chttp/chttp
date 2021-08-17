@@ -45,6 +45,7 @@ struct chttp_test {
 	size_t				line_raw_len;
 	size_t				line_buf_len;
 	size_t				lines;
+	size_t				lines_multi;
 
 	struct chttp_test_cmd		cmd;
 };
@@ -54,7 +55,8 @@ void chttp_test_cmds_setup(struct chttp_test *test);
 struct chttp_test_entry *chttp_test_cmds_get(struct chttp_test *test, const char *name);
 void chttp_test_cmds_free(struct chttp_test *test);
 
-int chttp_test_readline(struct chttp_test *test);
+int chttp_test_readline(struct chttp_test *test, size_t append_len);
+void chttp_test_parse_cmd(struct chttp_test *test);
 
 #define chttp_test_ok(test)						\
 	do {								\

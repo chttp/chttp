@@ -12,6 +12,7 @@ chttp_test_cmd_chttp_test(struct chttp_text_context *ctx, struct chttp_test_cmd 
 {
 	assert(ctx);
 	assert(cmd);
+	assert(cmd->param_count == 1);
 
-	printf("SUCCESS\n");
+	printf("SUCCESS: %s\n", cmd->params[0]);
 }
