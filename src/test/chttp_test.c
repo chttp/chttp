@@ -11,27 +11,6 @@
 struct chttp_test *TEST;
 
 static void
-_init_test(struct chttp_test *test)
-{
-	assert(test);
-
-	memset(test, 0, sizeof(struct chttp_test));
-
-	test->magic = CHTTP_TEST_MAGIC;
-	test->verbocity = CHTTP_LOG_VERBOSE;
-	test->line_raw_len = 1024;
-	test->line_raw = malloc(test->line_raw_len);
-	assert(test->line_raw);
-
-	RB_INIT(&test->cmd_tree);
-
-	TEST = test;
-
-	chttp_test_ok(test);
-	chttp_test_ok(chttp_test_convert(&test->context));
-}
-
-static void
 _finish_test(struct chttp_test *test)
 {
 	chttp_test_ok(test);
@@ -53,6 +32,30 @@ _finish_test(struct chttp_test *test)
 }
 
 static void
+_init_test(struct chttp_test *test)
+{
+	assert(test);
+
+	memset(test, 0, sizeof(struct chttp_test));
+
+	test->magic = CHTTP_TEST_MAGIC;
+	test->verbocity = CHTTP_LOG_VERBOSE;
+	test->line_raw_len = 1024;
+	test->line_raw = malloc(test->line_raw_len);
+	assert(test->line_raw);
+
+	RB_INIT(&test->cmd_tree);
+	TAILQ_INIT(&test->finish_list);
+
+	TEST = test;
+
+	chttp_test_ok(test);
+	chttp_test_ok(chttp_test_convert(&test->context));
+
+	chttp_test_register_finish(test, _finish_test);
+}
+
+static void
 _usage(int error)
 {
 	printf("%ssage: chttp_test [-q] [-v] [-vv] [-h] CHT_FILE\n",
@@ -63,7 +66,7 @@ int
 main(int argc, char **argv)
 {
 	struct chttp_test test;
-	struct chttp_test_entry *cmd_entry;
+	struct chttp_test_cmdentry *cmd_entry;
 	int i;
 
 	_init_test(&test);
@@ -135,11 +138,52 @@ main(int argc, char **argv)
 
 	}
 
-	chttp_test_cmds_free(&test);
+	chttp_test_run_finish(&test);
 
-	_finish_test(&test);
-
-	chttp_test_log(CHTTP_LOG_FORCE, "PASSED (%s)", test.cht_file);
+	chttp_test_log(CHTTP_LOG_FORCE, "PASSED");
 
 	return 0;
+}
+
+void
+chttp_test_register_finish(struct chttp_test *test, chttp_test_finish_f *func)
+{
+	struct chttp_test_finish *finish;
+
+	chttp_test_ok(test);
+
+	TAILQ_FOREACH(finish, &test->finish_list, entry) {
+		assert(finish->magic == CHTTP_TEST_FINISH);
+		chttp_test_ERROR(finish->func == func,
+			"Cannot register the same finish function twice");
+	}
+
+	finish = malloc(sizeof(*finish));
+	assert(finish);
+
+	finish->magic = CHTTP_TEST_FINISH;
+	finish->func = func;
+
+	TAILQ_INSERT_HEAD(&test->finish_list, finish, entry);
+}
+
+void
+chttp_test_run_finish(struct chttp_test *test)
+{
+	struct chttp_test_finish *finish, *temp;
+
+	chttp_test_ok(test);
+
+	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
+		assert(finish->magic == CHTTP_TEST_FINISH);
+
+		TAILQ_REMOVE(&test->finish_list, finish, entry);
+
+		finish->func(test);
+
+		finish->magic = 0;
+		free(finish);
+	}
+
+	assert(TAILQ_EMPTY(&test->finish_list));
 }

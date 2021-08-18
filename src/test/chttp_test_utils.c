@@ -94,7 +94,11 @@ chttp_test_ERROR(int condition, const char *fmt, ...)
 
 	va_end(ap);
 
-	printf("\nFAILED (%s)\n", TEST->cht_file);
+	if (TEST->cht_file) {
+		printf("\nFAILED (%s)\n", TEST->cht_file);
+	} else {
+		printf("\nFAILED\n");
+	}
 
 	exit(1);
 }

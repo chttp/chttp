@@ -175,4 +175,4 @@ void chttp_do_abort(const char *function, const char *file, int line, const char
 #define chttp_ABORT(reason)						\
 	chttp_do_abort(__func__, __FILE__, __LINE__, reason);
 
-#endif  /* _CHTTP_H_INCLUDED_ */
+#endif /* _CHTTP_H_INCLUDED_ */
