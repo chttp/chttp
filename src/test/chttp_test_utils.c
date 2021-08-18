@@ -17,28 +17,32 @@ chttp_test_convert(struct chttp_text_context *ctx)
 
 	test = (struct chttp_test*)((void*)ctx - offsetof(struct chttp_test, context));
 	chttp_test_ok(test);
+	assert(test == TEST);
 
 	return test;
 }
 
 void
-chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
-	const char *fmt, ...)
+chttp_test_log(enum chttp_test_verbocity level, const char *fmt, ...)
 {
-	struct chttp_test *test;
 	va_list ap;
 
-	test = chttp_test_convert(ctx);
+	if (TEST) {
+		chttp_test_ok(TEST);
 
-	if (test->verbocity == CHTTP_LOG_NONE || test->verbocity < level) {
-		return;
+		if (level != CHTTP_LOG_FORCE && (TEST->verbocity == CHTTP_LOG_NONE ||
+		    TEST->verbocity < level)) {
+			return;
+		}
+	} else {
+		assert(level == CHTTP_LOG_FORCE);
 	}
 
 	if (level == CHTTP_LOG_NONE) {
 		printf("- ");
 	} else if (level == CHTTP_LOG_VERBOSE) {
 		printf("-- ");
-	} else {
+	} else if (level == CHTTP_LOG_VERY_VERBOSE) {
 		printf("--- ");
 	}
 
@@ -76,6 +80,8 @@ chttp_test_ERROR(int condition, const char *fmt, ...)
 {
 	va_list ap;
 
+	chttp_test_ok(TEST);
+
 	if (!condition) {
 		return;
 	}
@@ -88,7 +94,7 @@ chttp_test_ERROR(int condition, const char *fmt, ...)
 
 	va_end(ap);
 
-	printf("\n");
+	printf("\nFAILED (%s)\n", TEST->cht_file);
 
 	exit(1);
 }

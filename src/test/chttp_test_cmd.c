@@ -42,14 +42,7 @@ void
 chttp_test_cmds_init(struct chttp_test *test)
 {
 	chttp_test_ok(test);
-
-	RB_INIT(&test->cmd_tree);
-}
-
-void
-chttp_test_cmds_setup(struct chttp_test *test)
-{
-	chttp_test_ok(test);
+	assert(RB_EMPTY(&test->cmd_tree));
 
 #define CHTTP_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &chttp_test_cmd_##cmd);

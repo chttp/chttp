@@ -13,6 +13,8 @@
 #include <stdio.h>
 
 enum chttp_test_verbocity {
+	CHTTP_LOG_FORCE = -2,
+	CHTTP_LOG_ROOT = -1,
 	CHTTP_LOG_NONE = 0,
 	CHTTP_LOG_VERBOSE,
 	CHTTP_LOG_VERY_VERBOSE
@@ -56,10 +58,12 @@ struct chttp_test {
 	struct chttp_test_cmd		cmd;
 
 	int				error;
+	int				skip;
 };
 
+extern struct chttp_test *TEST;
+
 void chttp_test_cmds_init(struct chttp_test *test);
-void chttp_test_cmds_setup(struct chttp_test *test);
 struct chttp_test_entry *chttp_test_cmds_get(struct chttp_test *test, const char *name);
 void chttp_test_cmds_free(struct chttp_test *test);
 
@@ -67,8 +71,7 @@ int chttp_test_readline(struct chttp_test *test, size_t append_len);
 void chttp_test_parse_cmd(struct chttp_test *test);
 
 struct chttp_test *chttp_test_convert(struct chttp_text_context *ctx);
-void chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
-	const char *fmt, ...);
+void chttp_test_log(enum chttp_test_verbocity level, const char *fmt, ...);
 void chttp_test_warn(int condition, const char *fmt, ...);
 void chttp_test_ERROR(int condition, const char *fmt, ...);
 

@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct chttp_test *TEST;
+
 static void
 _init_test(struct chttp_test *test)
 {
@@ -21,15 +23,20 @@ _init_test(struct chttp_test *test)
 	test->line_raw = malloc(test->line_raw_len);
 	assert(test->line_raw);
 
-	chttp_test_cmds_init(test);
+	RB_INIT(&test->cmd_tree);
+
+	TEST = test;
 
 	chttp_test_ok(test);
+	chttp_test_ok(chttp_test_convert(&test->context));
 }
 
 static void
 _finish_test(struct chttp_test *test)
 {
 	chttp_test_ok(test);
+	chttp_test_ok(TEST);
+	assert(test == TEST);
 
 	if (test->fcht) {
 		fclose(test->fcht);
@@ -41,12 +48,15 @@ _finish_test(struct chttp_test *test)
 	test->line_raw_len = 0;
 
 	test->magic = 0;
+
+	TEST = NULL;
 }
 
 static void
-_usage(char *name)
+_usage(int error)
 {
-	printf("ERROR usage: %s [-q] [-v] [-vv] CHT_FILE\n", name);
+	printf("%ssage: chttp_test [-q] [-v] [-vv] [-h] CHT_FILE\n",
+		(error ? "ERROR u" : "U"));
 }
 
 int
@@ -54,12 +64,10 @@ main(int argc, char **argv)
 {
 	struct chttp_test test;
 	struct chttp_test_entry *cmd_entry;
-	int i, error;
+	int i;
 
 	_init_test(&test);
-	chttp_test_cmds_setup(&test);
-
-	chttp_test_log(&test.context, -1, "chttp_test %s\n", CHTTP_VERSION);
+	chttp_test_cmds_init(&test);
 
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
@@ -68,16 +76,22 @@ main(int argc, char **argv)
 			test.verbocity = CHTTP_LOG_VERBOSE;
 		} else if (!strcmp(argv[i], "-vv")) {
 			test.verbocity = CHTTP_LOG_VERY_VERBOSE;
+		} else if (!strcmp(argv[i], "-h")) {
+			chttp_test_log(CHTTP_LOG_FORCE, "chttp_test %s", CHTTP_VERSION);
+			_usage(0);
+			return 0;
 		} else if (test.cht_file == NULL) {
 			test.cht_file = argv[i];
 		} else {
-			_usage(argv[0]);
+			_usage(1);
 			return 1;
 		}
 	}
 
+	chttp_test_log(CHTTP_LOG_ROOT, "chttp_test %s", CHTTP_VERSION);
+
 	if (!test.cht_file) {
-		_usage(argv[0]);
+		_usage(1);
 		return 1;
 	}
 
@@ -91,14 +105,14 @@ main(int argc, char **argv)
 		chttp_test_parse_cmd(&test);
 
 		if (test.verbocity == CHTTP_LOG_VERY_VERBOSE) {
-			chttp_test_log(&test.context, 0,
+			chttp_test_log(CHTTP_LOG_NONE,
 			    "%s (line %zu)", test.cmd.name, test.lines - test.lines_multi);
 		} else {
-			chttp_test_log(&test.context, 0, "%s", test.cmd.name);
+			chttp_test_log(CHTTP_LOG_NONE, "%s", test.cmd.name);
 		}
 
 		for (i = 0; i < test.cmd.param_count; i++) {
-			chttp_test_log(&test.context, CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
+			chttp_test_log(CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
 				test.cmd.params[i]);
 		}
 
@@ -110,19 +124,22 @@ main(int argc, char **argv)
 		}
 
 		cmd_entry->func(&test.context, &test.cmd);
+
+		if (test.error) {
+			chttp_test_log(CHTTP_LOG_FORCE, "FAILED (%s)", test.cht_file);
+			return 1;
+		} else if (test.skip) {
+			chttp_test_log(CHTTP_LOG_FORCE, "SKIPPED (%s)", test.cht_file);
+			return 0;
+		}
+
 	}
 
 	chttp_test_cmds_free(&test);
 
-	error = test.error;
-
-	if (error) {
-		printf("FAILED (%s)\n", test.cht_file);
-	} else {
-		printf("PASSED (%s)\n", test.cht_file);
-	}
-
 	_finish_test(&test);
 
-	return error;
+	chttp_test_log(CHTTP_LOG_FORCE, "PASSED (%s)", test.cht_file);
+
+	return 0;
 }
