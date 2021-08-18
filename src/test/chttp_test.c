@@ -17,6 +17,14 @@ _finish_test(struct chttp_test *test)
 	chttp_test_ok(TEST);
 	assert(test == TEST);
 
+	if (test->context.context) {
+		chttp_context_ok(test->context.context);
+		chttp_test_ERROR(test->context.context->error, "CHTTP error detected");
+
+		chttp_context_free(test->context.context);
+		test->context.context = NULL;
+	}
+
 	if (test->fcht) {
 		fclose(test->fcht);
 		test->fcht = NULL;

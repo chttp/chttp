@@ -5,10 +5,10 @@
 all:
 		$(MAKE) -C src $@
 
-%:
-		$(MAKE) -C src $@
-
 test:		check
 
 check:		chttp_test
 		$(MAKE) -C tests $@
+
+%:
+		$(MAKE) -C src $@
