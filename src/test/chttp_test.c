@@ -132,7 +132,8 @@ main(int argc, char **argv)
 			chttp_test_log(CHTTP_LOG_FORCE, "FAILED (%s)", test.cht_file);
 			return 1;
 		} else if (test.skip) {
-			chttp_test_log(CHTTP_LOG_FORCE, "SKIPPED (%s)", test.cht_file);
+			chttp_test_run_finish(&test);
+			chttp_test_log(CHTTP_LOG_FORCE, "SKIPPED");
 			return 0;
 		}
 
