@@ -12,6 +12,12 @@
 
 #include <stdio.h>
 
+enum chttp_test_verbocity {
+	CHTTP_LOG_NONE = 0,
+	CHTTP_LOG_VERBOSE,
+	CHTTP_LOG_VERY_VERBOSE
+};
+
 struct chttp_test_entry {
 	unsigned			magic;
 #define CHTTP_TEST_ENTRY		0x52C66713
@@ -33,7 +39,7 @@ struct chttp_test {
 	int				argc;
 	char				**argv;
 
-	int				verbocity;
+	enum chttp_test_verbocity	verbocity;
 
 	struct chttp_test_tree		cmd_tree;
 
@@ -48,6 +54,8 @@ struct chttp_test {
 	size_t				lines_multi;
 
 	struct chttp_test_cmd		cmd;
+
+	int				error;
 };
 
 void chttp_test_cmds_init(struct chttp_test *test);
@@ -57,6 +65,12 @@ void chttp_test_cmds_free(struct chttp_test *test);
 
 int chttp_test_readline(struct chttp_test *test, size_t append_len);
 void chttp_test_parse_cmd(struct chttp_test *test);
+
+struct chttp_test *chttp_test_convert(struct chttp_text_context *ctx);
+void chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
+	const char *fmt, ...);
+void chttp_test_warn(int condition, const char *fmt, ...);
+void chttp_test_ERROR(int condition, const char *fmt, ...);
 
 #define chttp_test_ok(test)						\
 	do {								\

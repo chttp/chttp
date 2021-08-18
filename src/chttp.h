@@ -132,7 +132,7 @@ void chttp_delete_header(struct chttp_context *ctx, const char *name);
 void chttp_parse_resp(struct chttp_context *ctx);
 const char *chttp_get_header(struct chttp_context *ctx, const char *name);
 int chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
-    int has_return, int *binary);
+	int has_return, int *binary);
 extern const char *CHTTP_HEADER_REASON;
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);

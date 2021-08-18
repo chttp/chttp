@@ -123,7 +123,7 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 
 int
 chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
-    int has_return, int *binary)
+	int has_return, int *binary)
 {
 	chttp_dpage_ok(data);
 	assert(start < data->offset);

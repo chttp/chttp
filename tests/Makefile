@@ -1,6 +1,7 @@
 # CHTTP Makefile (tests)
 
 CHTTP_TEST=../src/chttp_test
+CHTTP_TEST_FLAGS=-q
 CHTS=$(wildcard */*.cht)
 
 .PHONY:	all test check chttp_test
@@ -17,5 +18,5 @@ test:		check
 check:		chttp_test $(CHTS)
 
 %.cht:		FORCE
-		$(CHTTP_TEST) $@
+		$(CHTTP_TEST) $(CHTTP_TEST_FLAGS) $@
 
