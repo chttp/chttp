@@ -8,22 +8,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TODO get rid of this?
 struct chttp_test *TEST;
 
 static void
-_finish_test(struct chttp_test *test)
+_finish_test(struct chttp_text_context *ctx)
 {
+	struct chttp_test *test;
+
+	test = chttp_test_convert(ctx);
+
 	chttp_test_ok(test);
 	chttp_test_ok(TEST);
 	assert(test == TEST);
 
-	if (test->context.context) {
-		chttp_context_ok(test->context.context);
-		chttp_test_ERROR(test->context.context->error, "CHTTP error detected");
-
-		chttp_context_free(test->context.context);
-		test->context.context = NULL;
-	}
+	chttp_test_ERROR(test->context.context != NULL, "CHTTP context detected");
 
 	if (test->fcht) {
 		fclose(test->fcht);
@@ -60,7 +59,7 @@ _init_test(struct chttp_test *test)
 	chttp_test_ok(test);
 	chttp_test_ok(chttp_test_convert(&test->context));
 
-	chttp_test_register_finish(test, _finish_test);
+	chttp_test_register_finish(&test->context, _finish_test);
 }
 
 static void
@@ -99,7 +98,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	chttp_test_log(CHTTP_LOG_ROOT, "chttp_test %s", CHTTP_VERSION);
+	//chttp_test_log(CHTTP_LOG_ROOT, "chttp_test %s", CHTTP_VERSION);
 
 	if (!test.cht_file) {
 		_usage(1);
@@ -155,10 +154,12 @@ main(int argc, char **argv)
 }
 
 void
-chttp_test_register_finish(struct chttp_test *test, chttp_test_finish_f *func)
+chttp_test_register_finish(struct chttp_text_context *ctx, chttp_test_finish_f *func)
 {
+	struct chttp_test *test;
 	struct chttp_test_finish *finish;
 
+	test = chttp_test_convert(ctx);
 	chttp_test_ok(test);
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {
@@ -188,7 +189,7 @@ chttp_test_run_finish(struct chttp_test *test)
 
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 
-		finish->func(test);
+		finish->func(&test->context);
 
 		finish->magic = 0;
 		free(finish);

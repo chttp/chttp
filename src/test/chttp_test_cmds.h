@@ -18,6 +18,8 @@ struct chttp_test_cmd {
 };
 
 struct chttp_text_context {
+	struct chttp_context		scontext;
+
 	struct chttp_context		*context;
 };
 
@@ -34,5 +36,10 @@ typedef void (chttp_test_cmd_f)(struct chttp_text_context*, struct chttp_test_cm
 #endif
 
 CHTTP_TEST_CMD(chttp_test)
+CHTTP_TEST_CMD(connect_or_skip)
+CHTTP_TEST_CMD(chttp_init)
+CHTTP_TEST_CMD(chttp_url)
+CHTTP_TEST_CMD(chttp_send)
+CHTTP_TEST_CMD(chttp_status)
 
 #undef CHTTP_TEST_CMD

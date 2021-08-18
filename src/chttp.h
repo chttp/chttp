@@ -144,6 +144,7 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();
+extern long CHTTP_DNS_CACHE_TTL;
 
 void chttp_tcp_connect(struct chttp_context *ctx);
 void chttp_tcp_read(struct chttp_context *ctx);

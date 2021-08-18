@@ -34,7 +34,6 @@ _test_unescape(char *buf)
 	assert(buf);
 
 	len = strlen(buf);
-	assert(len);
 
 	for (i = 0, offset = 0; i < len; i++) {
 		if (buf[i] != '\\') {

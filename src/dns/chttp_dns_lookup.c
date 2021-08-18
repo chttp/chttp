@@ -9,6 +9,8 @@
 #include <string.h>
 #include <sys/types.h>
 
+long CHTTP_DNS_CACHE_TTL;
+
 void
 _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 {

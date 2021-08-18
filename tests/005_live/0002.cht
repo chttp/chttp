@@ -1,0 +1,8 @@
+chttp_test "Test ec2.rezsoft.org H1 plaintext 404"
+
+connect_or_skip ec2.rezsoft.org 80
+
+chttp_init
+chttp_url /404
+chttp_send ec2.rezsoft.org 80
+chttp_status 404

@@ -39,10 +39,12 @@ _test_cmd_register(struct chttp_test *test, const char *name, chttp_test_cmd_f *
 }
 
 static void
-_test_cmds_free(struct chttp_test *test)
+_test_cmds_free(struct chttp_text_context *ctx)
 {
+	struct chttp_test *test;
 	struct chttp_test_cmdentry *entry, *next;
 
+	test = chttp_test_convert(ctx);
 	chttp_test_ok(test);
 
 	RB_FOREACH_SAFE(entry, chttp_test_tree, &test->cmd_tree, next) {
@@ -67,7 +69,7 @@ chttp_test_cmds_init(struct chttp_test *test)
 	_test_cmd_register(test, #cmd, &chttp_test_cmd_##cmd);
 #include "test/chttp_test_cmds.h"
 
-	chttp_test_register_finish(test, _test_cmds_free);
+	chttp_test_register_finish(&test->context, _test_cmds_free);
 }
 
 struct chttp_test_cmdentry *

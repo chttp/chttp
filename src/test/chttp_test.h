@@ -35,7 +35,7 @@ RB_HEAD(chttp_test_tree, chttp_test_cmdentry);
 
 struct chttp_test;
 
-typedef void (chttp_test_finish_f)(struct chttp_test*);
+typedef void (chttp_test_finish_f)(struct chttp_text_context*);
 
 struct chttp_test_finish {
 	unsigned int				magic;
@@ -78,7 +78,7 @@ struct chttp_test {
 
 extern struct chttp_test *TEST;
 
-void chttp_test_register_finish(struct chttp_test *test, chttp_test_finish_f *func);
+void chttp_test_register_finish(struct chttp_text_context *ctx, chttp_test_finish_f *func);
 void chttp_test_run_finish(struct chttp_test *test);
 
 void chttp_test_cmds_init(struct chttp_test *test);
@@ -88,9 +88,11 @@ int chttp_test_readline(struct chttp_test *test, size_t append_len);
 void chttp_test_parse_cmd(struct chttp_test *test);
 
 struct chttp_test *chttp_test_convert(struct chttp_text_context *ctx);
+void chttp_test_skip(struct chttp_text_context *ctx);
 void chttp_test_log(enum chttp_test_verbocity level, const char *fmt, ...);
 void chttp_test_warn(int condition, const char *fmt, ...);
 void chttp_test_ERROR(int condition, const char *fmt, ...);
+long chttp_test_parse_long(const char *str);
 
 #define chttp_test_ok(test)						\
 	do {								\
