@@ -12,8 +12,6 @@ void
 chttp_test_cmd_chttp_test(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	assert(ctx);
-	assert(cmd);
-
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "%s", cmd->params[0]);
@@ -27,8 +25,6 @@ chttp_test_cmd_connect_or_skip(struct chttp_text_context *ctx, struct chttp_test
 	long port;
 
 	assert(ctx);
-	assert(cmd);
-
 	chttp_test_ERROR_param_count(cmd, 2);
 
 	host = cmd->params[0];

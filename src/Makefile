@@ -4,6 +4,7 @@ CC=gcc
 CFLAGS=-O3 -Wall -Wextra -g -fPIC -I.
 LDFLAGS=-shared
 LIBFLAGS=
+LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 RM=rm -f
 
 INCLUDES=$(wildcard *.h data/*.h)
@@ -28,7 +29,7 @@ chttp_client:	libchttp.a $(CLIENT_OBJS)
 		$(CC) -o $@ $(CLIENT_OBJS) libchttp.a $(LIBFLAGS)
 
 chttp_test:	libchttp.a $(TEST_OBJS)
-		$(CC) -o $@ $(TEST_OBJS) libchttp.a $(LIBFLAGS)
+		$(CC) -o $@ $(TEST_OBJS) libchttp.a $(LIBFLAGS_TEST)
 
 libchttp.so:	$(OBJS)
 		$(CC) $(LDFLAGS) -o $@ $(OBJS)

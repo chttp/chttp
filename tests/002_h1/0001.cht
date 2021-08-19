@@ -1,0 +1,3 @@
+chttp_test "Simple h1 server test"
+
+server_init

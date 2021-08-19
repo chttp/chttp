@@ -31,17 +31,16 @@ void
 chttp_test_cmd_chttp_init(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	assert(ctx);
-	assert(cmd);
 
 	chttp_test_ERROR_param_count(cmd, 0);
 	chttp_test_ERROR(ctx->context != NULL, "chttp context exists");
-
-	chttp_test_register_finish(ctx, "chttp_client", _client_finish);
 
 	ctx->context = &ctx->scontext;
 
 	chttp_context_init(ctx->context);
 	chttp_context_ok(ctx->context);
+
+	chttp_test_register_finish(ctx, "chttp_client", _client_finish);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "context initialized");
 }
@@ -52,7 +51,6 @@ chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *
 	char *url;
 
 	_test_context_ok(ctx);
-	assert(cmd);
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	url = cmd->params[0];
@@ -67,7 +65,6 @@ chttp_test_cmd_chttp_send(struct chttp_text_context *ctx, struct chttp_test_cmd 
 	long port;
 
 	_test_context_ok(ctx);
-	assert(cmd);
 	chttp_test_ERROR_param_count(cmd, 2);
 	chttp_test_ERROR_string(cmd->params[0]);
 
@@ -86,7 +83,6 @@ chttp_test_cmd_chttp_status(struct chttp_text_context *ctx, struct chttp_test_cm
 	long status;
 
 	_test_context_ok(ctx);
-	assert(cmd);
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	status = chttp_test_parse_long(cmd->params[0]);

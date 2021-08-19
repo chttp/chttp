@@ -2,7 +2,7 @@
 
 CHTTP_TEST=../src/chttp_test
 CHTTP_TEST_FLAGS=
-CHTS=$(wildcard */*.cht)
+CHTS=$(sort $(wildcard */*.cht))
 VALGRIND=
 
 .PHONY:	all test check chttp_test valgrind
