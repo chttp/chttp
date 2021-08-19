@@ -1,3 +1,6 @@
 chttp_test "Simple h1 server test"
 
 server_init
+server_listen
+
+sleep_ms 100

@@ -39,6 +39,7 @@ typedef void (chttp_test_cmd_f)(struct chttp_text_context*, struct chttp_test_cm
 #endif
 
 CHTTP_TEST_CMD(chttp_test)
+CHTTP_TEST_CMD(sleep_ms)
 CHTTP_TEST_CMD(connect_or_skip)
 
 CHTTP_TEST_CMD(chttp_init)
@@ -47,5 +48,6 @@ CHTTP_TEST_CMD(chttp_send)
 CHTTP_TEST_CMD(chttp_status)
 
 CHTTP_TEST_CMD(server_init)
+CHTTP_TEST_CMD(server_listen)
 
 #undef CHTTP_TEST_CMD
