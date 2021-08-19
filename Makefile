@@ -7,7 +7,7 @@ all:
 
 test:		check
 
-check:		chttp_test
+check:
 		$(MAKE) -C tests $@
 
 %:

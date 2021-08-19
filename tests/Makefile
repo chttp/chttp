@@ -22,6 +22,8 @@ test:		check
 check:		CHTTP_TEST_FLAGS=-q
 check:		$(CHTS)
 
+verbose:	$(CHTS)
+
 %.cht:		chttp_test FORCE
 		$(VALGRIND) $(CHTTP_TEST) $(CHTTP_TEST_FLAGS) $@
 

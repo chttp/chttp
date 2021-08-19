@@ -19,7 +19,6 @@ struct chttp_test_cmd {
 
 struct chttp_text_context {
 	struct chttp_context		scontext;
-
 	struct chttp_context		*context;
 };
 

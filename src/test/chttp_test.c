@@ -8,9 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO get rid of this?
-struct chttp_test *TEST;
-
 static void
 _finish_test(struct chttp_text_context *ctx)
 {
@@ -19,8 +16,6 @@ _finish_test(struct chttp_text_context *ctx)
 	test = chttp_test_convert(ctx);
 
 	chttp_test_ok(test);
-	chttp_test_ok(TEST);
-	assert(test == TEST);
 
 	chttp_test_ERROR(test->context.context != NULL, "CHTTP context detected");
 
@@ -34,8 +29,6 @@ _finish_test(struct chttp_text_context *ctx)
 	test->line_raw_len = 0;
 
 	test->magic = 0;
-
-	TEST = NULL;
 }
 
 static void
@@ -54,18 +47,16 @@ _init_test(struct chttp_test *test)
 	RB_INIT(&test->cmd_tree);
 	TAILQ_INIT(&test->finish_list);
 
-	TEST = test;
-
 	chttp_test_ok(test);
 	chttp_test_ok(chttp_test_convert(&test->context));
 
-	chttp_test_register_finish(&test->context, _finish_test);
+	chttp_test_register_finish(&test->context, "context", _finish_test);
 }
 
 static void
 _usage(int error)
 {
-	printf("%ssage: chttp_test [-q] [-v] [-vv] [-h] CHT_FILE\n",
+	printf("%ssage: chttp_test [-q] [-v] [-vv] [-h] [-V] CHT_FILE\n",
 		(error ? "ERROR u" : "U"));
 }
 
@@ -86,8 +77,11 @@ main(int argc, char **argv)
 			test.verbocity = CHTTP_LOG_VERBOSE;
 		} else if (!strcmp(argv[i], "-vv")) {
 			test.verbocity = CHTTP_LOG_VERY_VERBOSE;
+		} else if (!strcmp(argv[i], "-V")) {
+			chttp_test_log(&test.context, CHTTP_LOG_FORCE, "chttp_test %s",
+				CHTTP_VERSION);
+			return 0;
 		} else if (!strcmp(argv[i], "-h")) {
-			chttp_test_log(CHTTP_LOG_FORCE, "chttp_test %s", CHTTP_VERSION);
 			_usage(0);
 			return 0;
 		} else if (test.cht_file == NULL) {
@@ -98,87 +92,112 @@ main(int argc, char **argv)
 		}
 	}
 
-	//chttp_test_log(CHTTP_LOG_ROOT, "chttp_test %s", CHTTP_VERSION);
-
 	if (!test.cht_file) {
 		_usage(1);
 		return 1;
 	}
 
 	test.fcht = fopen(test.cht_file, "r");
-
-	if (!test.fcht) {
-		chttp_test_ERROR(1, "invalid file %s", test.cht_file);
-	}
+	chttp_test_ERROR(!test.fcht, "invalid file %s", test.cht_file);
 
 	while (chttp_test_readline(&test, 0)) {
 		chttp_test_parse_cmd(&test);
 
 		if (test.verbocity == CHTTP_LOG_VERY_VERBOSE) {
-			chttp_test_log(CHTTP_LOG_NONE,
+			chttp_test_log(&test.context, CHTTP_LOG_NONE,
 			    "%s (line %zu)", test.cmd.name, test.lines - test.lines_multi);
 		} else {
-			chttp_test_log(CHTTP_LOG_NONE, "%s", test.cmd.name);
+			chttp_test_log(&test.context, CHTTP_LOG_NONE, "%s", test.cmd.name);
 		}
 
 		for (i = 0; i < test.cmd.param_count; i++) {
-			chttp_test_log(CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
+			chttp_test_log(&test.context, CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
 				test.cmd.params[i]);
 		}
 
 		cmd_entry = chttp_test_cmds_get(&test, test.cmd.name);
-
-		if (!cmd_entry) {
-			chttp_test_ERROR(1, "%s not found", test.cmd.name);
-			return 1;
-		}
+		chttp_test_ERROR(!cmd_entry, "%s not found", test.cmd.name);
 
 		cmd_entry->func(&test.context, &test.cmd);
 
 		if (test.error) {
-			chttp_test_log(CHTTP_LOG_FORCE, "FAILED (%s)", test.cht_file);
+			chttp_test_log(&test.context, CHTTP_LOG_FORCE, "FAILED (%s)",
+				test.cht_file);
 			return 1;
 		} else if (test.skip) {
-			chttp_test_run_finish(&test);
-			chttp_test_log(CHTTP_LOG_FORCE, "SKIPPED");
+			chttp_test_run_all_finish(&test);
+			chttp_test_log(&test.context, CHTTP_LOG_FORCE, "SKIPPED");
 			return 0;
 		}
 
 	}
 
-	chttp_test_run_finish(&test);
+	chttp_test_run_all_finish(&test);
 
-	chttp_test_log(CHTTP_LOG_FORCE, "PASSED");
+	chttp_test_log(NULL, CHTTP_LOG_FORCE, "PASSED");
 
 	return 0;
 }
 
 void
-chttp_test_register_finish(struct chttp_text_context *ctx, chttp_test_finish_f *func)
+chttp_test_register_finish(struct chttp_text_context *ctx, const char *name,
+    chttp_test_finish_f *func)
 {
 	struct chttp_test *test;
 	struct chttp_test_finish *finish;
 
 	test = chttp_test_convert(ctx);
-	chttp_test_ok(test);
+	assert(name && *name);
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {
 		assert(finish->magic == CHTTP_TEST_FINISH);
+		chttp_test_ERROR(!strcmp(finish->name, name),
+			"cannot register the same finish name twice");
 		chttp_test_ERROR(finish->func == func,
-			"Cannot register the same finish function twice");
+			"cannot register the same finish function twice");
 	}
 
 	finish = malloc(sizeof(*finish));
 	assert(finish);
 
 	finish->magic = CHTTP_TEST_FINISH;
+	finish->name = name;
 	finish->func = func;
 
 	TAILQ_INSERT_HEAD(&test->finish_list, finish, entry);
 }
 
 void
-chttp_test_run_finish(struct chttp_test *test)
+chttp_test_run_finish(struct chttp_text_context *ctx, const char *name)
+{
+	struct chttp_test *test;
+	struct chttp_test_finish *finish, *temp;
+
+	test = chttp_test_convert(ctx);
+	assert(name && *name);
+
+	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
+		assert(finish->magic == CHTTP_TEST_FINISH);
+
+		if (strcmp(finish->name, name)) {
+			continue;
+		}
+
+		TAILQ_REMOVE(&test->finish_list, finish, entry);
+
+		finish->func(&test->context);
+
+		finish->magic = 0;
+		free(finish);
+
+		return;
+	}
+
+	chttp_test_ERROR(1, "finish task %s not found", name);
+}
+
+void
+chttp_test_run_all_finish(struct chttp_test *test)
 {
 	struct chttp_test_finish *finish, *temp;
 

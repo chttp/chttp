@@ -69,7 +69,7 @@ chttp_test_cmds_init(struct chttp_test *test)
 	_test_cmd_register(test, #cmd, &chttp_test_cmd_##cmd);
 #include "test/chttp_test_cmds.h"
 
-	chttp_test_register_finish(&test->context, _test_cmds_free);
+	chttp_test_register_finish(&test->context, "cmd", _test_cmds_free);
 }
 
 struct chttp_test_cmdentry *

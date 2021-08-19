@@ -19,21 +19,22 @@ chttp_test_convert(struct chttp_text_context *ctx)
 
 	test = (struct chttp_test*)((void*)ctx - offsetof(struct chttp_test, context));
 	chttp_test_ok(test);
-	assert(test == TEST);
 
 	return test;
 }
 
 void
-chttp_test_log(enum chttp_test_verbocity level, const char *fmt, ...)
+chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
+    const char *fmt, ...)
 {
+	struct chttp_test *test;
 	va_list ap;
 
-	if (TEST) {
-		chttp_test_ok(TEST);
+	if (ctx) {
+		test = chttp_test_convert(ctx);
 
-		if (level != CHTTP_LOG_FORCE && (TEST->verbocity == CHTTP_LOG_NONE ||
-		    TEST->verbocity < level)) {
+		if (level != CHTTP_LOG_FORCE && (test->verbocity == CHTTP_LOG_NONE ||
+		    test->verbocity < level)) {
 			return;
 		}
 	} else {
@@ -49,9 +50,7 @@ chttp_test_log(enum chttp_test_verbocity level, const char *fmt, ...)
 	}
 
 	va_start(ap, fmt);
-
 	vprintf(fmt, ap);
-
 	va_end(ap);
 
 	printf("\n");
@@ -79,9 +78,7 @@ chttp_test_warn(int condition, const char *fmt, ...)
 	printf("WARNING: ");
 
 	va_start(ap, fmt);
-
 	vprintf(fmt, ap);
-
 	va_end(ap);
 
 	printf("\n");
@@ -92,8 +89,6 @@ chttp_test_ERROR(int condition, const char *fmt, ...)
 {
 	va_list ap;
 
-	chttp_test_ok(TEST);
-
 	if (!condition) {
 		return;
 	}
@@ -101,16 +96,10 @@ chttp_test_ERROR(int condition, const char *fmt, ...)
 	printf("ERROR: ");
 
 	va_start(ap, fmt);
-
 	vprintf(fmt, ap);
-
 	va_end(ap);
 
-	if (TEST->cht_file) {
-		printf("\nFAILED (%s)\n", TEST->cht_file);
-	} else {
-		printf("\nFAILED\n");
-	}
+	printf("\nFAILED\n");
 
 	exit(1);
 }
@@ -132,4 +121,17 @@ chttp_test_parse_long(const char *str)
 	}
 
 	return ret;
+}
+
+void
+chttp_test_ERROR_param_count(struct chttp_test_cmd *cmd, size_t count)
+{
+	chttp_test_ERROR(cmd->param_count != count,
+		"invalid parameter count, found %zu, expected %zu", cmd->param_count, count);
+}
+
+void
+chttp_test_ERROR_string(const char *str)
+{
+	chttp_test_ERROR(!str || !*str, "invalid string");
 }
