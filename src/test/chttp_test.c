@@ -65,12 +65,12 @@ main(int argc, char **argv)
 {
 	struct chttp_test test;
 	struct chttp_test_cmdentry *cmd_entry;
-	int i;
+	size_t i;
 
 	_init_test(&test);
 	chttp_test_cmds_init(&test);
 
-	for (i = 1; i < argc; i++) {
+	for (i = 1; i < (unsigned)argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
 			test.verbocity = CHTTP_LOG_NONE;
 		} else if (!strcmp(argv[i], "-v")) {

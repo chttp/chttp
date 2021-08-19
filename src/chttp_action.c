@@ -29,6 +29,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 	chttp_context_ok(ctx);
 	assert(host && *host);
 	assert(port > 0);
+	(void)tls;
 
 	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
 		chttp_ABORT("invalid state, request must be setup before sending");
@@ -61,7 +62,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 		}
 
 		ret = send(ctx->addr.sock, data->data, data->offset, MSG_NOSIGNAL);
-		assert(ret == data->offset); // TODO partial send
+		assert(ret > 0 && (size_t)ret == data->offset); // TODO partial send
 	}
 
 	ctx->state = CHTTP_STATE_SENT;

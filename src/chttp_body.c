@@ -216,7 +216,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		// Figure out how much data we have left
 		ret_dpage = ctx->data_last->offset - start;
 
-		if (ctx->length >= 0 && ret_dpage > ctx->length) {
+		if (ctx->length >= 0 && ret_dpage > (size_t)ctx->length) {
 			ret_dpage = ctx->length;
 		}
 
@@ -234,7 +234,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			}
 
 			if (ctx->length > 0) {
-				assert(ret_dpage <= ctx->length);
+				assert(ret_dpage <= (size_t)ctx->length);
 				ctx->length -= ret_dpage;
 			}
 
@@ -262,7 +262,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			}
 
 			if (ctx->length > 0) {
-				assert(buf_len <= ctx->length);
+				assert(buf_len <= (size_t)ctx->length);
 				ctx->length -= buf_len;
 			}
 
@@ -270,7 +270,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		}
 	}
 
-	if (ctx->length >= 0 && buf_len > ctx->length) {
+	if (ctx->length >= 0 && buf_len > (size_t)ctx->length) {
 		buf_len = ctx->length;
 	}
 
@@ -280,7 +280,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	if (ctx->length > 0) {
-		assert(ret <= ctx->length);
+		assert(ret <= (size_t)ctx->length);
 		ctx->length -= ret;
 	}
 

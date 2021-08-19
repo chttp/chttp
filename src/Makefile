@@ -1,7 +1,7 @@
 # CHTTP Makefile (src)
 
 CC=gcc
-CFLAGS=-O3 -Wall -g -fPIC -I.
+CFLAGS=-O3 -Wall -Wextra -g -fPIC -I.
 LDFLAGS=-shared
 LIBFLAGS=
 RM=rm -f
@@ -15,10 +15,14 @@ TEST=$(wildcard test/*.c)
 TEST_INCLUDES=$(wildcard test/*.h)
 TEST_OBJS=$(TEST:.c=.o)
 
-.PHONY:		clean lib all
+.PHONY:		all clean lib allclean
 
 all:		chttp_client chttp_test lib
 lib:		libchttp.so libchttp.a
+
+allclean:
+		$(MAKE) clean
+		$(MAKE) all
 
 chttp_client:	libchttp.a $(CLIENT_OBJS)
 		$(CC) -o $@ $(CLIENT_OBJS) libchttp.a $(LIBFLAGS)
