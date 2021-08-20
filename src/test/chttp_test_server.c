@@ -5,11 +5,11 @@
 
 #include "test/chttp_test.h"
 
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define _SERVER_IP				"127.0.0.1"
+#define _SERVER_JOIN_TIMEOUT_MS			2500
 
 enum _server_cmds {
 	_SERVER_CMD_ACCEPT = 1
@@ -37,9 +37,8 @@ struct chttp_test_server {
 	TAILQ_HEAD(, _server_cmdentry)		cmd_list;
 
 	volatile int				stop;
-
-	unsigned int				started:1;
-	unsigned int				stopped:1;
+	volatile int				started;
+	volatile int				stopped;
 
 	int					sock;
 	int					port;
@@ -120,20 +119,22 @@ _server_finish(struct chttp_text_context *ctx)
 {
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry, *temp;
+	int ret;
 
 	server = _server_context_ok(ctx);
 
 	_server_LOCK(server);
 
+	assert(server->started);
+	assert_zero(server->stop);
 	assert_zero(server->stopped);
 	server->stop = 1;
 
 	_server_SIGNAL(server);
 	_server_UNLOCK(server);
 
-	// Join the thread
-	assert_zero(pthread_join(server->thread, NULL));
-	assert(server->stopped);
+	ret = chttp_test_join_thread(server->thread, &server->stopped, _SERVER_JOIN_TIMEOUT_MS);
+	chttp_test_ERROR(ret, "server thread is blocked");
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "server thread joined");
 
@@ -194,7 +195,6 @@ _server_init_socket(struct chttp_test_server *server)
 	assert_zero(getsockname(server->sock, addr, &len));
 	assert(addr->sa_family == chttp->addr.sa.sa_family);
 
-	// TODO
 	switch (addr->sa_family) {
 		case AF_INET:
 			server->port = ntohs(((struct sockaddr_in*)addr)->sin_port);

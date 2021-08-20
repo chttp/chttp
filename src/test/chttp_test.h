@@ -12,6 +12,9 @@
 #include "data/queue.h"
 
 #include <stdio.h>
+#include <pthread.h>
+
+#define CHTTP_TEST_TIMEOUT_SEC			10
 
 enum chttp_test_verbocity {
 	CHTTP_LOG_FORCE = -2,
@@ -56,6 +59,9 @@ struct chttp_test {
 	int					argc;
 	char					**argv;
 
+	pthread_t				thread;
+	volatile int				stopped;
+
 	enum chttp_test_verbocity		verbocity;
 
 	struct chttp_test_tree			cmd_tree;
@@ -77,6 +83,8 @@ struct chttp_test {
 	int					skip;
 };
 
+#define CHTTP_TEST_JOIN_INTERVAL_MS		25
+
 void chttp_test_register_finish(struct chttp_text_context *ctx, const char *name,
 	chttp_test_finish_f *func);
 void chttp_test_run_finish(struct chttp_text_context *ctx, const char *name);
@@ -97,6 +105,9 @@ void chttp_test_ERROR(int condition, const char *fmt, ...);
 long chttp_test_parse_long(const char *str);
 void chttp_test_ERROR_param_count(struct chttp_test_cmd *cmd, size_t count);
 void chttp_test_ERROR_string(const char *str);
+void chttp_test_sleep_ms(long ms);
+int chttp_test_join_thread(pthread_t thread, volatile int *stopped,
+	unsigned long timeout_ms);
 
 #define chttp_test_ok(test)						\
 	do {								\

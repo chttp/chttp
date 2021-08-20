@@ -136,3 +136,46 @@ chttp_test_ERROR_string(const char *str)
 {
 	chttp_test_ERROR(!str || !*str, "invalid string");
 }
+
+void
+chttp_test_sleep_ms(long ms)
+{
+	struct timespec tspec, rem;
+
+	assert(ms >= 0);
+
+	tspec.tv_sec = ms / 1000;
+	tspec.tv_nsec = (ms % 1000) * 1000 * 1000;
+
+	errno = 0;
+	while (nanosleep(&tspec, &rem) && errno == EINTR) {
+		tspec.tv_sec = rem.tv_sec;
+		tspec.tv_nsec = rem.tv_nsec;
+		errno = 0;
+	}
+}
+
+int
+chttp_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long timeout_ms)
+{
+	unsigned long time;
+
+	assert(stopped);
+	assert(timeout_ms + CHTTP_TEST_JOIN_INTERVAL_MS > timeout_ms);
+
+	time = 0;
+
+	while (!*stopped) {
+		chttp_test_sleep_ms(CHTTP_TEST_JOIN_INTERVAL_MS);
+
+		time += CHTTP_TEST_JOIN_INTERVAL_MS;
+
+		if (time > timeout_ms) {
+			return 1;
+		}
+	}
+
+	assert_zero(pthread_join(thread, NULL));
+
+	return 0;
+}

@@ -60,13 +60,16 @@ _usage(int error)
 		(error ? "ERROR u" : "U"));
 }
 
-void
-_test_run_cht_file(struct chttp_test *test)
+void *
+_test_run_cht_file(void *arg)
 {
+	struct chttp_test *test;
 	struct chttp_test_cmdentry *cmd_entry;
 	size_t i;
 
+	test = (struct chttp_test*)arg;
 	chttp_test_ok(test);
+	assert_zero(test->stopped);
 
 	test->fcht = fopen(test->cht_file, "r");
 	chttp_test_ERROR(!test->fcht, "invalid file %s", test->cht_file);
@@ -92,16 +95,20 @@ _test_run_cht_file(struct chttp_test *test)
 		cmd_entry->func(&test->context, &test->cmd);
 
 		if (test->error || test->skip) {
-			return;
+			break;
 		}
 	}
+
+	test->stopped = 1;
+
+	return NULL;
 }
 
 int
 main(int argc, char **argv)
 {
 	struct chttp_test test;
-	int i;
+	int i, ret;
 
 	_init_test(&test);
 	chttp_test_cmds_init(&test);
@@ -133,7 +140,10 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	_test_run_cht_file(&test);
+	assert_zero(pthread_create(&test.thread, NULL, _test_run_cht_file, &test));
+
+	ret = chttp_test_join_thread(test.thread, &test.stopped, CHTTP_TEST_TIMEOUT_SEC * 1000);
+	chttp_test_ERROR(ret, "test timed out after %ds", CHTTP_TEST_TIMEOUT_SEC);
 
 	if (test.error) {
 		chttp_test_log(&test.context, CHTTP_LOG_FORCE, "FAILED");
