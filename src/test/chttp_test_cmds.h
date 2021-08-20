@@ -48,6 +48,6 @@ CHTTP_TEST_CMD(chttp_send)
 CHTTP_TEST_CMD(chttp_status)
 
 CHTTP_TEST_CMD(server_init)
-CHTTP_TEST_CMD(server_listen)
+CHTTP_TEST_CMD(server_accept)
 
 #undef CHTTP_TEST_CMD

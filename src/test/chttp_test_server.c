@@ -9,8 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define _SERVER_IP				"127.0.0.1"
+
 enum _server_cmds {
-	_SERVER_CMD_LISTEN = 1
+	_SERVER_CMD_ACCEPT = 1
 };
 
 struct _server_cmdentry {
@@ -38,6 +40,10 @@ struct chttp_test_server {
 
 	unsigned int				started:1;
 	unsigned int				stopped:1;
+
+	int					sock;
+	int					port;
+	int					http_sock;
 };
 
 #define _server_ok(server)						\
@@ -154,6 +160,61 @@ _server_finish(struct chttp_text_context *ctx)
 }
 
 void
+_server_init_socket(struct chttp_test_server *server)
+{
+	struct chttp_context *chttp;
+	char chttp_buf[CHTTP_CTX_SIZE];
+	struct sockaddr_storage saddr;
+	struct sockaddr *addr;
+	socklen_t len;
+	int val;
+
+	_server_ok(server);
+	assert(server->sock == -1);
+
+	chttp_context_init_buf(chttp_buf, sizeof(chttp_buf));
+	chttp = (struct chttp_context*)chttp_buf;
+
+	chttp_dns_lookup(chttp, _SERVER_IP, 0);
+	assert(chttp->addr.magic == CHTTP_ADDR_MAGIC);
+
+	server->sock = socket(chttp->addr.sa.sa_family, SOCK_STREAM, 0);
+	assert(server->sock >= 0);
+
+	val = 1;
+	assert_zero(setsockopt(server->sock, SOL_SOCKET, SO_REUSEADDR,
+		&val, sizeof(val)));
+
+	assert_zero(bind(server->sock, &chttp->addr.sa, chttp->addr.len));
+	assert_zero(listen(server->sock, 1));
+
+	addr = (struct sockaddr*)&saddr;
+	len = sizeof(saddr);
+
+	assert_zero(getsockname(server->sock, addr, &len));
+	assert(addr->sa_family == chttp->addr.sa.sa_family);
+
+	// TODO
+	switch (addr->sa_family) {
+		case AF_INET:
+			server->port = ntohs(((struct sockaddr_in*)addr)->sin_port);
+			break;
+		case AF_INET6:
+			server->port = ntohs(((struct sockaddr_in6*)addr)->sin6_port);
+			break;
+		default:
+			chttp_test_ERROR(1, "Invalid server socket family");
+	}
+
+	assert(server->port >= 0);
+
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server socket port: %d",
+		server->port);
+
+	chttp_context_free(chttp);
+}
+
+void
 chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -169,6 +230,9 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 
 	server->magic = _SERVER_MAGIC;
 	server->ctx = ctx;
+	server->sock = -1;
+	server->port = -1;
+	server->http_sock = -1;
 	TAILQ_INIT(&server->cmd_list);
 	assert_zero(pthread_mutex_init(&server->cmd_lock, NULL));
 	assert_zero(pthread_cond_init(&server->cmd_signal, NULL));
@@ -185,6 +249,8 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 
 	_server_UNLOCK(server);
 
+	_server_init_socket(server);
+
 	ctx->server = server;
 
 	chttp_test_register_finish(ctx, "server", _server_finish);
@@ -193,7 +259,45 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 }
 
 void
-chttp_test_cmd_server_listen(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+_server_accept(struct chttp_test_server *server)
+{
+	struct sockaddr_storage saddr;
+	struct sockaddr *addr;
+	socklen_t len;
+	char remote[128] = {0};
+	int remote_port = -1;
+
+	_server_ok(server);
+	assert(server->sock >= 0);
+	assert(server->port >= 0);
+	assert(server->http_sock == -1);
+
+	addr = (struct sockaddr*)&saddr;
+	len = sizeof(saddr);
+
+	accept(server->sock, addr, &len);
+
+	switch (addr->sa_family) {
+		case AF_INET:
+			inet_ntop(AF_INET, &(((struct sockaddr_in*)addr)->sin_addr),
+				remote, sizeof(remote));
+			remote_port = ntohs(((struct sockaddr_in*)addr)->sin_port);
+			break;
+		case AF_INET6:
+			inet_ntop(AF_INET6, &(((struct sockaddr_in6*)addr)->sin6_addr),
+				remote, sizeof(remote));
+			remote_port = ntohs(((struct sockaddr_in6*)addr)->sin6_port);
+			break;
+		default:
+			chttp_test_ERROR(1, "Invalid server remote family");
+	}
+
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server remote client %s:%d",
+		remote, remote_port);
+}
+
+void
+chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry;
@@ -201,7 +305,7 @@ chttp_test_cmd_server_listen(struct chttp_text_context *ctx, struct chttp_test_c
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
 
-	cmdentry = _server_cmdentry_alloc(_SERVER_CMD_LISTEN);
+	cmdentry = _server_cmdentry_alloc(_SERVER_CMD_ACCEPT);
 
 	_server_LOCK(server);
 
@@ -219,7 +323,8 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 	assert(cmdentry->magic == _SERVER_CMDENTRY);
 
 	switch (cmdentry->cmd) {
-		case _SERVER_CMD_LISTEN:
+		case _SERVER_CMD_ACCEPT:
+			_server_accept(server);
 			break;
 		default:
 			chttp_test_ERROR(1, "invalid server cmd %d", cmdentry->cmd);

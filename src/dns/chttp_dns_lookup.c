@@ -5,6 +5,7 @@
 
 #include "chttp.h"
 
+#include <limits.h>
 #include <netdb.h>
 #include <string.h>
 #include <sys/types.h>
@@ -56,6 +57,7 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port)
 
 	chttp_context_ok(ctx);
 	assert(host && *host);
+	assert(port >= 0 && port <= INT16_MAX);
 
 	//chttp_dns_cache_lookup(host);
 
