@@ -261,7 +261,6 @@ _server_thread(void *arg)
 		_server_UNLOCK(server);
 
 		_server_cmd(server, cmdentry);
-
 		_server_cmdentry_free(cmdentry);
 
 		_server_LOCK(server);

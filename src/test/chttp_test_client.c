@@ -5,6 +5,15 @@
 
 #include "test/chttp_test.h"
 
+static inline void
+_test_context_ok(struct chttp_text_context *ctx)
+{
+	assert(ctx);
+	chttp_test_ERROR(!ctx->context, "chttp context does not exist");
+	chttp_context_ok(ctx->context);
+	chttp_test_ok(chttp_test_convert(ctx));
+}
+
 static void
 _client_finish(struct chttp_text_context *ctx)
 {
@@ -16,15 +25,6 @@ _client_finish(struct chttp_text_context *ctx)
 	chttp_context_free(ctx->context);
 	ctx->context = NULL;
 
-}
-
-static inline void
-_test_context_ok(struct chttp_text_context *ctx)
-{
-	assert(ctx);
-	chttp_test_ERROR(!ctx->context, "chttp context does not exist");
-	chttp_context_ok(ctx->context);
-	chttp_test_ok(chttp_test_convert(ctx));
 }
 
 void

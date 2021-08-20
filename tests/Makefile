@@ -5,7 +5,7 @@ V=
 CHTS=$(sort $(wildcard */*.cht))
 VALGRIND=
 
-.PHONY:	all test check chttp_test valgrind
+.PHONY:	all test check chttp_test valgrind verbose
 
 all:		check
 

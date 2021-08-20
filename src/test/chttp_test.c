@@ -60,17 +60,53 @@ _usage(int error)
 		(error ? "ERROR u" : "U"));
 }
 
+void
+_test_run_cht_file(struct chttp_test *test)
+{
+	struct chttp_test_cmdentry *cmd_entry;
+	size_t i;
+
+	chttp_test_ok(test);
+
+	test->fcht = fopen(test->cht_file, "r");
+	chttp_test_ERROR(!test->fcht, "invalid file %s", test->cht_file);
+
+	while (chttp_test_readline(test, 0)) {
+		chttp_test_parse_cmd(test);
+
+		if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
+			chttp_test_log(&test->context, CHTTP_LOG_NONE,
+			    "%s (line %zu)", test->cmd.name, test->lines - test->lines_multi);
+		} else {
+			chttp_test_log(&test->context, CHTTP_LOG_NONE, "%s", test->cmd.name);
+		}
+
+		for (i = 0; i < test->cmd.param_count; i++) {
+			chttp_test_log(&test->context, CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
+				test->cmd.params[i]);
+		}
+
+		cmd_entry = chttp_test_cmds_get(test, test->cmd.name);
+		chttp_test_ERROR(!cmd_entry, "%s not found", test->cmd.name);
+
+		cmd_entry->func(&test->context, &test->cmd);
+
+		if (test->error || test->skip) {
+			return;
+		}
+	}
+}
+
 int
 main(int argc, char **argv)
 {
 	struct chttp_test test;
-	struct chttp_test_cmdentry *cmd_entry;
-	size_t i;
+	int i;
 
 	_init_test(&test);
 	chttp_test_cmds_init(&test);
 
-	for (i = 1; i < (unsigned)argc; i++) {
+	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-q")) {
 			test.verbocity = CHTTP_LOG_NONE;
 		} else if (!strcmp(argv[i], "-v")) {
@@ -97,39 +133,15 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	test.fcht = fopen(test.cht_file, "r");
-	chttp_test_ERROR(!test.fcht, "invalid file %s", test.cht_file);
+	_test_run_cht_file(&test);
 
-	while (chttp_test_readline(&test, 0)) {
-		chttp_test_parse_cmd(&test);
-
-		if (test.verbocity == CHTTP_LOG_VERY_VERBOSE) {
-			chttp_test_log(&test.context, CHTTP_LOG_NONE,
-			    "%s (line %zu)", test.cmd.name, test.lines - test.lines_multi);
-		} else {
-			chttp_test_log(&test.context, CHTTP_LOG_NONE, "%s", test.cmd.name);
-		}
-
-		for (i = 0; i < test.cmd.param_count; i++) {
-			chttp_test_log(&test.context, CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
-				test.cmd.params[i]);
-		}
-
-		cmd_entry = chttp_test_cmds_get(&test, test.cmd.name);
-		chttp_test_ERROR(!cmd_entry, "%s not found", test.cmd.name);
-
-		cmd_entry->func(&test.context, &test.cmd);
-
-		if (test.error) {
-			chttp_test_log(&test.context, CHTTP_LOG_FORCE, "FAILED (%s)",
-				test.cht_file);
-			return 1;
-		} else if (test.skip) {
-			chttp_test_run_all_finish(&test);
-			chttp_test_log(&test.context, CHTTP_LOG_FORCE, "SKIPPED");
-			return 0;
-		}
-
+	if (test.error) {
+		chttp_test_log(&test.context, CHTTP_LOG_FORCE, "FAILED");
+		return 1;
+	} else if (test.skip) {
+		chttp_test_run_all_finish(&test);
+		chttp_test_log(&test.context, CHTTP_LOG_FORCE, "SKIPPED");
+		return 0;
 	}
 
 	chttp_test_run_all_finish(&test);
