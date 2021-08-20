@@ -24,7 +24,7 @@ struct _server_cmdentry {
 
 struct chttp_test_server {
 	unsigned int				magic;
-#define _TEST_SERVER				0xF3969B6A
+#define _SERVER_MAGIC				0xF3969B6A
 
 	struct chttp_text_context		*ctx;
 
@@ -43,18 +43,46 @@ struct chttp_test_server {
 #define _server_ok(server)						\
 	do {								\
 		assert(server);						\
-		assert((server)->magic == _TEST_SERVER);		\
+		assert((server)->magic == _SERVER_MAGIC);		\
 	} while (0)
 
 static void *_server_thread(void *arg);
 
-inline struct chttp_test_server *
+static inline struct chttp_test_server *
 _server_context_ok(struct chttp_text_context *ctx)
 {
 	assert(ctx);
 	chttp_test_ERROR(!ctx->server, "server context does not exist");
 	_server_ok(ctx->server);
 	return ctx->server;
+}
+
+static inline void
+_server_LOCK(struct chttp_test_server *server)
+{
+	_server_ok(server);
+	assert_zero(pthread_mutex_lock(&server->cmd_lock));
+}
+
+static inline void
+_server_UNLOCK(struct chttp_test_server *server)
+{
+	_server_ok(server);
+	assert_zero(pthread_mutex_unlock(&server->cmd_lock));
+}
+
+static inline void
+_server_SIGNAL(struct chttp_test_server *server)
+{
+	_server_ok(server);
+	assert_zero(pthread_cond_signal(&server->cmd_signal));
+}
+
+static inline void
+_server_WAIT(struct chttp_test_server *server)
+{
+	_server_ok(server);
+	assert_zero(pthread_cond_wait(&server->cmd_signal, &server->cmd_lock));
 }
 
 static void
@@ -89,15 +117,13 @@ _server_finish(struct chttp_text_context *ctx)
 
 	server = _server_context_ok(ctx);
 
-	assert_zero(pthread_mutex_lock(&server->cmd_lock));
+	_server_LOCK(server);
 
 	assert_zero(server->stopped);
 	server->stop = 1;
 
-	// Signal the thread stop
-	assert_zero(pthread_cond_signal(&server->cmd_signal));
-
-	assert_zero(pthread_mutex_unlock(&server->cmd_lock));
+	_server_SIGNAL(server);
+	_server_UNLOCK(server);
 
 	// Join the thread
 	assert_zero(pthread_join(server->thread, NULL));
@@ -141,23 +167,23 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 
 	memset(server, 0, sizeof(*server));
 
-	server->magic = _TEST_SERVER;
+	server->magic = _SERVER_MAGIC;
 	server->ctx = ctx;
 	TAILQ_INIT(&server->cmd_list);
 	assert_zero(pthread_mutex_init(&server->cmd_lock, NULL));
 	assert_zero(pthread_cond_init(&server->cmd_signal, NULL));
 
-	assert_zero(pthread_mutex_lock(&server->cmd_lock));
+	_server_LOCK(server);
 
 	// Start the server thread
 	assert_zero(pthread_create(&server->thread, NULL, _server_thread, server));
 
 	// Wait for it to ack
 	assert_zero(server->started);
-	assert_zero(pthread_cond_wait(&server->cmd_signal, &server->cmd_lock));
+	_server_WAIT(server);
 	assert(server->started);
 
-	assert_zero(pthread_mutex_unlock(&server->cmd_lock));
+	_server_UNLOCK(server);
 
 	ctx->server = server;
 
@@ -177,13 +203,30 @@ chttp_test_cmd_server_listen(struct chttp_text_context *ctx, struct chttp_test_c
 
 	cmdentry = _server_cmdentry_alloc(_SERVER_CMD_LISTEN);
 
-	assert_zero(pthread_mutex_lock(&server->cmd_lock));
+	_server_LOCK(server);
 
 	TAILQ_INSERT_TAIL(&server->cmd_list, cmdentry, entry);
 
-	assert_zero(pthread_cond_signal(&server->cmd_signal));
+	_server_SIGNAL(server);
+	_server_UNLOCK(server);
+}
 
-	assert_zero(pthread_mutex_unlock(&server->cmd_lock));
+void
+_server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
+{
+	_server_ok(server);
+	assert(cmdentry);
+	assert(cmdentry->magic == _SERVER_CMDENTRY);
+
+	switch (cmdentry->cmd) {
+		case _SERVER_CMD_LISTEN:
+			break;
+		default:
+			chttp_test_ERROR(1, "invalid server cmd %d", cmdentry->cmd);
+	}
+
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %d",
+		cmdentry->cmd);
 }
 
 static void *
@@ -194,40 +237,40 @@ _server_thread(void *arg)
 
 	_server_ok(server);
 
-	assert_zero(pthread_mutex_lock(&server->cmd_lock));
+	_server_LOCK(server);
 
 	// Ack the server init
 	server->started = 1;
-	assert_zero(pthread_cond_signal(&server->cmd_signal));
+	_server_SIGNAL(server);
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread started");
 
 	while (!server->stop) {
 		if (TAILQ_EMPTY(&server->cmd_list)) {
-			assert_zero(pthread_cond_wait(&server->cmd_signal, &server->cmd_lock));
+			_server_WAIT(server);
 			continue;
 		}
 
 		// Grab work
 		assert(!TAILQ_EMPTY(&server->cmd_list));
 		cmdentry = TAILQ_FIRST(&server->cmd_list);
-		assert(cmdentry && cmdentry->magic == _SERVER_CMDENTRY);
+		assert(cmdentry);
+		assert(cmdentry->magic == _SERVER_CMDENTRY);
 		TAILQ_REMOVE(&server->cmd_list, cmdentry, entry);
 
-		assert_zero(pthread_mutex_unlock(&server->cmd_lock));
+		_server_UNLOCK(server);
 
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %d",
-			cmdentry->cmd);
+		_server_cmd(server, cmdentry);
 
 		_server_cmdentry_free(cmdentry);
 
-		assert_zero(pthread_mutex_lock(&server->cmd_lock));
+		_server_LOCK(server);
 	}
 
 	assert_zero(server->stopped);
 	server->stopped = 1;
 
-	assert_zero(pthread_mutex_unlock(&server->cmd_lock));
+	_server_UNLOCK(server);
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread finished");
 

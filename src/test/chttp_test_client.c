@@ -18,7 +18,7 @@ _client_finish(struct chttp_text_context *ctx)
 
 }
 
-inline void
+static inline void
 _test_context_ok(struct chttp_text_context *ctx)
 {
 	assert(ctx);
