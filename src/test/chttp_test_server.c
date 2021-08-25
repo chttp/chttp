@@ -321,25 +321,23 @@ chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_c
 }
 
 char *
-chttp_test_var_server_host(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_var_server_host(struct chttp_text_context *ctx)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	assert(server->port >= 0);
-	chttp_test_ERROR_param_count(cmd, 0);
+	assert(server->sock >= 0);
 
 	return _SERVER_IP;
 }
 
 char *
-chttp_test_var_server_port(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_var_server_port(struct chttp_text_context *ctx)
 {
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
 	assert(server->port >= 0);
-	chttp_test_ERROR_param_count(cmd, 0);
 
 	return server->port_str;
 }

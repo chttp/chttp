@@ -77,7 +77,8 @@ _test_run_cht_file(void *arg)
 		chttp_test_parse_cmd(test);
 
 		cmd_entry = chttp_test_cmds_get(test, test->cmd.name);
-		chttp_test_ERROR(!cmd_entry, "%s not found", test->cmd.name);
+		chttp_test_ERROR(!cmd_entry, "command %s not found (line %zu)", test->cmd.name,
+			test->lines - test->lines_multi);
 		assert(cmd_entry->is_cmd);
 		assert(cmd_entry->cmd_func);
 
@@ -214,7 +215,6 @@ chttp_test_run_all_finish(struct chttp_test *test)
 
 	chttp_test_ok(test);
 
-	// TODO clean up this pattern
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		chttp_test_log(&test->context, CHTTP_LOG_NONE, "shutdown");
 	}

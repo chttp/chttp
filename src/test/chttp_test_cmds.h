@@ -27,8 +27,7 @@ struct chttp_text_context {
 };
 
 typedef void (chttp_test_cmd_f)(struct chttp_text_context*, struct chttp_test_cmd*);
-typedef char *(chttp_test_var_f)(struct chttp_text_context*,
-	struct chttp_test_cmd*);
+typedef char *(chttp_test_var_f)(struct chttp_text_context*);
 
 #define CHTTP_TEST_CMD(cmd)		chttp_test_cmd_f chttp_test_cmd_##cmd;
 #define CHTTP_TEST_VAR(var)		chttp_test_var_f chttp_test_var_##var;
