@@ -160,7 +160,7 @@ _server_finish(struct chttp_text_context *ctx)
 	ctx->server = NULL;
 }
 
-void
+static void
 _server_init_socket(struct chttp_test_server *server)
 {
 	struct chttp_context *chttp;
@@ -258,7 +258,7 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "server init completed");
 }
 
-void
+static void
 _server_accept(struct chttp_test_server *server)
 {
 	struct sockaddr_storage saddr;
@@ -315,7 +315,7 @@ chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_c
 	_server_UNLOCK(server);
 }
 
-void
+static void
 _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 {
 	_server_ok(server);

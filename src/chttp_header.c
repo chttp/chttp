@@ -227,7 +227,7 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 	}
 }
 
-void
+static void
 _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 {
 	struct chttp_dpage *data;

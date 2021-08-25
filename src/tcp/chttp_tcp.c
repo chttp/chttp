@@ -10,7 +10,8 @@
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
 
-void
+/*
+static void
 _tcp_set_nonblocking(int sock)
 {
 	int val, ret;
@@ -20,7 +21,7 @@ _tcp_set_nonblocking(int sock)
 	(void)ret;
 }
 
-void
+static void
 _tcp_set_blocking(int sock)
 {
 	int val, ret;
@@ -29,6 +30,7 @@ _tcp_set_blocking(int sock)
 	ret = ioctl(sock, FIONBIO, &val);
 	(void)ret;
 }
+*/
 
 void
 chttp_tcp_connect(struct chttp_context *ctx)

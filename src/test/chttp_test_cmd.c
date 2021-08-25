@@ -20,7 +20,7 @@ static int chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
 	return strcmp(k1->name, k2->name);
 }
 
-void
+static void
 _test_cmd_register(struct chttp_test *test, const char *name, chttp_test_cmd_f *func)
 {
 	struct chttp_test_cmdentry *entry, *ret;

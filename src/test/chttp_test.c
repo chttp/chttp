@@ -60,7 +60,7 @@ _usage(int error)
 		(error ? "ERROR u" : "U"));
 }
 
-void *
+static void *
 _test_run_cht_file(void *arg)
 {
 	struct chttp_test *test;

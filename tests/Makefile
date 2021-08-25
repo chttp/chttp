@@ -1,7 +1,7 @@
 # CHTTP Makefile (tests)
 
 CHTTP_TEST=../src/chttp_test
-V=
+V=v
 CHTS=$(sort $(wildcard */*.cht))
 VALGRIND=
 
@@ -19,11 +19,11 @@ valgrind:	check
 
 test:		check
 
-check:		V=-q
+check:		V=q
 check:		$(CHTS)
 
 verbose:	$(CHTS)
 
 %.cht:		chttp_test FORCE
-		$(VALGRIND) $(CHTTP_TEST) $(V) $@
+		$(VALGRIND) $(CHTTP_TEST) -$(V) $@
 

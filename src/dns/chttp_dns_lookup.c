@@ -12,7 +12,7 @@
 
 long CHTTP_DNS_CACHE_TTL;
 
-void
+static void
 _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 {
 	assert(addr_dest);
