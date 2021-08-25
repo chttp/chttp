@@ -214,6 +214,11 @@ chttp_test_run_all_finish(struct chttp_test *test)
 
 	chttp_test_ok(test);
 
+	// TODO clean up this pattern
+	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
+		chttp_test_log(&test->context, CHTTP_LOG_NONE, "shutdown");
+	}
+
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
 		assert(finish->magic == CHTTP_TEST_FINISH);
 

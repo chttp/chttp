@@ -44,6 +44,7 @@ struct chttp_test_server {
 	int					sock;
 	int					port;
 	int					http_sock;
+	char					port_str[16];
 
 	struct chttp_dpage			*dpage;
 };
@@ -210,6 +211,7 @@ _server_init_socket(struct chttp_test_server *server)
 	}
 
 	assert(server->port >= 0);
+	snprintf(server->port_str, sizeof(server->port_str), "%d", server->port);
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server socket port: %d",
 		server->port);
@@ -321,7 +323,10 @@ chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_c
 char *
 chttp_test_var_server_host(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
-	assert(ctx);
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	assert(server->port >= 0);
 	chttp_test_ERROR_param_count(cmd, 0);
 
 	return _SERVER_IP;
@@ -333,12 +338,10 @@ chttp_test_var_server_port(struct chttp_text_context *ctx, struct chttp_test_cmd
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
+	assert(server->port >= 0);
 	chttp_test_ERROR_param_count(cmd, 0);
 
-	(void)server;
-
-	// TODO
-	return "1234";
+	return server->port_str;
 }
 
 static void
@@ -356,7 +359,7 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 			chttp_test_ERROR(1, "invalid server cmd %d", cmdentry->cmd);
 	}
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %d",
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %d completed",
 		cmdentry->cmd);
 }
 

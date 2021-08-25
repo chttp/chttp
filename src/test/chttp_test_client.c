@@ -69,7 +69,7 @@ chttp_test_cmd_chttp_send(struct chttp_text_context *ctx, struct chttp_test_cmd 
 	chttp_test_ERROR_string(cmd->params[0]);
 
 	port = chttp_test_parse_long(cmd->params[1]);
-	chttp_test_ERROR(port <= 0 || port > INT16_MAX, "invalid port");
+	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
 	chttp_send(ctx->context, cmd->params[0], port, 0);
 	chttp_test_ERROR(ctx->context->error, "chttp send error");
