@@ -30,9 +30,33 @@ _test_cmd_register(struct chttp_test *test, const char *name, chttp_test_cmd_f *
 	entry = malloc(sizeof(*entry));
 	assert(entry);
 
+	memset(entry, 0, sizeof(*entry));
+
 	entry->magic = CHTTP_TEST_ENTRY;
 	entry->name = name;
-	entry->func = func;
+	entry->cmd_func = func;
+	entry->is_cmd = 1;
+
+	ret = RB_INSERT(chttp_test_tree, &test->cmd_tree, entry);
+	assert_zero(ret);
+}
+
+static void
+_test_var_register(struct chttp_test *test, const char *name, chttp_test_var_f *func)
+{
+	struct chttp_test_cmdentry *entry, *ret;
+
+	chttp_test_ok(test);
+
+	entry = malloc(sizeof(*entry));
+	assert(entry);
+
+	memset(entry, 0, sizeof(*entry));
+
+	entry->magic = CHTTP_TEST_ENTRY;
+	entry->name = name;
+	entry->var_func = func;
+	entry->is_var = 1;
 
 	ret = RB_INSERT(chttp_test_tree, &test->cmd_tree, entry);
 	assert_zero(ret);
@@ -67,6 +91,8 @@ chttp_test_cmds_init(struct chttp_test *test)
 
 #define CHTTP_TEST_CMD(cmd)					\
 	_test_cmd_register(test, #cmd, &chttp_test_cmd_##cmd);
+#define CHTTP_TEST_VAR(var)					\
+	_test_var_register(test, "$" #var, &chttp_test_var_##var);
 #include "test/chttp_test_cmds.h"
 
 	chttp_test_register_finish(&test->context, "cmd", _test_cmds_free);

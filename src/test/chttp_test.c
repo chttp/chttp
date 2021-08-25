@@ -16,8 +16,8 @@ _finish_test(struct chttp_text_context *ctx)
 	test = chttp_test_convert(ctx);
 
 	chttp_test_ok(test);
-
 	chttp_test_ERROR(test->context.context != NULL, "CHTTP context detected");
+	chttp_test_ERROR(test->context.server != NULL, "CHTTP server detected");
 
 	if (test->fcht) {
 		fclose(test->fcht);
@@ -65,7 +65,6 @@ _test_run_cht_file(void *arg)
 {
 	struct chttp_test *test;
 	struct chttp_test_cmdentry *cmd_entry;
-	size_t i;
 
 	test = (struct chttp_test*)arg;
 	chttp_test_ok(test);
@@ -77,22 +76,12 @@ _test_run_cht_file(void *arg)
 	while (chttp_test_readline(test, 0)) {
 		chttp_test_parse_cmd(test);
 
-		if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
-			chttp_test_log(&test->context, CHTTP_LOG_NONE,
-			    "%s (line %zu)", test->cmd.name, test->lines - test->lines_multi);
-		} else {
-			chttp_test_log(&test->context, CHTTP_LOG_NONE, "%s", test->cmd.name);
-		}
-
-		for (i = 0; i < test->cmd.param_count; i++) {
-			chttp_test_log(&test->context, CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
-				test->cmd.params[i]);
-		}
-
 		cmd_entry = chttp_test_cmds_get(test, test->cmd.name);
 		chttp_test_ERROR(!cmd_entry, "%s not found", test->cmd.name);
+		assert(cmd_entry->is_cmd);
+		assert(cmd_entry->cmd_func);
 
-		cmd_entry->func(&test->context, &test->cmd);
+		cmd_entry->cmd_func(&test->context, &test->cmd);
 
 		if (test->error || test->skip) {
 			break;

@@ -3,4 +3,6 @@ chttp_test "Simple h1 server test"
 server_init
 #server_accept
 
-sleep_ms 100
+chttp_init
+chttp_url /
+#chttp_send $server_host $server_port

@@ -31,7 +31,11 @@ struct chttp_test_cmdentry {
 	RB_ENTRY(chttp_test_cmdentry)		entry;
 
 	const char				*name;
-	chttp_test_cmd_f			*func;
+	chttp_test_cmd_f			*cmd_func;
+	chttp_test_var_f			*var_func;
+
+	unsigned int				is_cmd:1;
+	unsigned int				is_var:1;
 };
 
 RB_HEAD(chttp_test_tree, chttp_test_cmdentry);

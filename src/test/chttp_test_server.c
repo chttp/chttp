@@ -12,7 +12,8 @@
 #define _SERVER_JOIN_TIMEOUT_MS			2500
 
 enum _server_cmds {
-	_SERVER_CMD_ACCEPT = 1
+	_SERVER_CMD_ACCEPT = 1,
+	_SERVER_CMD_READ_HEADERS
 };
 
 struct _server_cmdentry {
@@ -43,6 +44,8 @@ struct chttp_test_server {
 	int					sock;
 	int					port;
 	int					http_sock;
+
+	struct chttp_dpage			*dpage;
 };
 
 #define _server_ok(server)						\
@@ -313,6 +316,29 @@ chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_c
 
 	_server_SIGNAL(server);
 	_server_UNLOCK(server);
+}
+
+char *
+chttp_test_var_server_host(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	return _SERVER_IP;
+}
+
+char *
+chttp_test_var_server_port(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	(void)server;
+
+	// TODO
+	return "1234";
 }
 
 static void

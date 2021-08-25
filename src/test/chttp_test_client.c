@@ -72,6 +72,8 @@ chttp_test_cmd_chttp_send(struct chttp_text_context *ctx, struct chttp_test_cmd 
 	chttp_test_ERROR(port <= 0 || port > INT16_MAX, "invalid port");
 
 	chttp_send(ctx->context, cmd->params[0], port, 0);
+	chttp_test_ERROR(ctx->context->error, "chttp send error");
+
 	chttp_recv(ctx->context);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent");

@@ -177,6 +177,8 @@ chttp_test_readline(struct chttp_test *test, size_t append_len)
 void
 chttp_test_parse_cmd(struct chttp_test *test)
 {
+	struct chttp_test_cmdentry *cmd_entry;
+	struct chttp_test_cmd cmd_var;
 	char *buf;
 	size_t i, len, count;
 	int quote;
@@ -234,7 +236,33 @@ chttp_test_parse_cmd(struct chttp_test *test)
 		}
 	}
 
+	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
+		chttp_test_log(&test->context, CHTTP_LOG_NONE, "%s (line %zu)",
+			test->cmd.name, test->lines - test->lines_multi);
+	} else {
+		chttp_test_log(&test->context, CHTTP_LOG_NONE, "%s", test->cmd.name);
+	}
+
 	for (i = 0; i < test->cmd.param_count; i++) {
-		_test_unescape(test->cmd.params[i]);
+		if (test->cmd.params[i][0] == '$') {
+			cmd_var.name = test->cmd.params[i];
+			cmd_var.param_count = 0;
+
+			chttp_test_log(&test->context, CHTTP_LOG_VERY_VERBOSE, "Var: %s",
+				cmd_var.name);
+
+			cmd_entry = chttp_test_cmds_get(test, cmd_var.name);
+			chttp_test_ERROR(!cmd_entry, "%s not found", cmd_var.name);
+			assert(cmd_entry->is_var);
+			assert(cmd_entry->var_func);
+
+			buf = cmd_entry->var_func(&test->context, &cmd_var);
+			test->cmd.params[i] = buf;
+		} else {
+			_test_unescape(test->cmd.params[i]);
+		}
+
+		chttp_test_log(&test->context, CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
+			test->cmd.params[i]);
 	}
 }
