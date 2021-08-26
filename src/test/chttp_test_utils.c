@@ -179,3 +179,11 @@ chttp_test_join_thread(pthread_t thread, volatile int *stopped, unsigned long ti
 
 	return 0;
 }
+
+size_t
+chttp_test_line_pos(struct chttp_test *test)
+{
+	chttp_test_ok(test);
+
+	return (test->lines - test->lines_multi);
+}

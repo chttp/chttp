@@ -77,9 +77,8 @@ _test_run_cht_file(void *arg)
 		chttp_test_parse_cmd(test);
 
 		cmd_entry = chttp_test_cmds_get(test, test->cmd.name);
-		chttp_test_ERROR(!cmd_entry, "command %s not found (line %zu)", test->cmd.name,
-			test->lines - test->lines_multi);
-		assert(cmd_entry->is_cmd);
+		chttp_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,
+			"command %s not found (line %zu)", test->cmd.name, chttp_test_line_pos(test));
 		assert(cmd_entry->cmd_func);
 
 		cmd_entry->cmd_func(&test->context, &test->cmd);

@@ -112,6 +112,7 @@ void chttp_test_ERROR_string(const char *str);
 void chttp_test_sleep_ms(long ms);
 int chttp_test_join_thread(pthread_t thread, volatile int *stopped,
 	unsigned long timeout_ms);
+size_t chttp_test_line_pos(struct chttp_test *test);
 
 #define chttp_test_ok(test)						\
 	do {								\

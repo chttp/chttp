@@ -237,21 +237,23 @@ chttp_test_parse_cmd(struct chttp_test *test)
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		chttp_test_log(&test->context, CHTTP_LOG_NONE, "%s (line %zu)",
-			test->cmd.name, test->lines - test->lines_multi);
+			test->cmd.name, chttp_test_line_pos(test));
 	} else {
 		chttp_test_log(&test->context, CHTTP_LOG_NONE, "%s", test->cmd.name);
 	}
 
 	for (i = 0; i < test->cmd.param_count; i++) {
-		if (test->cmd.params[i][0] == '$') {
+		if (test->cmd.params[i][0] == '$' && test->cmd.params[i][1] == '$') {
+			test->cmd.params[i] += 1;
+			_test_unescape(test->cmd.params[i]);
+		} else if (test->cmd.params[i][0] == '$') {
 			var = test->cmd.params[i];
 
 			chttp_test_log(&test->context, CHTTP_LOG_VERY_VERBOSE, "Var: %s", var);
 
 			cmd_entry = chttp_test_cmds_get(test, var);
-			chttp_test_ERROR(!cmd_entry, "variable %s not found (line %zu)", var,
-				test->lines - test->lines_multi);
-			assert(cmd_entry->is_var);
+			chttp_test_ERROR(!cmd_entry || !cmd_entry->is_var,
+				"variable %s not found (line %zu)", var, chttp_test_line_pos(test));
 			assert(cmd_entry->var_func);
 
 			buf = cmd_entry->var_func(&test->context);
