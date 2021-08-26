@@ -12,7 +12,8 @@
 #define _SERVER_JOIN_TIMEOUT_MS			2500
 
 enum _server_cmds {
-	_SERVER_CMD_ACCEPT = 1,
+	_SERVER_CMD_ZERO = 0,
+	_SERVER_CMD_ACCEPT,
 	_SERVER_CMD_READ_HEADERS
 };
 
@@ -56,6 +57,21 @@ struct chttp_test_server {
 	} while (0)
 
 static void *_server_thread(void *arg);
+
+const char *
+_server_cmd_name(enum _server_cmds cmd)
+{
+	switch (cmd) {
+		case _SERVER_CMD_ZERO:
+			return "UNINITIALIZED";
+		case _SERVER_CMD_ACCEPT:
+			return "CMD_ACCEPT";
+		case _SERVER_CMD_READ_HEADERS:
+			return "CMD_READ_HEADERS";
+	}
+
+	return "UNKNOWN";
+}
 
 static inline struct chttp_test_server *
 _server_context_ok(struct chttp_text_context *ctx)
@@ -280,7 +296,8 @@ _server_accept(struct chttp_test_server *server)
 	addr = (struct sockaddr*)&saddr;
 	len = sizeof(saddr);
 
-	accept(server->sock, addr, &len);
+	server->http_sock = accept(server->sock, addr, &len);
+	assert(server->http_sock >= 0);
 
 	switch (addr->sa_family) {
 		case AF_INET:
@@ -343,6 +360,32 @@ chttp_test_var_server_port(struct chttp_text_context *ctx)
 }
 
 static void
+_server_read_headers(struct chttp_test_server *server)
+{
+	_server_ok(server);
+	assert(server->http_sock >= 0);
+}
+
+void
+chttp_test_cmd_server_read_headers(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+	struct _server_cmdentry *cmdentry;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	cmdentry = _server_cmdentry_alloc(_SERVER_CMD_READ_HEADERS);
+
+	_server_LOCK(server);
+
+	TAILQ_INSERT_TAIL(&server->cmd_list, cmdentry, entry);
+
+	_server_SIGNAL(server);
+	_server_UNLOCK(server);
+}
+
+static void
 _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 {
 	_server_ok(server);
@@ -353,12 +396,15 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 		case _SERVER_CMD_ACCEPT:
 			_server_accept(server);
 			break;
+		case _SERVER_CMD_READ_HEADERS:
+			_server_read_headers(server);
+			break;
 		default:
 			chttp_test_ERROR(1, "invalid server cmd %d", cmdentry->cmd);
 	}
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %d completed",
-		cmdentry->cmd);
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %s completed",
+		_server_cmd_name(cmdentry->cmd));
 }
 
 static void *

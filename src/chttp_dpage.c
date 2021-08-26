@@ -28,12 +28,10 @@ chttp_dpage_size(int min)
 	}
 }
 
-static struct chttp_dpage *
-_dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
+struct chttp_dpage *
+chttp_dpage_alloc(size_t dpage_size)
 {
 	struct chttp_dpage *data;
-
-	chttp_context_ok(ctx);
 
 	dpage_size += sizeof(struct chttp_dpage);
 	assert(dpage_size > sizeof(struct chttp_dpage));
@@ -44,6 +42,18 @@ _dpage_alloc(struct chttp_context *ctx, size_t dpage_size)
 	chttp_dpage_init(data, dpage_size);
 
 	data->free = 1;
+
+	return data;
+}
+
+static struct chttp_dpage *
+_dpage_alloc_ctx(struct chttp_context *ctx, size_t dpage_size)
+{
+	struct chttp_dpage *data;
+
+	chttp_context_ok(ctx);
+
+	data = chttp_dpage_alloc(dpage_size);
 
 	if (!ctx->data) {
 		ctx->data = data;
@@ -118,7 +128,7 @@ chttp_dpage_get(struct chttp_context *ctx, size_t bytes)
 		assert(dpage_size >= bytes);
 	}
 
-	data = _dpage_alloc(ctx, dpage_size);
+	data = _dpage_alloc_ctx(ctx, dpage_size);
 	assert(data == ctx->data_last);
 
 	return (data);

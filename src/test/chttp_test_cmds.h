@@ -54,6 +54,7 @@ CHTTP_TEST_CMD(chttp_status)
 
 CHTTP_TEST_CMD(server_init)
 CHTTP_TEST_CMD(server_accept)
+CHTTP_TEST_CMD(server_read_headers)
 CHTTP_TEST_VAR(server_host)
 CHTTP_TEST_VAR(server_port)
 

@@ -2,6 +2,7 @@ chttp_test "Simple h1 server test"
 
 server_init
 #server_accept
+#server_read_headers
 
 chttp_init
 chttp_url /

@@ -115,6 +115,7 @@ struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_free(struct chttp_context *ctx);
 
 size_t chttp_dpage_size(int min);
+struct chttp_dpage *chttp_dpage_alloc(size_t dpage_size);
 void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
 void chttp_dpage_reset(struct chttp_context *ctx);
 struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
