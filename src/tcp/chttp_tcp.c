@@ -33,6 +33,21 @@ _tcp_set_blocking(int sock)
 */
 
 void
+chttp_tcp_import(struct chttp_context *ctx, int sock)
+{
+	chttp_context_ok(ctx);
+	assert_zero(ctx->addr.magic);
+	assert_zero(ctx->addr.len);
+	assert_zero(ctx->addr.sa.sa_family);
+	assert(sock >= 0);
+
+	ctx->addr.magic = CHTTP_ADDR_MAGIC;
+	ctx->addr.sock = sock;
+
+	chttp_addr_ok(ctx);
+}
+
+void
 chttp_tcp_connect(struct chttp_context *ctx)
 {
 	struct chttp_addr *addr;
@@ -94,7 +109,7 @@ chttp_tcp_read(struct chttp_context *ctx)
 size_t
 chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
-	size_t ret;
+	ssize_t ret;
 
 	chttp_context_ok(ctx);
 	chttp_addr_ok(ctx);
@@ -118,7 +133,6 @@ chttp_tcp_close(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 	chttp_addr_ok(ctx);
-	assert(ctx->addr.sock >= 0);
 
 	assert_zero(close(ctx->addr.sock));
 

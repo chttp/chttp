@@ -99,3 +99,26 @@ chttp_do_abort(const char *function, const char *file, int line, const char *rea
 	fprintf(stderr, "%s(): %s\n", function, reason);
 	abort();
 }
+
+const char *
+chttp_error_msg(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+
+	switch (ctx->error) {
+		case CHTTP_ERR_NONE:
+			return "none";
+		case CHTTP_ERR_INIT:
+			return "initialization";
+		case CHTTP_ERR_DNS:
+			return "DNS error";
+		case CHTTP_ERR_CONNECT:
+			return "cannot make connection";
+		case CHTTP_ERR_NETOWRK:
+			return "network error";
+		case CHTTP_ERR_RESP_PARSE:
+			return "cannot parse response";
+	}
+
+	return "unknown";
+}

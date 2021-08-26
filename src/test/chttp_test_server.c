@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define _SERVER_IP				"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500
@@ -14,7 +15,8 @@
 enum _server_cmds {
 	_SERVER_CMD_ZERO = 0,
 	_SERVER_CMD_ACCEPT,
-	_SERVER_CMD_READ_HEADERS
+	_SERVER_CMD_READ_HEADERS,
+	_SERVER_CMD_SEND_RESPONSE
 };
 
 struct _server_cmdentry {
@@ -35,7 +37,7 @@ struct chttp_test_server {
 	pthread_t				thread;
 
 	pthread_mutex_t				cmd_lock;
-        pthread_cond_t				cmd_signal;
+	pthread_cond_t				cmd_signal;
 	TAILQ_HEAD(, _server_cmdentry)		cmd_list;
 
 	volatile int				stop;
@@ -47,7 +49,7 @@ struct chttp_test_server {
 	int					http_sock;
 	char					port_str[16];
 
-	struct chttp_dpage			*dpage;
+	struct chttp_context			*context;
 };
 
 #define _server_ok(server)						\
@@ -57,21 +59,6 @@ struct chttp_test_server {
 	} while (0)
 
 static void *_server_thread(void *arg);
-
-const char *
-_server_cmd_name(enum _server_cmds cmd)
-{
-	switch (cmd) {
-		case _SERVER_CMD_ZERO:
-			return "UNINITIALIZED";
-		case _SERVER_CMD_ACCEPT:
-			return "CMD_ACCEPT";
-		case _SERVER_CMD_READ_HEADERS:
-			return "CMD_READ_HEADERS";
-	}
-
-	return "UNKNOWN";
-}
 
 static inline struct chttp_test_server *
 _server_context_ok(struct chttp_text_context *ctx)
@@ -134,6 +121,43 @@ _server_cmdentry_alloc(enum _server_cmds cmd)
 	return cmdentry;
 }
 
+const char *
+_server_cmd_name(enum _server_cmds cmd)
+{
+	switch (cmd) {
+		case _SERVER_CMD_ZERO:
+			return "UNINITIALIZED";
+		case _SERVER_CMD_ACCEPT:
+			return "CMD_ACCEPT";
+		case _SERVER_CMD_READ_HEADERS:
+			return "CMD_READ_HEADERS";
+		case _SERVER_CMD_SEND_RESPONSE:
+			return "CMD_SEND_RESPONSE";
+	}
+
+	return "UNKNOWN";
+}
+
+static void
+_server_cmd_send(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd,
+    enum _server_cmds cmd_code)
+{
+	struct chttp_test_server *server;
+	struct _server_cmdentry *cmdentry;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	cmdentry = _server_cmdentry_alloc(cmd_code);
+
+	_server_LOCK(server);
+
+	TAILQ_INSERT_TAIL(&server->cmd_list, cmdentry, entry);
+
+	_server_SIGNAL(server);
+	_server_UNLOCK(server);
+}
+
 static void
 _server_finish(struct chttp_text_context *ctx)
 {
@@ -173,6 +197,21 @@ _server_finish(struct chttp_text_context *ctx)
 	}
 
 	assert(TAILQ_EMPTY(&server->cmd_list));
+
+	if (server->context) {
+		chttp_test_ERROR(server->context->error, "server error detected (%s)",
+			chttp_error_msg(server->context));
+
+		chttp_context_free(server->context);
+		server->context = NULL;
+	}
+
+	if (server->sock >= 0) {
+		close(server->sock);
+	}
+	if (server->http_sock >= 0) {
+		close(server->http_sock);
+	}
 
 	server->magic = 0;
 
@@ -321,20 +360,7 @@ _server_accept(struct chttp_test_server *server)
 void
 chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
-	struct chttp_test_server *server;
-	struct _server_cmdentry *cmdentry;
-
-	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
-
-	cmdentry = _server_cmdentry_alloc(_SERVER_CMD_ACCEPT);
-
-	_server_LOCK(server);
-
-	TAILQ_INSERT_TAIL(&server->cmd_list, cmdentry, entry);
-
-	_server_SIGNAL(server);
-	_server_UNLOCK(server);
+	_server_cmd_send(ctx, cmd, _SERVER_CMD_ACCEPT);
 }
 
 char *
@@ -360,29 +386,88 @@ chttp_test_var_server_port(struct chttp_text_context *ctx)
 }
 
 static void
+_server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
+{
+	struct chttp_dpage *data;
+	size_t len;
+
+	chttp_context_ok(ctx);
+	chttp_dpage_ok(ctx->data_last);
+
+	data = ctx->data_last;
+	len = end - start;
+
+	assert(strlen((char*)&data->data[start]) == len);
+
+	// TODO
+}
+
+static void
 _server_read_headers(struct chttp_test_server *server)
 {
 	_server_ok(server);
 	assert(server->http_sock >= 0);
+	assert_zero(server->context);
+
+	server->context = chttp_context_alloc();
+	server->context->state = CHTTP_STATE_RESP_HEADERS;
+
+	chttp_tcp_import(server->context, server->http_sock);
+
+	do {
+		chttp_tcp_read(server->context);
+		chttp_test_ERROR(server->context->state == CHTTP_STATE_DONE,
+			"network error");
+
+		chttp_parse(server->context, &_server_parse_request_url);
+		chttp_test_ERROR(server->context->error, "%s",
+			chttp_error_msg(server->context));
+	} while (server->context->state == CHTTP_STATE_RESP_HEADERS);
+
+	assert_zero(server->context->error);
+	assert(server->context->state == CHTTP_STATE_RESP_BODY);
+
+	chttp_body_length(server->context, 0);
+
+	server->context->state = CHTTP_STATE_DONE;
+
+	server->http_sock = server->context->addr.sock;
+	server->context->addr.sock = -1;
 }
 
 void
-chttp_test_cmd_server_read_headers(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_read_headers(struct chttp_text_context *ctx,
+    struct chttp_test_cmd *cmd)
 {
-	struct chttp_test_server *server;
-	struct _server_cmdentry *cmdentry;
+	_server_cmd_send(ctx, cmd, _SERVER_CMD_READ_HEADERS);
+}
 
-	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+static void
+_server_send_response(struct chttp_test_server *server)
+{
+	ssize_t ret;
+	size_t len;
+	char *buf;
 
-	cmdentry = _server_cmdentry_alloc(_SERVER_CMD_READ_HEADERS);
+	_server_ok(server);
+	assert(server->http_sock >= 0);
 
-	_server_LOCK(server);
+	buf = "HTTP/1.1 200 OK\r\n";
+	len = strlen(buf);
+	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
+	assert(ret > 0 && (size_t)ret == len);
 
-	TAILQ_INSERT_TAIL(&server->cmd_list, cmdentry, entry);
+	buf = "Content-Length: 5\r\n\r\nDONE!";
+	len = strlen(buf);
+	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
+	assert(ret > 0 && (size_t)ret == len);
+}
 
-	_server_SIGNAL(server);
-	_server_UNLOCK(server);
+void
+chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
+    struct chttp_test_cmd *cmd)
+{
+	_server_cmd_send(ctx, cmd, _SERVER_CMD_SEND_RESPONSE);
 }
 
 static void
@@ -398,6 +483,9 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 			break;
 		case _SERVER_CMD_READ_HEADERS:
 			_server_read_headers(server);
+			break;
+		case _SERVER_CMD_SEND_RESPONSE:
+			_server_send_response(server);
 			break;
 		default:
 			chttp_test_ERROR(1, "invalid server cmd %d", cmdentry->cmd);

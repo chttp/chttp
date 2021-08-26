@@ -299,7 +299,14 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 }
 
 void
-chttp_parse_resp(struct chttp_context *ctx)
+chttp_parse_response(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+
+	return chttp_parse(ctx, &_parse_resp_status);
+}
+void
+chttp_parse(struct chttp_context *ctx, chttp_parse_f *func)
 {
 	struct chttp_dpage *data;
 	size_t start, end;
@@ -308,6 +315,7 @@ chttp_parse_resp(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_RESP_HEADERS);
 	chttp_dpage_ok(ctx->data_last);
+	assert(func);
 
 	data = ctx->data_last;
 
@@ -341,7 +349,7 @@ chttp_parse_resp(struct chttp_context *ctx)
 		data->data[end - 1] = '\0';
 
 		if (first) {
-			_parse_resp_status(ctx, start, end - 1);
+			func(ctx, start, end - 1);
 
 			if (ctx->error) {
 				return;

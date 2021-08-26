@@ -20,7 +20,8 @@ _client_finish(struct chttp_text_context *ctx)
 	assert(ctx);
 	chttp_test_ERROR(!ctx->context, "chttp context does not exist");
 	chttp_context_ok(ctx->context);
-	chttp_test_ERROR(ctx->context->error, "chttp context has an error");
+	chttp_test_ERROR(ctx->context->error, "chttp context has an error (%s)",
+		chttp_error_msg(ctx->context));
 
 	chttp_context_free(ctx->context);
 	ctx->context = NULL;

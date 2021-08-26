@@ -5,6 +5,8 @@
 
 #include "chttp.h"
 
+// TODO make a chttp error style assert with msg
+
 static void
 _finalize_request(struct chttp_context *ctx, const char *host)
 {
@@ -24,7 +26,7 @@ void
 chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 {
 	struct chttp_dpage *data;
-	int ret;
+	ssize_t ret;
 
 	chttp_context_ok(ctx);
 	assert(host && *host);
@@ -83,7 +85,13 @@ chttp_recv(struct chttp_context *ctx)
 
 	do {
 		chttp_tcp_read(ctx);
-		chttp_parse_resp(ctx);
+
+		if (ctx->state == CHTTP_STATE_DONE) {
+			ctx->error = CHTTP_ERR_NETOWRK;
+			return;
+		}
+
+		chttp_parse_response(ctx);
 
 		if (ctx->error) {
 			chttp_finish(ctx);
@@ -92,10 +100,9 @@ chttp_recv(struct chttp_context *ctx)
 	} while (ctx->state == CHTTP_STATE_RESP_HEADERS);
 
 	assert_zero(ctx->error);
+	assert(ctx->state == CHTTP_STATE_RESP_BODY);
 
-	ctx->state = CHTTP_STATE_RESP_BODY;
-
-	chttp_body_length(ctx);
+	chttp_body_length(ctx, 1);
 }
 
 void

@@ -1,9 +1,11 @@
 chttp_test "Simple h1 server test"
 
 server_init
-#server_accept
-#server_read_headers
+server_accept
+server_read_headers
+server_send_response
 
 chttp_init
 chttp_url /
-#chttp_send $server_host $server_port
+chttp_send $server_host $server_port
+chttp_status 200

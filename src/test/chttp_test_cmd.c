@@ -101,20 +101,20 @@ chttp_test_cmds_init(struct chttp_test *test)
 struct chttp_test_cmdentry *
 chttp_test_cmds_get(struct chttp_test *test, const char *name)
 {
-        struct chttp_test_cmdentry *result, find;
+	struct chttp_test_cmdentry *result, find;
 
 	chttp_test_ok(test);
 	assert(name);
 
-        find.name = name;
+	find.name = name;
 
-        result = RB_FIND(chttp_test_tree, &test->cmd_tree, &find);
+	result = RB_FIND(chttp_test_tree, &test->cmd_tree, &find);
 
 	if (!result) {
 		return NULL;
 	}
 
-        assert(result->magic == CHTTP_TEST_ENTRY);
+	assert(result->magic == CHTTP_TEST_ENTRY);
 
-        return result;
+	return result;
 }

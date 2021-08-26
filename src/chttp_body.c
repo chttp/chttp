@@ -68,7 +68,7 @@ _body_end_chunk(struct chttp_context *ctx)
 }
 
 void
-chttp_body_length(struct chttp_context *ctx)
+chttp_body_length(struct chttp_context *ctx, int do_error)
 {
 	const char *header = NULL;
 	size_t start, end;
@@ -149,7 +149,7 @@ chttp_body_length(struct chttp_context *ctx)
 		chttp_tcp_read(ctx);
 
 		if (ctx->state == CHTTP_STATE_RESP_BODY) {
-			return chttp_body_length(ctx);
+			return chttp_body_length(ctx, do_error);
 		}
 
 		return;
@@ -178,6 +178,10 @@ chttp_body_length(struct chttp_context *ctx)
 	if (ctx->version == CHTTP_H_VERSION_1_0) {
 		ctx->close = 1;
 		ctx->length = -1;
+		return;
+	}
+
+	if (!do_error) {
 		return;
 	}
 
@@ -242,7 +246,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 				_body_end_chunk(ctx);
 
 				if (ctx->state == CHTTP_STATE_RESP_BODY) {
-					chttp_body_length(ctx);
+					chttp_body_length(ctx, 1);
 				}
 
 				// TODO try to read more?
@@ -288,7 +292,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		_body_end_chunk(ctx);
 
 		if (ctx->state == CHTTP_STATE_RESP_BODY) {
-			chttp_body_length(ctx);
+			chttp_body_length(ctx, 1);
 		}
 	} else if (ctx->length == 0) {
 		ctx->state = CHTTP_STATE_IDLE;

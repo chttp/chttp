@@ -45,6 +45,7 @@ enum chttp_error {
 	CHTTP_ERR_INIT,
 	CHTTP_ERR_DNS,
 	CHTTP_ERR_CONNECT,
+	CHTTP_ERR_NETOWRK,
 	CHTTP_ERR_RESP_PARSE
 };
 
@@ -125,12 +126,14 @@ size_t chttp_dpage_resp_start(struct chttp_context *ctx);
 void chttp_dpage_free(struct chttp_dpage *data);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 
+typedef void (chttp_parse_f)(struct chttp_context*, size_t, size_t);
 void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);
 void chttp_set_url(struct chttp_context *ctx, const char *url);
 void chttp_add_header(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_delete_header(struct chttp_context *ctx, const char *name);
-void chttp_parse_resp(struct chttp_context *ctx);
+void chttp_parse_response(struct chttp_context *ctx);
+void chttp_parse(struct chttp_context *ctx, chttp_parse_f *func);
 const char *chttp_get_header(struct chttp_context *ctx, const char *name);
 int chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary);
@@ -140,13 +143,14 @@ void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 void chttp_recv(struct chttp_context *ctx);
 void chttp_finish(struct chttp_context *ctx);
 
-void chttp_body_length(struct chttp_context *ctx);
+void chttp_body_length(struct chttp_context *ctx, int do_error);
 size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();
 extern long CHTTP_DNS_CACHE_TTL;
 
+void chttp_tcp_import(struct chttp_context *ctx, int sock);
 void chttp_tcp_connect(struct chttp_context *ctx);
 void chttp_tcp_read(struct chttp_context *ctx);
 size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
@@ -156,6 +160,7 @@ void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *data);
 void chttp_print_hex(void *buf, size_t buf_len);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
+const char *chttp_error_msg(struct chttp_context *ctx);
 
 #define assert_zero(expr)						\
 	assert(!(expr))
