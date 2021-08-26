@@ -87,6 +87,7 @@ chttp_body_length(struct chttp_context *ctx, int do_error)
 	}
 
 	// TODO special codes, HEAD, 1xx, 204, 304
+	// TODO move to IDLE in all cases
 
 	if (!ctx->chunked) {
 		header = chttp_get_header(ctx, "transfer-encoding");

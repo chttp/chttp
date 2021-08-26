@@ -1,10 +1,16 @@
 chttp_test "Simple h1 server test"
 
+# Server is asynchronous
 server_init
 server_accept
 server_read_headers
+server_method_match GET
+server_url_match /
+server_header_match host $server_host
+server_header_submatch user-agent chttp
 server_send_response
 
+# chttp is synchronous
 chttp_init
 chttp_url /
 chttp_send $server_host $server_port

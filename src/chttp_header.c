@@ -7,6 +7,7 @@
 
 #include <string.h>
 
+const char *_CHTTP_HEADER_FIRST	 = "_FIRST";
 const char *CHTTP_HEADER_REASON	 = "_REASON";
 
 static void _setup_request(struct chttp_context *ctx);
@@ -385,7 +386,7 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 	chttp_context_ok(ctx);
 	assert(name && *name);
 
-	if (ctx->state != CHTTP_STATE_RESP_BODY) {
+	if (ctx->state != CHTTP_STATE_RESP_BODY && ctx->state != CHTTP_STATE_IDLE) {
 		chttp_ABORT("invalid state, headers must be read after receiving");
 	}
 
@@ -404,7 +405,10 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 				return NULL;
 			}
 
-			if (first && name == CHTTP_HEADER_REASON) {
+			if (first && name == _CHTTP_HEADER_FIRST) {
+				assert_zero(start);
+				return ((char*)data->data);
+			} else if (first && name == CHTTP_HEADER_REASON) {
 				assert_zero(start);
 				assert(end >= 14);
 				return ((char*)data->data + 13);
