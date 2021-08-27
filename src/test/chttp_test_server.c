@@ -12,16 +12,9 @@
 #define _SERVER_IP				"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500
 
-enum _server_cmds {
-	_SERVER_CMD_ZERO = 0,
-	_SERVER_CMD_ACCEPT,
-	_SERVER_CMD_READ_HEADERS,
-	_SERVER_CMD_MATCH_METHOD,
-	_SERVER_CMD_MATCH_URL,
-	_SERVER_CMD_MATCH_HEADER,
-	_SERVER_CMD_SUBMATCH_HEADER,
-	_SERVER_CMD_SEND_RESPONSE
-};
+struct chttp_test_server;
+
+typedef void (chttp_test_cmd_async_f)(struct chttp_test_server*, struct chttp_test_cmd*);
 
 struct _server_cmdentry {
 	unsigned int				magic;
@@ -29,10 +22,9 @@ struct _server_cmdentry {
 
 	TAILQ_ENTRY(_server_cmdentry)		entry;
 
-	enum _server_cmds			cmd;
+	struct chttp_test_cmd			cmd;
 
-	size_t					param_count;
-	char					*params[CHTTP_TEST_MAX_PARAMS];
+	chttp_test_cmd_async_f			*func;
 };
 
 struct chttp_test_server {
@@ -114,16 +106,19 @@ _server_cmdentry_free(struct _server_cmdentry *cmdentry)
 	assert(cmdentry);
 	assert(cmdentry->magic == _SERVER_CMDENTRY);
 
-	for (i = 0; i < cmdentry->param_count; i++) {
-		free(cmdentry->params[i]);
+	free((char*)cmdentry->cmd.name);
+
+	for (i = 0; i < cmdentry->cmd.param_count; i++) {
+		free((char*)cmdentry->cmd.params[i]);
 	}
 
 	cmdentry->magic = 0;
+
 	free(cmdentry);
 }
 
 static struct _server_cmdentry *
-_server_cmdentry_alloc(enum _server_cmds cmd)
+_server_cmdentry_alloc()
 {
 	struct _server_cmdentry *cmdentry;
 
@@ -133,14 +128,13 @@ _server_cmdentry_alloc(enum _server_cmds cmd)
 	memset(cmdentry, 0, sizeof(*cmdentry));
 
 	cmdentry->magic = _SERVER_CMDENTRY;
-	cmdentry->cmd = cmd;
 
 	return cmdentry;
 }
 
 static void
-_server_cmd_send(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd,
-    enum _server_cmds cmd_code, size_t params)
+_server_cmd_send_async(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd,
+    size_t params, chttp_test_cmd_async_f *func)
 {
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry;
@@ -149,16 +143,18 @@ _server_cmd_send(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd,
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, params);
 
-	cmdentry = _server_cmdentry_alloc(cmd_code);
+	cmdentry = _server_cmdentry_alloc();
+
+	cmdentry->cmd.name = strdup(cmd->name);
+	cmdentry->cmd.param_count = params;
+	cmdentry->func = func;
 
 	for (i = 0; i < params; i++) {
 		assert(i < cmd->param_count);
 		chttp_test_ERROR_string(cmd->params[i]);
 
-		cmdentry->params[i] = strdup(cmd->params[i]);
+		cmdentry->cmd.params[i] = strdup(cmd->params[i]);
 	}
-
-	cmdentry->param_count = params;
 
 	_server_LOCK(server);
 
@@ -331,7 +327,7 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 }
 
 static void
-_server_accept(struct chttp_test_server *server)
+_server_accept(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
 	struct sockaddr_storage saddr;
 	struct sockaddr *addr;
@@ -343,6 +339,7 @@ _server_accept(struct chttp_test_server *server)
 	assert(server->sock >= 0);
 	assert(server->port >= 0);
 	assert(server->http_sock == -1);
+	assert(cmd);
 
 	addr = (struct sockaddr*)&saddr;
 	len = sizeof(saddr);
@@ -372,7 +369,7 @@ _server_accept(struct chttp_test_server *server)
 void
 chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send(ctx, cmd, _SERVER_CMD_ACCEPT, 0);
+	_server_cmd_send_async(ctx, cmd, 0, &_server_accept);
 }
 
 char *
@@ -433,11 +430,12 @@ _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 }
 
 static void
-_server_read_headers(struct chttp_test_server *server)
+_server_read_headers(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
 	_server_ok(server);
 	assert(server->http_sock >= 0);
 	assert_zero(server->context);
+	assert(cmd);
 
 	server->context = chttp_context_alloc();
 	server->context->state = CHTTP_STATE_RESP_HEADERS;
@@ -469,93 +467,100 @@ void
 chttp_test_cmd_server_read_headers(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send(ctx, cmd, _SERVER_CMD_READ_HEADERS, 0);
+	_server_cmd_send_async(ctx, cmd, 0, &_server_read_headers);
 }
 
 static void
-_server_match_header(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
+_server_match_header(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
-	const char *value = NULL;
-	char *match;
+	const char *header, *header_value, *expected;
 	size_t len;
+	int sub = 0;
 
 	_server_ok(server);
 	chttp_context_ok(server->context);
-	assert(cmdentry);
+	assert(cmd);
+	assert(cmd->name);
 
-	switch (cmdentry->cmd) {
-		case _SERVER_CMD_MATCH_METHOD:
-			assert(cmdentry->param_count == 1);
-			value = chttp_get_header(server->context, _CHTTP_HEADER_FIRST);
-			match = cmdentry->params[0];
-			break;
-		case _SERVER_CMD_MATCH_URL:
-			assert(cmdentry->param_count == 1);
+	header = header_value = expected = NULL;
 
-			value = chttp_get_header(server->context, _CHTTP_HEADER_FIRST);
-			assert(value);
+	if (!strcmp(cmd->name, "server_method_match")) {
+		assert(cmd->param_count == 1);
 
-			len = strlen(value);
-			value += len + 1;
+		header = "_METHOD";
+		expected = cmd->params[0];
+		header_value = chttp_get_header(server->context, _CHTTP_HEADER_FIRST);
+	} else if (!strcmp(cmd->name, "server_url_match")) {
+		assert(cmd->param_count == 1);
 
-			match = cmdentry->params[0];
-			break;
-		case _SERVER_CMD_MATCH_HEADER:
-		case _SERVER_CMD_SUBMATCH_HEADER:
-			assert(cmdentry->param_count == 2);
-			value = chttp_get_header(server->context, cmdentry->params[0]);
-			match = cmdentry->params[1];
-			break;
-		default:
-			assert_zero("bad match");
-	}
+		header = "_URL";
+		expected = cmd->params[0];
 
-	chttp_test_ERROR(!value, "header %s not found", cmdentry->params[0]);
-	if (cmdentry->cmd == _SERVER_CMD_SUBMATCH_HEADER) {
-		chttp_test_ERROR(!strstr(value, match), "value %s not found in header %s",
-			match, value);
+		header_value = chttp_get_header(server->context, _CHTTP_HEADER_FIRST);
+		assert(header_value);
+		len = strlen(header_value);
+		header_value += len + 1;
+	} else if (!strcmp(cmd->name, "server_header_match")) {
+		assert(cmd->param_count == 2);
 
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "sub found %s>%s",
-			match, value);
+		header = cmd->params[0];
+		expected = cmd->params[1];
+		header_value = chttp_get_header(server->context, header);
+	} else if (!strcmp(cmd->name, "server_header_submatch")) {
+		assert(cmd->param_count == 2);
+
+		header = cmd->params[0];
+		expected = cmd->params[1];
+		header_value = chttp_get_header(server->context, header);
+		sub = 1;
 	} else {
-		chttp_test_ERROR(strcmp(value, match), "headers dont match, found %s, "
-			"expected %s", value, match);
-
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "headers match %s",
-			match);
+		assert_zero("INVALID SERVER MATCH");
 	}
+
+	chttp_test_ERROR(!header_value, "header %s not found", header);
+
+	if (sub) {
+		chttp_test_ERROR(!strstr(header_value, expected), "value %s not found in header %s:%s",
+			expected, header, header_value);
+	} else {
+		chttp_test_ERROR(strcmp(header_value, expected), "headers dont match, found %s:%s, "
+			"expected %s", header, header_value, expected);
+	}
+
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "headers match %s:%s",
+		header, header_value);
 }
 
 void
 chttp_test_cmd_server_method_match(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send(ctx, cmd, _SERVER_CMD_MATCH_METHOD, 1);
+	_server_cmd_send_async(ctx, cmd, 1, &_server_match_header);
 }
 
 void
 chttp_test_cmd_server_url_match(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send(ctx, cmd, _SERVER_CMD_MATCH_URL, 1);
+	_server_cmd_send_async(ctx, cmd, 1, &_server_match_header);
 }
 
 void
 chttp_test_cmd_server_header_match(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send(ctx, cmd, _SERVER_CMD_MATCH_HEADER, 2);
+	_server_cmd_send_async(ctx, cmd, 2, &_server_match_header);
 }
 
 void
 chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send(ctx, cmd, _SERVER_CMD_SUBMATCH_HEADER, 2);
+	_server_cmd_send_async(ctx, cmd, 2, &_server_match_header);
 }
 
 static void
-_server_send_response(struct chttp_test_server *server)
+_server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
 	ssize_t ret;
 	size_t len;
@@ -563,6 +568,7 @@ _server_send_response(struct chttp_test_server *server)
 
 	_server_ok(server);
 	assert(server->http_sock >= 0);
+	assert(cmd);
 
 	buf = "HTTP/1.1 200 OK\r\n";
 	len = strlen(buf);
@@ -579,7 +585,7 @@ void
 chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send(ctx, cmd, _SERVER_CMD_SEND_RESPONSE, 0);
+	_server_cmd_send_async(ctx, cmd, 0, &_server_send_response);
 }
 
 static void
@@ -588,29 +594,12 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 	_server_ok(server);
 	assert(cmdentry);
 	assert(cmdentry->magic == _SERVER_CMDENTRY);
+	assert(cmdentry->func);
 
-	switch (cmdentry->cmd) {
-		case _SERVER_CMD_ACCEPT:
-			_server_accept(server);
-			break;
-		case _SERVER_CMD_READ_HEADERS:
-			_server_read_headers(server);
-			break;
-		case _SERVER_CMD_MATCH_METHOD:
-		case _SERVER_CMD_MATCH_URL:
-		case _SERVER_CMD_MATCH_HEADER:
-		case _SERVER_CMD_SUBMATCH_HEADER:
-			_server_match_header(server, cmdentry);
-			break;
-		case _SERVER_CMD_SEND_RESPONSE:
-			_server_send_response(server);
-			break;
-		default:
-			chttp_test_ERROR(1, "invalid server cmd %d", cmdentry->cmd);
-	}
+	cmdentry->func(server, &cmdentry->cmd);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %d completed",
-		cmdentry->cmd);
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %s completed",
+		cmdentry->cmd.name);
 }
 
 static void *
