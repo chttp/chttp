@@ -68,7 +68,7 @@ _body_end_chunk(struct chttp_context *ctx)
 }
 
 void
-chttp_body_length(struct chttp_context *ctx, int do_error)
+chttp_body_length(struct chttp_context *ctx, int response)
 {
 	const char *header = NULL;
 	size_t start, end;
@@ -150,7 +150,7 @@ chttp_body_length(struct chttp_context *ctx, int do_error)
 		chttp_tcp_read(ctx);
 
 		if (ctx->state == CHTTP_STATE_RESP_BODY) {
-			return chttp_body_length(ctx, do_error);
+			return chttp_body_length(ctx, response);
 		}
 
 		return;
@@ -171,7 +171,8 @@ chttp_body_length(struct chttp_context *ctx, int do_error)
 		return;
 	}
 
-	if (!do_error) {
+	if (!response) {
+		ctx->state = CHTTP_STATE_IDLE;
 		return;
 	}
 

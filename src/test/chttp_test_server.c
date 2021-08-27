@@ -185,7 +185,7 @@ _server_finish(struct chttp_text_context *ctx)
 	ret = chttp_test_join_thread(server->thread, &server->stopped, _SERVER_JOIN_TIMEOUT_MS);
 	chttp_test_ERROR(ret, "server thread is blocked");
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "server thread joined");
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread joined");
 
 	pthread_mutex_destroy(&server->cmd_lock);
 	pthread_cond_destroy(&server->cmd_signal);
@@ -195,7 +195,7 @@ _server_finish(struct chttp_text_context *ctx)
 
 		TAILQ_REMOVE(&server->cmd_list, cmdentry, entry);
 
-		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "server unfinished cmd found %d",
+		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* unfinished cmd found %d",
 			cmdentry->cmd);
 
 		_server_cmdentry_free(cmdentry);
@@ -275,7 +275,7 @@ _server_init_socket(struct chttp_test_server *server)
 	assert(server->port >= 0);
 	snprintf(server->port_str, sizeof(server->port_str), "%d", server->port);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server socket port: %d",
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
 		server->port);
 
 	chttp_context_free(chttp);
@@ -322,7 +322,7 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 
 	chttp_test_register_finish(ctx, "server", _server_finish);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "server init completed");
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* init completed");
 }
 
 static void
@@ -361,7 +361,7 @@ _server_accept(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 			chttp_test_ERROR(1, "Invalid server remote family");
 	}
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server remote client %s:%d",
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
 		remote, remote_port);
 }
 
@@ -431,10 +431,13 @@ _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 static void
 _server_read_request(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
+	struct chttp_test *test;
+
 	_server_ok(server);
 	assert(server->http_sock >= 0);
 	assert_zero(server->context);
 	assert(cmd);
+	test = chttp_test_convert(server->ctx);
 
 	server->context = chttp_context_alloc();
 	server->context->state = CHTTP_STATE_RESP_HEADERS;
@@ -457,7 +460,12 @@ _server_read_request(struct chttp_test_server *server, struct chttp_test_cmd *cm
 	chttp_body_length(server->context, 0);
 	chttp_test_ERROR(server->context->length, "request bodies not supported");
 
-	server->context->state = CHTTP_STATE_IDLE;
+	assert(server->context->state == CHTTP_STATE_IDLE);
+
+	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
+		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
+		chttp_dpage_debug(server->context->data);
+	}
 
 	server->http_sock = server->context->addr.sock;
 	server->context->addr.sock = -1;
@@ -520,14 +528,14 @@ _server_match_header(struct chttp_test_server *server, struct chttp_test_cmd *cm
 	chttp_test_ERROR(!header_value, "header %s not found", header);
 
 	if (sub && *expected) {
-		chttp_test_ERROR(!strstr(header_value, expected), "value %s not found in header %s:%s",
-			expected, header, header_value);
+		chttp_test_ERROR(!strstr(header_value, expected), "value %s not found in header "
+			"%s:%s", expected, header, header_value);
 	} else if (!sub) {
 		chttp_test_ERROR(strcmp(header_value, expected), "headers dont match, found %s:%s, "
 			"expected %s", header, header_value, expected);
 	}
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "headers match %s:%s%s%s%s",
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* headers match %s:%s%s%s%s",
 		header, header_value, sub ? " (" : "", sub ? expected : "", sub ? ")" : "");
 }
 
@@ -560,7 +568,8 @@ chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
 }
 
 static void
-_server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+_server_send_response_version(struct chttp_test_server *server, struct chttp_test_cmd *cmd,
+    int http11, int partial)
 {
 	long status;
 	char *reason, buf[128], *body = "";
@@ -583,10 +592,12 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 		reason = cmd->params[1];
 	}
 	if (cmd->param_count == 3) {
+		assert_zero(partial);
 		body = cmd->params[2];
 	}
 
-	len = snprintf(buf, sizeof(buf), "HTTP/1.1 %ld %s\r\n", status, reason);
+	len = snprintf(buf, sizeof(buf), "HTTP/1.%c %ld %s\r\n", http11 ? '1' : '0', status,
+		reason);
 	assert(len < sizeof(buf));
 	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
 	assert(ret > 0 && (size_t)ret == len);
@@ -597,6 +608,10 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 	assert(ret > 0 && (size_t)ret == len);
 
 	// TODO date
+
+	if (partial) {
+		return;
+	}
 
 	body_len = strlen(body);
 
@@ -609,6 +624,12 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 		ret = send(server->http_sock, body, body_len, MSG_NOSIGNAL);
 		assert(ret > 0 && (size_t)ret == body_len);
 	}
+}
+
+static void
+_server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+{
+	_server_send_response_version(server, cmd, 1, 0);
 }
 
 void
@@ -641,7 +662,7 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 
 	cmdentry->func(server, &cmdentry->cmd);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread cmd %s completed",
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread cmd %s completed",
 		cmdentry->cmd.name);
 }
 
@@ -659,7 +680,7 @@ _server_thread(void *arg)
 	server->started = 1;
 	_server_SIGNAL(server);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread started");
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread started");
 
 	while (!server->stop) {
 		if (TAILQ_EMPTY(&server->cmd_list)) {
@@ -687,7 +708,7 @@ _server_thread(void *arg)
 
 	_server_UNLOCK(server);
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "server thread finished");
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread finished");
 
 	return NULL;
 }
