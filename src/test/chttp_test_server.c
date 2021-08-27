@@ -430,7 +430,7 @@ _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 }
 
 static void
-_server_read_headers(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+_server_read_request(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
 	_server_ok(server);
 	assert(server->http_sock >= 0);
@@ -456,6 +456,7 @@ _server_read_headers(struct chttp_test_server *server, struct chttp_test_cmd *cm
 	assert(server->context->state == CHTTP_STATE_RESP_BODY);
 
 	chttp_body_length(server->context, 0);
+	chttp_test_ERROR(server->context->length, "request bodies not supported");
 
 	server->context->state = CHTTP_STATE_IDLE;
 
@@ -464,10 +465,10 @@ _server_read_headers(struct chttp_test_server *server, struct chttp_test_cmd *cm
 }
 
 void
-chttp_test_cmd_server_read_headers(struct chttp_text_context *ctx,
+chttp_test_cmd_server_read_request(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 0, &_server_read_headers);
+	_server_cmd_send_async(ctx, cmd, 0, &_server_read_request);
 }
 
 static void

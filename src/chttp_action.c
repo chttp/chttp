@@ -5,8 +5,6 @@
 
 #include "chttp.h"
 
-// TODO make a chttp error style assert with msg
-
 static void
 _finalize_request(struct chttp_context *ctx, const char *host)
 {
@@ -71,7 +69,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 }
 
 void
-chttp_recv(struct chttp_context *ctx)
+chttp_receive(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 

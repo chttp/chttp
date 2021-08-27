@@ -75,9 +75,39 @@ chttp_test_cmd_chttp_send(struct chttp_text_context *ctx, struct chttp_test_cmd 
 	chttp_send(ctx->context, cmd->params[0], port, 0);
 	chttp_test_ERROR(ctx->context->error, "chttp send error");
 
-	chttp_recv(ctx->context);
+	chttp_receive(ctx->context);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent and received");
+}
+
+void
+chttp_test_cmd_chttp_send_only(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long port;
+
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 2);
+	chttp_test_ERROR_string(cmd->params[0]);
+
+	port = chttp_test_parse_long(cmd->params[1]);
+	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
+
+	chttp_send(ctx->context, cmd->params[0], port, 0);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent");
+}
+
+void
+chttp_test_cmd_chttp_receive(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long port;
+
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	chttp_receive(ctx->context);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request received");
 }
 
 void

@@ -41,7 +41,7 @@ main(int argc, char **argv)
 	chttp_delete_header(context, "header2");
 	chttp_send(context, "ec2.rezsoft.org", 80, 0);
 	chttp_context_debug(context);
-	chttp_recv(context);
+	chttp_receive(context);
 	chttp_context_debug(context);
 	do {
 		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
@@ -61,7 +61,7 @@ main(int argc, char **argv)
 	chttp_add_header(&scontext, "x", "2");
 	chttp_send(&scontext, "textglass.org", 80, 0);
 	chttp_context_debug(&scontext);
-	chttp_recv(&scontext);
+	chttp_receive(&scontext);
 	chttp_context_debug(&scontext);
 	do {
 		body_len = chttp_get_body(&scontext, body_buf, sizeof(body_buf));

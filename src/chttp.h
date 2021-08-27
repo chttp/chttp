@@ -140,7 +140,7 @@ int chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size
 extern const char *CHTTP_HEADER_REASON;
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
-void chttp_recv(struct chttp_context *ctx);
+void chttp_receive(struct chttp_context *ctx);
 void chttp_finish(struct chttp_context *ctx);
 
 void chttp_body_length(struct chttp_context *ctx, int do_error);

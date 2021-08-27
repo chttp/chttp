@@ -171,6 +171,10 @@ chttp_body_length(struct chttp_context *ctx, int do_error)
 		return;
 	}
 
+	if (!do_error) {
+		return;
+	}
+
 	if (ctx->close) {
 		ctx->length = -1;
 		return;
@@ -179,10 +183,6 @@ chttp_body_length(struct chttp_context *ctx, int do_error)
 	if (ctx->version == CHTTP_H_VERSION_1_0) {
 		ctx->close = 1;
 		ctx->length = -1;
-		return;
-	}
-
-	if (!do_error) {
 		return;
 	}
 
