@@ -13,8 +13,11 @@
 void
 chttp_test_cmd_chttp_test(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
-	assert(ctx);
+	struct chttp_test *test;
+
+	test = chttp_test_convert(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
+	chttp_test_ERROR(test->cmds != 1, "test file must begin with chttp_test");
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "%s", cmd->params[0]);
 }

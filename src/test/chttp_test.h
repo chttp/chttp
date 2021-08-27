@@ -82,6 +82,7 @@ struct chttp_test {
 	size_t					lines_multi;
 
 	struct chttp_test_cmd			cmd;
+	size_t					cmds;
 
 	int					error;
 	int					skip;

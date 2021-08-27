@@ -76,6 +76,11 @@ _test_run_cht_file(void *arg)
 	while (chttp_test_readline(test, 0)) {
 		chttp_test_parse_cmd(test);
 
+		chttp_test_ERROR(!test->cmds && strcmp(test->cmd.name, "chttp_test"),
+			"test file must begin with chttp_test");
+
+		test->cmds++;
+
 		cmd_entry = chttp_test_cmds_get(test, test->cmd.name);
 		chttp_test_ERROR(!cmd_entry || !cmd_entry->is_cmd,
 			"command %s not found (line %zu)", test->cmd.name, chttp_test_line_pos(test));
