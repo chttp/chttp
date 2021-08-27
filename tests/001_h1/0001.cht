@@ -14,4 +14,7 @@ server_send_response
 chttp_init
 chttp_url /
 chttp_send $server_host $server_port
-chttp_status 200
+chttp_status_match 200
+chttp_reason_match OK
+chttp_header_submatch server chttp
+chttp_header_match content-length 0

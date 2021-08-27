@@ -134,25 +134,24 @@ _server_cmdentry_alloc()
 
 static void
 _server_cmd_send_async(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd,
-    size_t params, chttp_test_cmd_async_f *func)
+    int params, chttp_test_cmd_async_f *func)
 {
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry;
 	size_t i;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, params);
+	if (params >= 0) {
+		chttp_test_ERROR_param_count(cmd, params);
+	}
 
 	cmdentry = _server_cmdentry_alloc();
 
 	cmdentry->cmd.name = strdup(cmd->name);
-	cmdentry->cmd.param_count = params;
+	cmdentry->cmd.param_count = cmd->param_count;
 	cmdentry->func = func;
 
-	for (i = 0; i < params; i++) {
-		assert(i < cmd->param_count);
-		chttp_test_ERROR_string(cmd->params[i]);
-
+	for (i = 0; i < cmd->param_count; i++) {
 		cmdentry->cmd.params[i] = strdup(cmd->params[i]);
 	}
 
@@ -520,16 +519,16 @@ _server_match_header(struct chttp_test_server *server, struct chttp_test_cmd *cm
 
 	chttp_test_ERROR(!header_value, "header %s not found", header);
 
-	if (sub) {
+	if (sub && *expected) {
 		chttp_test_ERROR(!strstr(header_value, expected), "value %s not found in header %s:%s",
 			expected, header, header_value);
-	} else {
+	} else if (!sub) {
 		chttp_test_ERROR(strcmp(header_value, expected), "headers dont match, found %s:%s, "
 			"expected %s", header, header_value, expected);
 	}
 
-	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "headers match %s:%s",
-		header, header_value);
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "headers match %s:%s%s%s%s",
+		header, header_value, sub ? " (" : "", sub ? expected : "", sub ? ")" : "");
 }
 
 void
@@ -563,30 +562,73 @@ chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
 static void
 _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
+	long status;
+	char *reason, buf[128], *body = "";
 	ssize_t ret;
-	size_t len;
-	char *buf;
+	size_t len, body_len;
 
 	_server_ok(server);
 	assert(server->http_sock >= 0);
 	assert(cmd);
+	assert(cmd->param_count <= 3);
 
-	buf = "HTTP/1.1 200 OK\r\n";
-	len = strlen(buf);
+	status = 200;
+	reason = "OK";
+
+	if (cmd->param_count >= 1) {
+		status = chttp_test_parse_long(cmd->params[0]);
+		assert(status > 0 && status < 1000);
+	}
+	if (cmd->param_count >= 2) {
+		reason = cmd->params[1];
+	}
+	if (cmd->param_count == 3) {
+		body = cmd->params[2];
+	}
+
+	len = snprintf(buf, sizeof(buf), "HTTP/1.1 %ld %s\r\n", status, reason);
+	assert(len < sizeof(buf));
 	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
 	assert(ret > 0 && (size_t)ret == len);
 
-	buf = "Content-Length: 5\r\n\r\nDONE!";
-	len = strlen(buf);
+	len = snprintf(buf, sizeof(buf), "Server: chttp_test %s\r\n", CHTTP_VERSION);
+	assert(len < sizeof(buf));
 	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
 	assert(ret > 0 && (size_t)ret == len);
+
+	// TODO date
+
+	body_len = strlen(body);
+
+	len = snprintf(buf, sizeof(buf), "Content-Length: %zu\r\n\r\n", body_len);
+	assert(len < sizeof(buf));
+	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
+	assert(ret > 0 && (size_t)ret == len);
+
+	if (body_len > 0) {
+		ret = send(server->http_sock, body, body_len, MSG_NOSIGNAL);
+		assert(ret > 0 && (size_t)ret == body_len);
+	}
 }
 
 void
 chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 0, &_server_send_response);
+	long status;
+
+	assert(cmd);
+	chttp_test_ERROR(cmd->param_count > 3, "too many parameters");
+
+	if (cmd->param_count >= 1) {
+		status = chttp_test_parse_long(cmd->params[0]);
+		chttp_test_ERROR(status <= 0 || status > 999, "invalid status code");
+	}
+	if (cmd->param_count >= 2) {
+		chttp_test_ERROR_string(cmd->params[1]);
+	}
+
+	_server_cmd_send_async(ctx, cmd, -1, &_server_send_response);
 }
 
 static void

@@ -5,4 +5,4 @@ connect_or_skip ec2.rezsoft.org 80
 chttp_init
 chttp_url /404
 chttp_send ec2.rezsoft.org 80
-chttp_status 404
+chttp_status_match 404
