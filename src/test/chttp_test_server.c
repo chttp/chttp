@@ -5,6 +5,7 @@
 
 #include "test/chttp_test.h"
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -521,16 +522,27 @@ _server_match_header(struct chttp_test_server *server, struct chttp_test_cmd *cm
 		expected = cmd->params[1];
 		header_value = chttp_get_header(server->context, header);
 		sub = 1;
-	} else {
+	} else if (!strcmp(cmd->name, "server_header_exists")) {
+		assert(cmd->param_count == 1);
+
+		header = cmd->params[0];
+		expected = NULL;
+		header_value = chttp_get_header(server->context, header);
+	}else {
 		assert_zero("INVALID SERVER MATCH");
 	}
 
 	chttp_test_ERROR(!header_value, "header %s not found", header);
 
-	if (sub && *expected) {
+	if (!expected) {
+		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* header exists %s", header);
+		return;
+	}
+
+	if (sub) {
 		chttp_test_ERROR(!strstr(header_value, expected), "value %s not found in header "
 			"%s:%s", expected, header, header_value);
-	} else if (!sub) {
+	} else {
 		chttp_test_ERROR(strcmp(header_value, expected), "headers dont match, found %s:%s, "
 			"expected %s", header, header_value, expected);
 	}
@@ -567,14 +579,42 @@ chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
 	_server_cmd_send_async(ctx, cmd, 2, &_server_match_header);
 }
 
+void
+chttp_test_cmd_server_header_exists(struct chttp_text_context *ctx,
+    struct chttp_test_cmd *cmd)
+{
+	_server_cmd_send_async(ctx, cmd, 1, &_server_match_header);
+}
+
+void
+_server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
+{
+	va_list ap;
+	char buf[256];
+	size_t len;
+	ssize_t ret;
+
+	_server_ok(server);
+	assert(server->http_sock >= 0);
+
+	va_start(ap, fmt);
+
+	len = vsnprintf(buf, sizeof(buf), fmt, ap);
+	assert(len < sizeof(buf));
+	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
+	assert(ret > 0 && (size_t)ret == len);
+
+	va_end(ap);
+}
+
 static void
 _server_send_response_version(struct chttp_test_server *server, struct chttp_test_cmd *cmd,
     int http11, int partial)
 {
 	long status;
-	char *reason, buf[128], *body = "";
+	char *reason, *body = "";
 	ssize_t ret;
-	size_t len, body_len;
+	size_t body_len;
 
 	_server_ok(server);
 	assert(server->http_sock >= 0);
@@ -596,18 +636,9 @@ _server_send_response_version(struct chttp_test_server *server, struct chttp_tes
 		body = cmd->params[2];
 	}
 
-	len = snprintf(buf, sizeof(buf), "HTTP/1.%c %ld %s\r\n", http11 ? '1' : '0', status,
-		reason);
-	assert(len < sizeof(buf));
-	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
-	assert(ret > 0 && (size_t)ret == len);
-
-	len = snprintf(buf, sizeof(buf), "Server: chttp_test %s\r\n", CHTTP_VERSION);
-	assert(len < sizeof(buf));
-	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
-	assert(ret > 0 && (size_t)ret == len);
-
-	// TODO date
+	_server_send_printf(server, "HTTP/1.%c %ld %s\r\n", http11 ? '1' : '0', status, reason);
+	_server_send_printf(server, "Server: chttp_test %s\r\n", CHTTP_VERSION);
+	_server_send_printf(server, "Date: // TODO\r\n");
 
 	if (partial) {
 		return;
@@ -615,10 +646,7 @@ _server_send_response_version(struct chttp_test_server *server, struct chttp_tes
 
 	body_len = strlen(body);
 
-	len = snprintf(buf, sizeof(buf), "Content-Length: %zu\r\n\r\n", body_len);
-	assert(len < sizeof(buf));
-	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
-	assert(ret > 0 && (size_t)ret == len);
+	_server_send_printf(server, "Content-Length: %zu\r\n\r\n", body_len);
 
 	if (body_len > 0) {
 		ret = send(server->http_sock, body, body_len, MSG_NOSIGNAL);

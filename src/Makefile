@@ -5,7 +5,6 @@ CFLAGS=-O3 -Wall -Wextra -g -fPIC -I.
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
-RM=rm -f
 
 INCLUDES=$(wildcard *.h data/*.h)
 SOURCE=$(wildcard *.c dns/*.c tcp/*.c)
@@ -44,5 +43,5 @@ test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-		$(RM) *.o dns/*.o tcp/*.o client/*.o test/*.o \
+		rm -f *.o dns/*.o tcp/*.o client/*.o test/*.o \
 		*.so *.a chttp_client chttp_test

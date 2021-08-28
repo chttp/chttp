@@ -17,4 +17,5 @@ chttp_send $server_host $server_port
 chttp_status_match 200
 chttp_reason_match OK
 chttp_header_submatch server chttp
+chttp_header_exists date
 chttp_header_match content-length 0

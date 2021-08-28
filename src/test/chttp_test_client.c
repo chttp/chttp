@@ -94,8 +94,8 @@ chttp_test_cmd_chttp_receive(struct chttp_text_context *ctx, struct chttp_test_c
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request received");
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
-		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "dpage dump");
-		chttp_dpage_debug(ctx->context->data);
+		printf("--- ");
+		chttp_context_debug(ctx->context);
 	}
 }
 
@@ -142,10 +142,15 @@ _test_header_match(struct chttp_text_context *ctx, const char *header, const cha
 	header_value = chttp_get_header(ctx->context, header);
 	chttp_test_ERROR(!header_value, "header %s not found", header);
 
-	if (sub && *expected) {
+	if (!*expected) {
+		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "header exists %s", header);
+		return;
+	}
+
+	if (sub) {
 		chttp_test_ERROR(!strstr(header_value, expected), "value %s not found in header "
 			"%s:%s", expected, header, header_value);
-	} else if (!sub) {
+	} else {
 		chttp_test_ERROR(strcmp(header_value, expected), "headers dont match, found %s:%s, "
 			"expected %s", header, header_value, expected);
 	}
@@ -181,8 +186,19 @@ chttp_test_cmd_chttp_header_submatch(struct chttp_text_context *ctx, struct chtt
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
 	chttp_test_ERROR_string(cmd->params[0]);
+	chttp_test_ERROR_string(cmd->params[1]);
 
 	_test_header_match(ctx, cmd->params[0], cmd->params[1], 1);
+}
+
+void
+chttp_test_cmd_chttp_header_exists(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+	chttp_test_ERROR_string(cmd->params[0]);
+
+	_test_header_match(ctx, cmd->params[0], "", 1);
 }
 
 static void
