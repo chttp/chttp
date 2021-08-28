@@ -587,29 +587,38 @@ chttp_test_cmd_server_header_exists(struct chttp_text_context *ctx,
 }
 
 void
-_server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
+_server_send_buf(struct chttp_test_server *server, const char *buf, size_t len)
 {
-	va_list ap;
-	char buf[256];
-	size_t len;
 	ssize_t ret;
 
 	_server_ok(server);
 	assert(server->http_sock >= 0);
 
+	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
+	assert(ret > 0 && (size_t)ret == len);
+}
+void
+_server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
+{
+	va_list ap;
+	char buf[256];
+	size_t len;
+
+	_server_ok(server);
+
 	va_start(ap, fmt);
 
 	len = vsnprintf(buf, sizeof(buf), fmt, ap);
 	assert(len < sizeof(buf));
-	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
-	assert(ret > 0 && (size_t)ret == len);
+
+	_server_send_buf(server, buf, len);
 
 	va_end(ap);
 }
 
 static void
 _server_send_response_version(struct chttp_test_server *server, struct chttp_test_cmd *cmd,
-    int http11, int partial)
+    int H1_1, int partial)
 {
 	long status;
 	char *reason, *body = "";
@@ -636,7 +645,7 @@ _server_send_response_version(struct chttp_test_server *server, struct chttp_tes
 		body = cmd->params[2];
 	}
 
-	_server_send_printf(server, "HTTP/1.%c %ld %s\r\n", http11 ? '1' : '0', status, reason);
+	_server_send_printf(server, "HTTP/1.%c %ld %s\r\n", H1_1 ? '1' : '0', status, reason);
 	_server_send_printf(server, "Server: chttp_test %s\r\n", CHTTP_VERSION);
 	_server_send_printf(server, "Date: // TODO\r\n");
 
@@ -646,11 +655,20 @@ _server_send_response_version(struct chttp_test_server *server, struct chttp_tes
 
 	body_len = strlen(body);
 
-	_server_send_printf(server, "Content-Length: %zu\r\n\r\n", body_len);
+	if (H1_1) {
+		_server_send_printf(server, "Content-Length: %zu\r\n\r\n", body_len);
+	} else {
+		_server_send_printf(server, "\r\n");
+	}
 
 	if (body_len > 0) {
 		ret = send(server->http_sock, body, body_len, MSG_NOSIGNAL);
 		assert(ret > 0 && (size_t)ret == body_len);
+	}
+
+	if (!H1_1) {
+		assert_zero(close(server->http_sock));
+		server->http_sock = -1;
 	}
 }
 
@@ -658,6 +676,18 @@ static void
 _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
 	_server_send_response_version(server, cmd, 1, 0);
+}
+
+static void
+_server_send_response_H1_0(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+{
+	_server_send_response_version(server, cmd, 0, 0);
+}
+
+static void
+_server_send_response_partial(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+{
+	_server_send_response_version(server, cmd, 1, 1);
 }
 
 void
@@ -678,6 +708,64 @@ chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
 	}
 
 	_server_cmd_send_async(ctx, cmd, -1, &_server_send_response);
+}
+
+void
+chttp_test_cmd_server_send_response_H1_0(struct chttp_text_context *ctx,
+    struct chttp_test_cmd *cmd)
+{
+	long status;
+
+	assert(cmd);
+	chttp_test_ERROR(cmd->param_count > 3, "too many parameters");
+
+	if (cmd->param_count >= 1) {
+		status = chttp_test_parse_long(cmd->params[0]);
+		chttp_test_ERROR(status <= 0 || status > 999, "invalid status code");
+	}
+	if (cmd->param_count >= 2) {
+		chttp_test_ERROR_string(cmd->params[1]);
+	}
+
+	_server_cmd_send_async(ctx, cmd, -1, &_server_send_response_H1_0);
+}
+
+void
+chttp_test_cmd_server_send_response_partial(struct chttp_text_context *ctx,
+    struct chttp_test_cmd *cmd)
+{
+	long status;
+
+	assert(cmd);
+	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
+
+	if (cmd->param_count >= 1) {
+		status = chttp_test_parse_long(cmd->params[0]);
+		chttp_test_ERROR(status <= 0 || status > 999, "invalid status code");
+	}
+	if (cmd->param_count == 2) {
+		chttp_test_ERROR_string(cmd->params[1]);
+	}
+
+	_server_cmd_send_async(ctx, cmd, -1, &_server_send_response_partial);
+}
+
+static void
+_server_send_raw(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+{
+	_server_ok(server);
+	assert(server->http_sock >= 0);
+	assert(cmd);
+	assert(cmd->param_count == 1);
+
+	_server_send_buf(server, cmd->params[0], strlen(cmd->params[0]));
+}
+
+void
+chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx,
+    struct chttp_test_cmd *cmd)
+{
+	_server_cmd_send_async(ctx, cmd, 1, &_server_send_raw);
 }
 
 static void
