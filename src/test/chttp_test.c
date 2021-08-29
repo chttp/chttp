@@ -86,6 +86,9 @@ _test_run_cht_file(void *arg)
 			"command %s not found (line %zu)", test->cmd.name, chttp_test_line_pos(test));
 		assert(cmd_entry->cmd_func);
 
+		test->cmd.func = cmd_entry->cmd_func;
+		assert_zero(test->cmd.async);
+
 		cmd_entry->cmd_func(&test->context, &test->cmd);
 
 		if (test->error || test->skip) {

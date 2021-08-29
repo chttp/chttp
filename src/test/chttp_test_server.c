@@ -13,10 +13,6 @@
 #define _SERVER_IP				"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500
 
-struct chttp_test_server;
-
-typedef void (chttp_test_cmd_async_f)(struct chttp_test_server*, struct chttp_test_cmd*);
-
 struct _server_cmdentry {
 	unsigned int				magic;
 #define _SERVER_CMDENTRY			0xA50DBA3C
@@ -24,8 +20,6 @@ struct _server_cmdentry {
 	TAILQ_ENTRY(_server_cmdentry)		entry;
 
 	struct chttp_test_cmd			cmd;
-
-	chttp_test_cmd_async_f			*func;
 };
 
 struct chttp_test_server {
@@ -134,23 +128,21 @@ _server_cmdentry_alloc()
 }
 
 static void
-_server_cmd_send_async(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd,
-    int params, chttp_test_cmd_async_f *func)
+_server_cmd_async(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 {
-	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry;
 	size_t i;
 
-	server = _server_context_ok(ctx);
-	if (params >= 0) {
-		chttp_test_ERROR_param_count(cmd, params);
-	}
+	_server_ok(server);
+	assert(cmd);
+	assert(cmd->func);
 
 	cmdentry = _server_cmdentry_alloc();
 
 	cmdentry->cmd.name = strdup(cmd->name);
 	cmdentry->cmd.param_count = cmd->param_count;
-	cmdentry->func = func;
+	cmdentry->cmd.func = cmd->func;
+	cmdentry->cmd.async = 1;
 
 	for (i = 0; i < cmd->param_count; i++) {
 		cmdentry->cmd.params[i] = strdup(cmd->params[i]);
@@ -326,20 +318,26 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* init completed");
 }
 
-static void
-_server_accept(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+void
+chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
+	struct chttp_test_server *server;
 	struct sockaddr_storage saddr;
 	struct sockaddr *addr;
 	socklen_t len;
 	char remote[128] = {0};
 	int remote_port = -1;
 
-	_server_ok(server);
+	server = _server_context_ok(ctx);
 	assert(server->sock >= 0);
 	assert(server->port >= 0);
 	assert(server->http_sock == -1);
-	assert(cmd);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
 
 	addr = (struct sockaddr*)&saddr;
 	len = sizeof(saddr);
@@ -364,12 +362,6 @@ _server_accept(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
 		remote, remote_port);
-}
-
-void
-chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
-{
-	_server_cmd_send_async(ctx, cmd, 0, &_server_accept);
 }
 
 char *
@@ -429,16 +421,23 @@ _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 	}
 }
 
-static void
-_server_read_request(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+void
+chttp_test_cmd_server_read_request(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
+	struct chttp_test_server *server;
 	struct chttp_test *test;
 
-	_server_ok(server);
-	assert(server->http_sock >= 0);
+	server = _server_context_ok(ctx);
 	assert_zero(server->context);
-	assert(cmd);
+	chttp_test_ERROR_param_count(cmd, 0);
 	test = chttp_test_convert(server->ctx);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	assert(server->http_sock >= 0);
 
 	server->context = chttp_context_alloc();
 	server->context->state = CHTTP_STATE_RESP_HEADERS;
@@ -472,24 +471,19 @@ _server_read_request(struct chttp_test_server *server, struct chttp_test_cmd *cm
 	server->context->addr.sock = -1;
 }
 
-void
-chttp_test_cmd_server_read_request(struct chttp_text_context *ctx,
-    struct chttp_test_cmd *cmd)
-{
-	_server_cmd_send_async(ctx, cmd, 0, &_server_read_request);
-}
-
 static void
-_server_match_header(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
+_server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
+	struct chttp_test_server *server;
 	const char *header, *header_value, *expected;
 	size_t len;
 	int sub = 0;
 
-	_server_ok(server);
+	server = _server_context_ok(ctx);
 	chttp_context_ok(server->context);
 	assert(cmd);
 	assert(cmd->name);
+	assert(cmd->async);
 
 	header = header_value = expected = NULL;
 
@@ -555,35 +549,75 @@ void
 chttp_test_cmd_server_method_match(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 1, &_server_match_header);
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+	assert_zero(cmd->async);
+
+	cmd->func = &_server_match_header;
+
+	_server_cmd_async(server, cmd);
 }
 
 void
 chttp_test_cmd_server_url_match(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 1, &_server_match_header);
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+	assert_zero(cmd->async);
+
+	cmd->func = &_server_match_header;
+
+	_server_cmd_async(server, cmd);
 }
 
 void
 chttp_test_cmd_server_header_match(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 2, &_server_match_header);
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 2);
+	assert_zero(cmd->async);
+
+	cmd->func = &_server_match_header;
+
+	_server_cmd_async(server, cmd);
 }
 
 void
 chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 2, &_server_match_header);
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 2);
+	assert_zero(cmd->async);
+
+	cmd->func = &_server_match_header;
+
+	_server_cmd_async(server, cmd);
 }
 
 void
 chttp_test_cmd_server_header_exists(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 1, &_server_match_header);
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+	assert_zero(cmd->async);
+
+	cmd->func = &_server_match_header;
+
+	_server_cmd_async(server, cmd);
 }
 
 void
@@ -617,7 +651,7 @@ _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 }
 
 static void
-_server_send_response_version(struct chttp_test_server *server, struct chttp_test_cmd *cmd,
+_server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd,
     int H1_1, int partial)
 {
 	long status;
@@ -672,30 +706,14 @@ _server_send_response_version(struct chttp_test_server *server, struct chttp_tes
 	}
 }
 
-static void
-_server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
-{
-	_server_send_response_version(server, cmd, 1, 0);
-}
-
-static void
-_server_send_response_H1_0(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
-{
-	_server_send_response_version(server, cmd, 0, 0);
-}
-
-static void
-_server_send_response_partial(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
-{
-	_server_send_response_version(server, cmd, 1, 1);
-}
-
 void
 chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
+	struct chttp_test_server *server;
 	long status;
 
+	server = _server_context_ok(ctx);
 	assert(cmd);
 	chttp_test_ERROR(cmd->param_count > 3, "too many parameters");
 
@@ -707,15 +725,22 @@ chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
 		chttp_test_ERROR_string(cmd->params[1]);
 	}
 
-	_server_cmd_send_async(ctx, cmd, -1, &_server_send_response);
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_send_response(server, cmd, 1, 0);
 }
 
 void
 chttp_test_cmd_server_send_response_H1_0(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
+	struct chttp_test_server *server;
 	long status;
 
+	server = _server_context_ok(ctx);
 	assert(cmd);
 	chttp_test_ERROR(cmd->param_count > 3, "too many parameters");
 
@@ -727,15 +752,22 @@ chttp_test_cmd_server_send_response_H1_0(struct chttp_text_context *ctx,
 		chttp_test_ERROR_string(cmd->params[1]);
 	}
 
-	_server_cmd_send_async(ctx, cmd, -1, &_server_send_response_H1_0);
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_send_response(server, cmd, 0, 0);
 }
 
 void
 chttp_test_cmd_server_send_response_partial(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
+	struct chttp_test_server *server;
 	long status;
 
+	server = _server_context_ok(ctx);
 	assert(cmd);
 	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
 
@@ -747,25 +779,28 @@ chttp_test_cmd_server_send_response_partial(struct chttp_text_context *ctx,
 		chttp_test_ERROR_string(cmd->params[1]);
 	}
 
-	_server_cmd_send_async(ctx, cmd, -1, &_server_send_response_partial);
-}
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
 
-static void
-_server_send_raw(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
-{
-	_server_ok(server);
-	assert(server->http_sock >= 0);
-	assert(cmd);
-	assert(cmd->param_count == 1);
-
-	_server_send_buf(server, cmd->params[0], strlen(cmd->params[0]));
+	_server_send_response(server, cmd, 1, 1);
 }
 
 void
-chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx,
-    struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
-	_server_cmd_send_async(ctx, cmd, 1, &_server_send_raw);
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_send_buf(server, cmd->params[0], strlen(cmd->params[0]));
 }
 
 static void
@@ -774,9 +809,10 @@ _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 	_server_ok(server);
 	assert(cmdentry);
 	assert(cmdentry->magic == _SERVER_CMDENTRY);
-	assert(cmdentry->func);
+	assert(cmdentry->cmd.async);
+	assert(cmdentry->cmd.func);
 
-	cmdentry->func(server, &cmdentry->cmd);
+	cmdentry->cmd.func(server->ctx, &cmdentry->cmd);
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread cmd %s completed",
 		cmdentry->cmd.name);

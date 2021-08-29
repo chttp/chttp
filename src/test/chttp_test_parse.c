@@ -186,9 +186,8 @@ chttp_test_parse_cmd(struct chttp_test *test)
 	assert(test->line_buf);
 	assert(test->line_buf_len);
 
+	memset(&test->cmd, 0, sizeof(test->cmd));
 	test->cmd.name = test->line_buf;
-	test->cmd.param_count = 0;
-	memset(test->cmd.params, 0, sizeof(char*) * CHTTP_TEST_MAX_PARAMS);
 
 	buf = test->line_buf;
 	len = test->line_buf_len;
@@ -225,6 +224,9 @@ chttp_test_parse_cmd(struct chttp_test *test)
 			if (i == len) {
 				break;
 			}
+
+			chttp_test_ERROR(test->cmd.param_count >= CHTTP_TEST_MAX_PARAMS,
+				"too many parameters");
 
 			test->cmd.params[test->cmd.param_count] = &buf[i];
 			test->cmd.param_count++;
