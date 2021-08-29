@@ -136,6 +136,7 @@ _server_cmd_async(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 	_server_ok(server);
 	assert(cmd);
 	assert(cmd->func);
+	assert_zero(cmd->async);
 
 	cmdentry = _server_cmdentry_alloc();
 
@@ -207,10 +208,10 @@ _server_finish(struct chttp_text_context *ctx)
 	}
 
 	if (server->sock >= 0) {
-		close(server->sock);
+		assert_zero(close(server->sock));
 	}
 	if (server->http_sock >= 0) {
-		close(server->http_sock);
+		assert_zero(close(server->http_sock));
 	}
 
 	server->magic = 0;
@@ -331,13 +332,14 @@ chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_c
 	server = _server_context_ok(ctx);
 	assert(server->sock >= 0);
 	assert(server->port >= 0);
-	assert(server->http_sock == -1);
 	chttp_test_ERROR_param_count(cmd, 0);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
+
+	assert(server->http_sock == -1);
 
 	addr = (struct sockaddr*)&saddr;
 	len = sizeof(saddr);
@@ -553,7 +555,6 @@ chttp_test_cmd_server_method_match(struct chttp_text_context *ctx,
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
-	assert_zero(cmd->async);
 
 	cmd->func = &_server_match_header;
 
@@ -568,7 +569,6 @@ chttp_test_cmd_server_url_match(struct chttp_text_context *ctx,
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
-	assert_zero(cmd->async);
 
 	cmd->func = &_server_match_header;
 
@@ -583,7 +583,6 @@ chttp_test_cmd_server_header_match(struct chttp_text_context *ctx,
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	assert_zero(cmd->async);
 
 	cmd->func = &_server_match_header;
 
@@ -598,7 +597,6 @@ chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	assert_zero(cmd->async);
 
 	cmd->func = &_server_match_header;
 
@@ -613,7 +611,6 @@ chttp_test_cmd_server_header_exists(struct chttp_text_context *ctx,
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
-	assert_zero(cmd->async);
 
 	cmd->func = &_server_match_header;
 
