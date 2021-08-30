@@ -23,11 +23,18 @@ struct chttp_test_cmd;
 typedef void (chttp_test_cmd_f)(struct chttp_text_context *, struct chttp_test_cmd *);
 typedef char *(chttp_test_var_f)(struct chttp_text_context *);
 
+struct chttp_test_param {
+	char				*value;
+	size_t				len;
+
+	unsigned int			v_const:1;
+};
+
 struct chttp_test_cmd {
 	const char			*name;
 
 	size_t				param_count;
-	char				*params[CHTTP_TEST_MAX_PARAMS];
+	struct chttp_test_param		params[CHTTP_TEST_MAX_PARAMS];
 
 	chttp_test_cmd_f		*func;
 

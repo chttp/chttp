@@ -57,7 +57,7 @@ chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	url = cmd->params[0];
+	url = cmd->params[0].value;
 	chttp_test_ERROR_string(url);
 
 	chttp_set_url(ctx->context, url);
@@ -70,12 +70,12 @@ chttp_test_cmd_chttp_send_only(struct chttp_text_context *ctx, struct chttp_test
 
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	chttp_test_ERROR_string(cmd->params[0]);
+	chttp_test_ERROR_string(cmd->params[0].value);
 
-	port = chttp_test_parse_long(cmd->params[1]);
+	port = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
-	chttp_send(ctx->context, cmd->params[0], port, 0);
+	chttp_send(ctx->context, cmd->params[0].value, port, 0);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent");
 }
@@ -119,7 +119,7 @@ chttp_test_cmd_chttp_status_match(struct chttp_text_context *ctx, struct chttp_t
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	status = chttp_test_parse_long(cmd->params[0]);
+	status = chttp_test_parse_long(cmd->params[0].value);
 	chttp_test_ERROR(status <= 0 || status > 999, "invalid status");
 
 	chttp_test_ERROR(ctx->context->status != status,
@@ -164,9 +164,9 @@ chttp_test_cmd_chttp_reason_match(struct chttp_text_context *ctx, struct chttp_t
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
-	chttp_test_ERROR_string(cmd->params[0]);
+	chttp_test_ERROR_string(cmd->params[0].value);
 
-	_test_header_match(ctx, CHTTP_HEADER_REASON, cmd->params[0], 0);
+	_test_header_match(ctx, CHTTP_HEADER_REASON, cmd->params[0].value, 0);
 }
 
 void
@@ -174,10 +174,10 @@ chttp_test_cmd_chttp_header_match(struct chttp_text_context *ctx, struct chttp_t
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	chttp_test_ERROR_string(cmd->params[0]);
-	chttp_test_ERROR_string(cmd->params[1]);
+	chttp_test_ERROR_string(cmd->params[0].value);
+	chttp_test_ERROR_string(cmd->params[1].value);
 
-	_test_header_match(ctx, cmd->params[0], cmd->params[1], 0);
+	_test_header_match(ctx, cmd->params[0].value, cmd->params[1].value, 0);
 }
 
 void
@@ -185,10 +185,10 @@ chttp_test_cmd_chttp_header_submatch(struct chttp_text_context *ctx, struct chtt
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	chttp_test_ERROR_string(cmd->params[0]);
-	chttp_test_ERROR_string(cmd->params[1]);
+	chttp_test_ERROR_string(cmd->params[0].value);
+	chttp_test_ERROR_string(cmd->params[1].value);
 
-	_test_header_match(ctx, cmd->params[0], cmd->params[1], 1);
+	_test_header_match(ctx, cmd->params[0].value, cmd->params[1].value, 1);
 }
 
 void
@@ -196,9 +196,9 @@ chttp_test_cmd_chttp_header_exists(struct chttp_text_context *ctx, struct chttp_
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
-	chttp_test_ERROR_string(cmd->params[0]);
+	chttp_test_ERROR_string(cmd->params[0].value);
 
-	_test_header_match(ctx, cmd->params[0], "", 1);
+	_test_header_match(ctx, cmd->params[0].value, "", 1);
 }
 
 static void
@@ -249,7 +249,7 @@ chttp_test_cmd_chttp_body_match(struct chttp_text_context *ctx, struct chttp_tes
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	_test_body_match(ctx, cmd->params[0], 0);
+	_test_body_match(ctx, cmd->params[0].value, 0);
 }
 
 void
@@ -258,5 +258,5 @@ chttp_test_cmd_chttp_body_submatch(struct chttp_text_context *ctx, struct chttp_
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	_test_body_match(ctx, cmd->params[0], 1);
+	_test_body_match(ctx, cmd->params[0].value, 1);
 }

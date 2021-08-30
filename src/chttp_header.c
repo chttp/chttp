@@ -241,6 +241,7 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 	data = ctx->data_last;
 	len = end - start;
 
+	// TODO remove
 	assert(strlen((char*)&data->data[start]) == len);
 
 	if (len < 14) {

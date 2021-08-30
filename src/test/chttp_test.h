@@ -98,6 +98,7 @@ void chttp_test_run_all_finish(struct chttp_test *test);
 void chttp_test_cmds_init(struct chttp_test *test);
 struct chttp_test_cmdentry *chttp_test_cmds_get(struct chttp_test *test, const char *name);
 
+void chttp_test_unescape(struct chttp_test_param *param);
 int chttp_test_readline(struct chttp_test *test, size_t append_len);
 void chttp_test_parse_cmd(struct chttp_test *test);
 

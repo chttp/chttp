@@ -26,49 +26,53 @@
 		_TRIM_STR_RIGHT(s, len);		\
 	} while (0)
 
-static void
-_test_unescape(char *buf)
+void
+chttp_test_unescape(struct chttp_test_param *param)
 {
-	size_t len, offset, i;
+	size_t offset, i;
 
-	assert(buf);
+	assert(param);
+	// TODO remove
+	assert(param->len == strlen(param->value));
 
-	len = strlen(buf);
+	if (param->v_const) {
+		return;
+	}
 
-	for (i = 0, offset = 0; i < len; i++) {
-		if (buf[i] != '\\') {
+	for (i = 0, offset = 0; i < param->len; i++) {
+		if (param->value[i] != '\\') {
 			if (offset) {
-				buf[i - offset] = buf[i];
+				param->value[i - offset] = param->value[i];
 			}
 
 			continue;
 		}
 
-		assert(i < len - 1);
+		assert(i < param->len - 1);
 
-		switch (buf[i + 1]) {
+		switch (param->value[i + 1]) {
 			case '\\':
-				buf[i - offset] = '\\';
+				param->value[i - offset] = '\\';
 				offset++;
 				i++;
 				continue;
 			case '\"':
-				buf[i - offset] = '\"';
+				param->value[i - offset] = '\"';
 				offset++;
 				i++;
 				continue;
 			case 'n':
-				buf[i - offset] = '\n';
+				param->value[i - offset] = '\n';
 				offset++;
 				i++;
 				continue;
 			case 'r':
-				buf[i - offset] = '\r';
+				param->value[i - offset] = '\r';
 				offset++;
 				i++;
 				continue;
 			case 't':
-				buf[i - offset] = '\t';
+				param->value[i - offset] = '\t';
 				offset++;
 				i++;
 				continue;
@@ -79,8 +83,9 @@ _test_unescape(char *buf)
 	}
 
 	if (offset) {
-		assert(offset < len);
-		buf[len - offset] = '\0';
+		assert(offset < param->len);
+		param->value[param->len - offset] = '\0';
+		param->len -= offset;
 	}
 }
 
@@ -179,7 +184,7 @@ chttp_test_parse_cmd(struct chttp_test *test)
 {
 	struct chttp_test_cmdentry *cmd_entry;
 	char *buf, *var;
-	size_t i, len, count;
+	size_t i, len, count, start;
 	int quote;
 
 	chttp_test_ok(test);
@@ -191,6 +196,7 @@ chttp_test_parse_cmd(struct chttp_test *test)
 
 	buf = test->line_buf;
 	len = test->line_buf_len;
+	start = 0;
 	quote = 0;
 
 	for (i = 0; i < len; i++) {
@@ -204,16 +210,20 @@ chttp_test_parse_cmd(struct chttp_test *test)
 				continue;
 			} else {
 				assert(test->cmd.param_count);
-				assert(test->cmd.params[test->cmd.param_count - 1][0] ==
-					'\"');
+				assert(test->cmd.params[test->cmd.param_count - 1].value[0] == '\"');
 
 				quote = 0;
 				buf[i] = ' ';
-				test->cmd.params[test->cmd.param_count - 1] += 1;
+				test->cmd.params[test->cmd.param_count - 1].value += 1;
+				start++;
 			}
 		}
 		if (!quote && buf[i] <= ' ' ) {
 			buf[i] = '\0';
+
+			if (test->cmd.param_count) {
+				test->cmd.params[test->cmd.param_count - 1].len = i - start;
+			}
 
 			i++;
 
@@ -222,19 +232,28 @@ chttp_test_parse_cmd(struct chttp_test *test)
 			}
 
 			if (i == len) {
+				i++;
 				break;
 			}
 
 			chttp_test_ERROR(test->cmd.param_count >= CHTTP_TEST_MAX_PARAMS,
 				"too many parameters");
 
-			test->cmd.params[test->cmd.param_count] = &buf[i];
+			test->cmd.params[test->cmd.param_count].value = &buf[i];
 			test->cmd.param_count++;
+
+			start = i;
 
 			if (buf[i] == '\"') {
 				quote = 1;
 			}
 		}
+	}
+
+	chttp_test_ERROR(quote, "ending quote not found");
+
+	if (i == len && test->cmd.param_count) {
+		test->cmd.params[test->cmd.param_count - 1].len = i - start;
 	}
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
@@ -245,11 +264,13 @@ chttp_test_parse_cmd(struct chttp_test *test)
 	}
 
 	for (i = 0; i < test->cmd.param_count; i++) {
-		if (test->cmd.params[i][0] == '$' && test->cmd.params[i][1] == '$') {
-			test->cmd.params[i] += 1;
-			_test_unescape(test->cmd.params[i]);
-		} else if (test->cmd.params[i][0] == '$') {
-			var = test->cmd.params[i];
+		// TODO remove
+		assert(test->cmd.params[i].len == strlen(test->cmd.params[i].value));
+
+		if (test->cmd.params[i].value[0] == '$' && test->cmd.params[i].value[1] == '$') {
+			test->cmd.params[i].value += 1;
+		} else if (test->cmd.params[i].value[0] == '$') {
+			var = test->cmd.params[i].value;
 
 			chttp_test_log(&test->context, CHTTP_LOG_VERY_VERBOSE, "Var: %s", var);
 
@@ -259,12 +280,13 @@ chttp_test_parse_cmd(struct chttp_test *test)
 			assert(cmd_entry->var_func);
 
 			buf = cmd_entry->var_func(&test->context);
-			test->cmd.params[i] = buf;
-		} else {
-			_test_unescape(test->cmd.params[i]);
+
+			test->cmd.params[i].value = buf;
+			test->cmd.params[i].len = strlen(buf);
+			test->cmd.params[i].v_const = 1;
 		}
 
 		chttp_test_log(&test->context, CHTTP_LOG_VERY_VERBOSE, "Arg: %s",
-			test->cmd.params[i]);
+			test->cmd.params[i].value);
 	}
 }
