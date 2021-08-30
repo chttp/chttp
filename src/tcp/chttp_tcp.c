@@ -118,10 +118,14 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	ret = recv(ctx->addr.sock, buf, buf_len, 0);
 
-	if (ret <= 0) {
-		// TODO other errors
-		chttp_finish(ctx);
+	if (ret == 0) {
+		chttp_tcp_close(ctx);
+		ctx->state = CHTTP_STATE_CLOSED;
+		return 0;
 
+	} else if (ret < 0) {
+		// TODO errors
+		chttp_finish(ctx);
 		return 0;
 	}
 

@@ -79,15 +79,24 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
 
 	if (!ctx->close && !ctx->chunked) {
+		if (ctx->version == CHTTP_H_VERSION_1_0) {
+			ctx->close = 1;
+		}
+
 		header = chttp_get_header(ctx, "connection");
 
 		if (header && !strcmp(header, "close")) {
 			ctx->close = 1;
+		} else if (header && !strcmp(header, "keep-alive")) {
+			ctx->close = 0;
 		}
 	}
 
-	// TODO special codes, HEAD, 1xx, 204, 304
-	// TODO move to IDLE in all cases
+	if (ctx->is_head) {
+		// TODO 1xx, 204, 304 ?
+		ctx->state = CHTTP_STATE_IDLE;
+		return;
+	}
 
 	if (!ctx->chunked) {
 		header = chttp_get_header(ctx, "transfer-encoding");
@@ -168,6 +177,10 @@ chttp_body_length(struct chttp_context *ctx, int response)
 			chttp_finish(ctx);
 		}
 
+		if (ctx->length == 0) {
+			ctx->state = CHTTP_STATE_IDLE;
+		}
+
 		return;
 	}
 
@@ -177,12 +190,6 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	}
 
 	if (ctx->close) {
-		ctx->length = -1;
-		return;
-	}
-
-	if (ctx->version == CHTTP_H_VERSION_1_0) {
-		ctx->close = 1;
 		ctx->length = -1;
 		return;
 	}
@@ -200,17 +207,17 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	chttp_context_ok(ctx);
 	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
+	assert(ctx->state < CHTTP_STATE_DONE);
 	assert(buf);
 	assert(buf_len);
 
-	if (ctx->state >= CHTTP_STATE_IDLE || !buf_len) {
+	if (ctx->state >= CHTTP_STATE_IDLE) {
+		chttp_try_close(ctx);
 		return 0;
 	}
 
-	if (ctx->length == 0 && !ctx->chunked) {
-		ctx->state = CHTTP_STATE_IDLE;
-		return 0;
-	}
+	// TODO this might be too strict, see other TODO
+	assert(ctx->length || ctx->chunked);
 
 	ret_dpage = ret = 0;
 
@@ -299,6 +306,8 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 	} else if (ctx->length == 0) {
 		ctx->state = CHTTP_STATE_IDLE;
 	}
+
+	chttp_try_close(ctx);
 
 	return ret + ret_dpage;
 }

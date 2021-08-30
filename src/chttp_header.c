@@ -43,6 +43,10 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 		chttp_ABORT("invalid state, method must before url or headers");
 	}
 
+	if (!strcmp(method, "HEAD")) {
+		ctx->is_head = 1;
+	}
+
 	chttp_dpage_append(ctx, method, strlen(method));
 
 	if (ctx->version == CHTTP_H_VERSION_DEFAULT) {
@@ -387,7 +391,7 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 	chttp_context_ok(ctx);
 	assert(name && *name);
 
-	if (ctx->state != CHTTP_STATE_RESP_BODY && ctx->state != CHTTP_STATE_IDLE) {
+	if (ctx->state < CHTTP_STATE_RESP_BODY || ctx->state > CHTTP_STATE_CLOSED) {
 		chttp_ABORT("invalid state, headers must be read after receiving");
 	}
 

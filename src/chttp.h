@@ -37,6 +37,7 @@ enum chttp_state {
 	CHTTP_STATE_RESP_HEADERS,
 	CHTTP_STATE_RESP_BODY,
 	CHTTP_STATE_IDLE,
+	CHTTP_STATE_CLOSED,
 	CHTTP_STATE_DONE
 };
 
@@ -100,6 +101,7 @@ struct chttp_context {
 	long				length;
 
 	unsigned int			free:1;
+	unsigned int			is_head:1;
 	unsigned int			has_host:1;
 	unsigned int			event_based:1;
 	unsigned int			close:1;
@@ -141,6 +143,7 @@ extern const char *CHTTP_HEADER_REASON;
 
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 void chttp_receive(struct chttp_context *ctx);
+void chttp_try_close(struct chttp_context *ctx);
 void chttp_finish(struct chttp_context *ctx);
 
 void chttp_body_length(struct chttp_context *ctx, int do_error);
