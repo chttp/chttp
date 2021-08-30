@@ -787,6 +787,56 @@ chttp_test_cmd_server_send_response_partial(struct chttp_text_context *ctx,
 }
 
 void
+chttp_test_cmd_server_start_chunked(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_send_printf(server, "Transfer-Encoding: chunked\r\n\r\n");
+}
+
+void
+chttp_test_cmd_server_send_chunked(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	chttp_test_unescape(&cmd->params[0]);
+
+	_server_send_printf(server, "%x\r\n%s\r\n", cmd->params[0].len, cmd->params[0].value);
+}
+
+void
+chttp_test_cmd_server_end_chunked(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_send_printf(server, "0\r\n\r\n");
+}
+
+void
 chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
