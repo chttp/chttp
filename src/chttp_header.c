@@ -126,6 +126,11 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 	chttp_dpage_append(ctx, "\r\n", 2);
 }
 
+/*
+ * greater than 0, error
+ * less than 0, need more
+ * equal to 0, match
+ */
 int
 chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary)

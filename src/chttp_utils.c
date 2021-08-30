@@ -106,6 +106,8 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "network error";
 		case CHTTP_ERR_RESP_PARSE:
 			return "cannot parse response";
+		case CHTTP_ERR_RESP_LENGTH:
+			return "cannot parse response body length";
 	}
 
 	return "unknown";
