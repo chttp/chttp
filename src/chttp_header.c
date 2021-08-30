@@ -338,7 +338,8 @@ chttp_parse(struct chttp_context *ctx, chttp_parse_f *func)
 
 		ctx->resp_last = data->data;
 		first = 1;
-	} else if (ctx->resp_last == ctx->data->data) {
+	} else if (!ctx->status) {
+		assert(ctx->resp_last == data->data);
 		first = 1;
 	}
 

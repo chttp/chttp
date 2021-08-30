@@ -269,7 +269,8 @@ _server_init_socket(struct chttp_test_server *server)
 	}
 
 	assert(server->port >= 0);
-	snprintf(server->port_str, sizeof(server->port_str), "%d", server->port);
+	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->port);
+	assert((size_t)val < sizeof(server->port_str));
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
 		server->port);
@@ -444,7 +445,11 @@ chttp_test_cmd_server_read_request(struct chttp_text_context *ctx, struct chttp_
 
 	assert(server->http_sock >= 0);
 
-	server->context = chttp_context_alloc();
+	server->context = malloc(sizeof(struct chttp_context));
+	assert(server->context);
+	chttp_context_init_buf(server->context, sizeof(struct chttp_context));
+
+	server->context->free = 1;
 	server->context->state = CHTTP_STATE_RESP_HEADERS;
 
 	chttp_tcp_import(server->context, server->http_sock);

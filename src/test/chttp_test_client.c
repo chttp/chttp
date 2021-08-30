@@ -50,6 +50,31 @@ chttp_test_cmd_chttp_init(struct chttp_text_context *ctx, struct chttp_test_cmd 
 }
 
 void
+chttp_test_cmd_chttp_init_dynamic(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long size = 0;
+
+	assert(ctx);
+
+	chttp_test_ERROR(cmd->param_count > 1, "too many parameters");
+	chttp_test_ERROR(ctx->context != NULL, "chttp context exists");
+
+	if (cmd->param_count == 1) {
+		size = chttp_test_parse_long(cmd->params[0].value);
+		chttp_test_ERROR(size <= 0, "chttp size must be greater than 0");
+	}
+
+	_DEBUG_CHTTP_DPAGE_MIN_SIZE = (size_t)size;
+
+	ctx->context = chttp_context_alloc();
+	chttp_context_ok(ctx->context);
+
+	chttp_test_register_finish(ctx, "chttp_client", _test_client_finish);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "context initialized");
+}
+
+void
 chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	char *url;

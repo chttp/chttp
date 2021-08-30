@@ -11,12 +11,15 @@
 #define CHTTP_TEST_MAX_PARAMS		16
 
 struct chttp_test_server;
+struct chttp_test_random;
 
 struct chttp_text_context {
 	struct chttp_context		scontext;
 	struct chttp_context		*context;
 
 	struct chttp_test_server	*server;
+
+	struct chttp_test_random	*random;
 };
 
 struct chttp_test_cmd;
@@ -60,6 +63,7 @@ CHTTP_TEST_CMD(sleep_ms)
 CHTTP_TEST_CMD(connect_or_skip)
 
 CHTTP_TEST_CMD(chttp_init)
+CHTTP_TEST_CMD(chttp_init_dynamic)
 CHTTP_TEST_CMD(chttp_url)
 CHTTP_TEST_CMD(chttp_send)
 CHTTP_TEST_CMD(chttp_send_only)
@@ -89,6 +93,9 @@ CHTTP_TEST_CMD(server_end_chunked)
 CHTTP_TEST_CMD(server_send_raw)
 CHTTP_TEST_VAR(server_host)
 CHTTP_TEST_VAR(server_port)
+
+CHTTP_TEST_CMD(random_range)
+CHTTP_TEST_VAR(random)
 
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR
