@@ -23,7 +23,7 @@ chttp_test_convert(struct chttp_text_context *ctx)
 	return test;
 }
 
-void
+void __chttp_attr_printf_p(3)
 chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
     const char *fmt, ...)
 {
@@ -66,7 +66,7 @@ chttp_test_skip(struct chttp_text_context *ctx)
 	test->skip = 1;
 }
 
-void
+void __chttp_attr_printf
 chttp_test_warn(int condition, const char *fmt, ...)
 {
 	va_list ap;
@@ -84,7 +84,7 @@ chttp_test_warn(int condition, const char *fmt, ...)
 	printf("\n");
 }
 
-void
+void __chttp_attr_printf
 chttp_test_ERROR(int condition, const char *fmt, ...)
 {
 	va_list ap;

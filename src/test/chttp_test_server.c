@@ -191,8 +191,8 @@ _server_finish(struct chttp_text_context *ctx)
 
 		TAILQ_REMOVE(&server->cmd_list, cmdentry, entry);
 
-		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* unfinished cmd found %d",
-			cmdentry->cmd);
+		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* unfinished cmd found %s",
+			cmdentry->cmd.name);
 
 		_server_cmdentry_free(cmdentry);
 	}
@@ -637,7 +637,7 @@ _server_send_buf(struct chttp_test_server *server, const char *buf, size_t len)
 	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
 	assert(ret > 0 && (size_t)ret == len);
 }
-void
+void __chttp_attr_printf
 _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 {
 	va_list ap;
@@ -823,7 +823,8 @@ chttp_test_cmd_server_send_chunked(struct chttp_text_context *ctx, struct chttp_
 
 	chttp_test_unescape(&cmd->params[0]);
 
-	_server_send_printf(server, "%x\r\n%s\r\n", cmd->params[0].len, cmd->params[0].value);
+	_server_send_printf(server, "%x\r\n%s\r\n", (unsigned int)cmd->params[0].len,
+		cmd->params[0].value);
 }
 
 void

@@ -14,8 +14,6 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#define CHTTP_TEST_TIMEOUT_SEC			10
-
 enum chttp_test_verbocity {
 	CHTTP_LOG_FORCE = -2,
 	CHTTP_LOG_ROOT = -1,
@@ -88,6 +86,7 @@ struct chttp_test {
 	int					skip;
 };
 
+#define CHTTP_TEST_TIMEOUT_SEC			10
 #define CHTTP_TEST_JOIN_INTERVAL_MS		25
 
 void chttp_test_register_finish(struct chttp_text_context *ctx, const char *name,
@@ -104,10 +103,10 @@ void chttp_test_parse_cmd(struct chttp_test *test);
 
 struct chttp_test *chttp_test_convert(struct chttp_text_context *ctx);
 void chttp_test_skip(struct chttp_text_context *ctx);
-void chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
-	const char *fmt, ...);
-void chttp_test_warn(int condition, const char *fmt, ...);
-void chttp_test_ERROR(int condition, const char *fmt, ...);
+void __chttp_attr_printf_p(3) chttp_test_log(struct chttp_text_context *ctx,
+	enum chttp_test_verbocity level, const char *fmt, ...);
+void __chttp_attr_printf chttp_test_warn(int condition, const char *fmt, ...);
+void __chttp_attr_printf chttp_test_ERROR(int condition, const char *fmt, ...);
 long chttp_test_parse_long(const char *str);
 void chttp_test_ERROR_param_count(struct chttp_test_cmd *cmd, size_t count);
 void chttp_test_ERROR_string(const char *str);

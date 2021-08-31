@@ -148,7 +148,7 @@ chttp_test_cmd_chttp_status_match(struct chttp_text_context *ctx, struct chttp_t
 	chttp_test_ERROR(status <= 0 || status > 999, "invalid status");
 
 	chttp_test_ERROR(ctx->context->status != status,
-		"invalid status (wanted %ld, found %ld)", status, ctx->context->status);
+		"invalid status (wanted %ld, found %d)", status, ctx->context->status);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "status OK (%ld)", status);
 }

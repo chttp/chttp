@@ -64,7 +64,7 @@ chttp_test_cmd_connect_or_skip(struct chttp_text_context *ctx, struct chttp_test
 	if (chttp->error) {
 		chttp_context_free(chttp);
 		chttp_test_skip(ctx);
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%d", host, port);
+		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
 		return;
 	}
 
@@ -73,13 +73,13 @@ chttp_test_cmd_connect_or_skip(struct chttp_text_context *ctx, struct chttp_test
 	if (chttp->error) {
 		chttp_context_free(chttp);
 		chttp_test_skip(ctx);
-		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%d", host, port);
+		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
 		return;
 	}
 
 	chttp_context_free(chttp);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "valid address found %s:%d", host, port);
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "valid address found %s:%ld", host, port);
 
 	return;
 }

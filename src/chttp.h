@@ -114,6 +114,10 @@ struct chttp_context {
 
 #define CHTTP_CTX_SIZE			(sizeof(struct chttp_context) - CHTTP_DPAGE_SIZE)
 
+#define __chttp_attr_printf		__chttp_attr_printf_p(2)
+#define __chttp_attr_printf_p(fpos)	__attribute__((__format__( \
+						__printf__, (fpos), ((fpos) + 1))))
+
 struct chttp_context *chttp_context_alloc();
 void chttp_context_init(struct chttp_context *ctx);
 struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);

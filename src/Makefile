@@ -1,7 +1,7 @@
 # CHTTP Makefile (src)
 
 CC=gcc
-CFLAGS=-O3 -Wall -Wextra -g -fPIC -I.
+CFLAGS=-O3 -Wall -Wextra -Werror -g -fPIC -I.
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
