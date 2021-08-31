@@ -457,10 +457,10 @@ chttp_test_cmd_server_read_request(struct chttp_text_context *ctx, struct chttp_
 
 	do {
 		chttp_tcp_read(server->context);
-		chttp_test_ERROR(server->context->state == CHTTP_STATE_DONE,
+		chttp_test_ERROR(server->context->state >= CHTTP_STATE_CLOSED,
 			"network error");
 
-		chttp_parse(server->context, &_server_parse_request_url);
+		chttp_parse_headers(server->context, &_server_parse_request_url);
 		chttp_test_ERROR(server->context->error, "%s",
 			chttp_error_msg(server->context));
 	} while (server->context->state == CHTTP_STATE_RESP_HEADERS);

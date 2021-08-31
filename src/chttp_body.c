@@ -65,6 +65,8 @@ _body_chunk_end(struct chttp_context *ctx)
 		return _body_chunk_end(ctx);
 	}
 
+	ctx->error = CHTTP_ERR_RESP_LENGTH;
+
 	return;
 }
 
@@ -135,6 +137,8 @@ _body_chunk_start(struct chttp_context *ctx)
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
 		return _body_chunk_start(ctx);
 	}
+
+	ctx->error = CHTTP_ERR_RESP_LENGTH;
 }
 
 void
@@ -145,6 +149,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
+	assert_zero(ctx->length);
 
 	if (ctx->version == CHTTP_H_VERSION_1_0) {
 		ctx->close = 1;
@@ -214,17 +219,21 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	chttp_context_ok(ctx);
 	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
-	assert(ctx->state < CHTTP_STATE_DONE);
+	assert(ctx->state <= CHTTP_STATE_DONE);
 	assert(buf);
-	assert(buf_len);
+
+	if (!buf_len) {
+		return 0;
+	}
 
 	if (ctx->state >= CHTTP_STATE_IDLE) {
-		chttp_try_close(ctx);
+		assert(ctx->state != CHTTP_STATE_IDLE && !ctx->close);
 		return 0;
 	}
 
 	// TODO this might be too strict, see other TODO
-	assert(ctx->length || ctx->chunked);
+	//assert(ctx->length || ctx->chunked);
+	assert(ctx->length);
 
 	ret_dpage = ret = 0;
 
@@ -265,12 +274,24 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 					_body_chunk_start(ctx);
 				}
 
-				// TODO try to read more?
-				return ret_dpage;
+				if (ctx->error) {
+					return 0;
+				}
+
+				if (ctx->state == CHTTP_STATE_IDLE) {
+					chttp_try_close(ctx);
+					return ret_dpage;
+				}
 			}
+
+			assert(ctx->state == CHTTP_STATE_RESP_BODY);
 
 			buf += ret_dpage;
 			buf_len -= ret_dpage;
+
+			if (ctx->resp_last) {
+				return ret_dpage + chttp_get_body(ctx, buf, buf_len);
+			}
 		} else {
 			// Not enough room
 			memcpy(buf, ctx->resp_last, buf_len);
@@ -290,6 +311,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		}
 	}
 
+	// TODO we cannot read more than 1 chunk now...
 	if (ctx->length >= 0 && buf_len > (size_t)ctx->length) {
 		buf_len = ctx->length;
 	}
@@ -304,17 +326,30 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		ctx->length -= ret;
 	}
 
+	if (ctx->state == CHTTP_STATE_CLOSED) {
+		if (ctx->length > 0 || ctx->chunked) {
+			ctx->error = CHTTP_ERR_RESP_BODY;
+			return 0;
+		} else {
+			ctx->length = 0;
+			return ret + ret_dpage;
+		}
+	}
+
 	if (ctx->chunked && ctx->length == 0) {
 		_body_chunk_end(ctx);
 
 		if (ctx->state == CHTTP_STATE_RESP_BODY) {
 			_body_chunk_start(ctx);
 		}
+
+		if (ctx->error) {
+			return 0;
+		}
 	} else if (ctx->length == 0) {
 		ctx->state = CHTTP_STATE_IDLE;
+		chttp_try_close(ctx);
 	}
-
-	chttp_try_close(ctx);
 
 	return ret + ret_dpage;
 }

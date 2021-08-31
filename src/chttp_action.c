@@ -92,7 +92,6 @@ chttp_receive(struct chttp_context *ctx)
 		chttp_parse_response(ctx);
 
 		if (ctx->error) {
-			chttp_finish(ctx);
 			return;
 		}
 	} while (ctx->state == CHTTP_STATE_RESP_HEADERS);
@@ -101,6 +100,11 @@ chttp_receive(struct chttp_context *ctx)
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
 
 	chttp_body_length(ctx, 1);
+
+	if (ctx->error) {
+		return;
+	}
+
 	chttp_try_close(ctx);
 }
 
@@ -109,7 +113,7 @@ chttp_try_close(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
-	assert(ctx->state < CHTTP_STATE_DONE);
+	assert(ctx->state < CHTTP_STATE_CLOSED);
 
 	if (ctx->state == CHTTP_STATE_IDLE && ctx->close) {
 		chttp_tcp_close(ctx);

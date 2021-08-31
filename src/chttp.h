@@ -48,7 +48,8 @@ enum chttp_error {
 	CHTTP_ERR_CONNECT,
 	CHTTP_ERR_NETOWRK,
 	CHTTP_ERR_RESP_PARSE,
-	CHTTP_ERR_RESP_LENGTH
+	CHTTP_ERR_RESP_LENGTH,
+	CHTTP_ERR_RESP_BODY
 };
 
 struct chttp_dpage {
@@ -141,7 +142,7 @@ void chttp_set_url(struct chttp_context *ctx, const char *url);
 void chttp_add_header(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_delete_header(struct chttp_context *ctx, const char *name);
 void chttp_parse_response(struct chttp_context *ctx);
-void chttp_parse(struct chttp_context *ctx, chttp_parse_f *func);
+void chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func);
 const char *chttp_get_header(struct chttp_context *ctx, const char *name);
 int chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary);
