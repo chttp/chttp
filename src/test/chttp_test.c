@@ -16,8 +16,8 @@ _finish_test(struct chttp_text_context *ctx)
 	test = chttp_test_convert(ctx);
 
 	chttp_test_ok(test);
-	chttp_test_ERROR(test->context.context != NULL, "CHTTP context detected");
-	chttp_test_ERROR(test->context.server != NULL, "CHTTP server detected");
+	chttp_test_ERROR(test->context.chttp != NULL, "chttp context detected");
+	chttp_test_ERROR(test->context.server != NULL, "chttp server detected");
 
 	if (test->fcht) {
 		fclose(test->fcht);

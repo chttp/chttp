@@ -12,8 +12,8 @@ static inline void
 _test_context_ok(struct chttp_text_context *ctx)
 {
 	assert(ctx);
-	chttp_test_ERROR(!ctx->context, "chttp context does not exist");
-	chttp_context_ok(ctx->context);
+	chttp_test_ERROR(!ctx->chttp, "chttp context does not exist");
+	chttp_context_ok(ctx->chttp);
 	chttp_test_ok(chttp_test_convert(ctx));
 }
 
@@ -21,13 +21,13 @@ static void
 _test_client_finish(struct chttp_text_context *ctx)
 {
 	assert(ctx);
-	chttp_test_ERROR(!ctx->context, "chttp context does not exist");
-	chttp_context_ok(ctx->context);
-	chttp_test_ERROR(ctx->context->error, "chttp context has an error (%s)",
-		chttp_error_msg(ctx->context));
+	chttp_test_ERROR(!ctx->chttp, "chttp context does not exist");
+	chttp_context_ok(ctx->chttp);
+	chttp_test_ERROR(ctx->chttp->error, "chttp context has an error (%s)",
+		chttp_error_msg(ctx->chttp));
 
-	chttp_context_free(ctx->context);
-	ctx->context = NULL;
+	chttp_context_free(ctx->chttp);
+	ctx->chttp = NULL;
 
 }
 
@@ -37,12 +37,12 @@ chttp_test_cmd_chttp_init(struct chttp_text_context *ctx, struct chttp_test_cmd 
 	assert(ctx);
 
 	chttp_test_ERROR_param_count(cmd, 0);
-	chttp_test_ERROR(ctx->context != NULL, "chttp context exists");
+	chttp_test_ERROR(ctx->chttp != NULL, "chttp context exists");
 
-	ctx->context = &ctx->scontext;
+	ctx->chttp = &ctx->chttp_static;
 
-	chttp_context_init(ctx->context);
-	chttp_context_ok(ctx->context);
+	chttp_context_init(ctx->chttp);
+	chttp_context_ok(ctx->chttp);
 
 	chttp_test_register_finish(ctx, "chttp_client", _test_client_finish);
 
@@ -57,7 +57,7 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_text_context *ctx, struct chttp_t
 	assert(ctx);
 
 	chttp_test_ERROR(cmd->param_count > 1, "too many parameters");
-	chttp_test_ERROR(ctx->context != NULL, "chttp context exists");
+	chttp_test_ERROR(ctx->chttp != NULL, "chttp context exists");
 
 	if (cmd->param_count == 1) {
 		size = chttp_test_parse_long(cmd->params[0].value);
@@ -66,8 +66,8 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_text_context *ctx, struct chttp_t
 
 	_DEBUG_CHTTP_DPAGE_MIN_SIZE = (size_t)size;
 
-	ctx->context = chttp_context_alloc();
-	chttp_context_ok(ctx->context);
+	ctx->chttp = chttp_context_alloc();
+	chttp_context_ok(ctx->chttp);
 
 	chttp_test_register_finish(ctx, "chttp_client", _test_client_finish);
 
@@ -85,7 +85,7 @@ chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *
 	url = cmd->params[0].value;
 	chttp_test_ERROR_string(url);
 
-	chttp_set_url(ctx->context, url);
+	chttp_set_url(ctx->chttp, url);
 }
 
 void
@@ -100,7 +100,7 @@ chttp_test_cmd_chttp_send_only(struct chttp_text_context *ctx, struct chttp_test
 	port = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
-	chttp_send(ctx->context, cmd->params[0].value, port, 0);
+	chttp_send(ctx->chttp, cmd->params[0].value, port, 0);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent");
 }
@@ -114,13 +114,13 @@ chttp_test_cmd_chttp_receive(struct chttp_text_context *ctx, struct chttp_test_c
 	chttp_test_ERROR_param_count(cmd, 0);
 	test = chttp_test_convert(ctx);
 
-	chttp_receive(ctx->context);
+	chttp_receive(ctx->chttp);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request received");
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		printf("--- ");
-		chttp_context_debug(ctx->context);
+		chttp_context_debug(ctx->chttp);
 	}
 }
 
@@ -130,7 +130,7 @@ chttp_test_cmd_chttp_send(struct chttp_text_context *ctx, struct chttp_test_cmd 
 	_test_context_ok(ctx);
 
 	chttp_test_cmd_chttp_send_only(ctx, cmd);
-	chttp_test_ERROR(ctx->context->error, "chttp send error");
+	chttp_test_ERROR(ctx->chttp->error, "chttp send error");
 
 	cmd->param_count = 0;
 	chttp_test_cmd_chttp_receive(ctx, cmd);
@@ -147,8 +147,8 @@ chttp_test_cmd_chttp_status_match(struct chttp_text_context *ctx, struct chttp_t
 	status = chttp_test_parse_long(cmd->params[0].value);
 	chttp_test_ERROR(status <= 0 || status > 999, "invalid status");
 
-	chttp_test_ERROR(ctx->context->status != status,
-		"invalid status (wanted %ld, found %d)", status, ctx->context->status);
+	chttp_test_ERROR(ctx->chttp->status != status,
+		"invalid status (wanted %ld, found %d)", status, ctx->chttp->status);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "status OK (%ld)", status);
 }
@@ -160,11 +160,11 @@ _test_header_match(struct chttp_text_context *ctx, const char *header, const cha
 	const char *header_value;
 
 	_test_context_ok(ctx);
-	chttp_context_ok(ctx->context);
+	chttp_context_ok(ctx->chttp);
 	assert(header);
 	assert(expected);
 
-	header_value = chttp_get_header(ctx->context, header);
+	header_value = chttp_get_header(ctx->chttp, header);
 	chttp_test_ERROR(!header_value, "header %s not found", header);
 
 	if (!*expected) {
@@ -233,8 +233,8 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, 
 	size_t body_len, old_size, calls;
 
 	_test_context_ok(ctx);
-	chttp_context_ok(ctx->context);
-	chttp_test_ERROR(ctx->context->state != CHTTP_STATE_RESP_BODY, "chttp no body found");
+	chttp_context_ok(ctx->chttp);
+	chttp_test_ERROR(ctx->chttp->state != CHTTP_STATE_RESP_BODY, "chttp no body found");
 	assert(expected);
 
 	body = NULL;
@@ -253,17 +253,17 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, 
 		body = realloc(body, size + 1);
 		assert(body);
 
-		body_len += chttp_get_body(ctx->context, body + body_len,
+		body_len += chttp_get_body(ctx->chttp, body + body_len,
 			size - body_len);
 
 		calls++;
-	} while (ctx->context->state == CHTTP_STATE_RESP_BODY);
+	} while (ctx->chttp->state == CHTTP_STATE_RESP_BODY);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
 
-	chttp_test_ERROR(ctx->context->error, "chttp error %s",
-		chttp_error_msg(ctx->context));
+	chttp_test_ERROR(ctx->chttp->error, "chttp error %s",
+		chttp_error_msg(ctx->chttp));
 
 	body[body_len] = '\0';
 

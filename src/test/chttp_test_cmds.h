@@ -14,9 +14,8 @@ struct chttp_test_server;
 struct chttp_test_random;
 
 struct chttp_text_context {
-	struct chttp_context		scontext;
-	// TODO rename to chttp
-	struct chttp_context		*context;
+	struct chttp_context		chttp_static;
+	struct chttp_context		*chttp;
 
 	struct chttp_test_server	*server;
 
