@@ -399,6 +399,7 @@ _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->data_last);
+	assert_zero(ctx->seen_first);
 
 	data = ctx->data_last;
 	len = end - start;

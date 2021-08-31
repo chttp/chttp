@@ -107,6 +107,7 @@ struct chttp_context {
 	unsigned int			event_based:1;
 	unsigned int			close:1;
 	unsigned int			chunked:1;
+	unsigned int			seen_first:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };

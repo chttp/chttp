@@ -246,6 +246,7 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->data_last);
 	assert_zero(ctx->status);
+	assert_zero(ctx->seen_first);
 
 	data = ctx->data_last;
 	len = end - start;
@@ -321,7 +322,7 @@ chttp_parse(struct chttp_context *ctx, chttp_parse_f *func)
 {
 	struct chttp_dpage *data;
 	size_t start, end;
-	int first = 0, binary, error;
+	int binary, error;
 
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_RESP_HEADERS);
@@ -334,13 +335,9 @@ chttp_parse(struct chttp_context *ctx, chttp_parse_f *func)
 	if (!ctx->resp_last) {
 		assert(data == ctx->data);
 		assert(data->offset);
-		assert_zero(ctx->status);
+		assert_zero(ctx->seen_first);
 
 		ctx->resp_last = data->data;
-		first = 1;
-	} else if (!ctx->status) {
-		assert(ctx->resp_last == data->data);
-		first = 1;
 	}
 
 	start = chttp_dpage_resp_start(ctx);
@@ -349,7 +346,7 @@ chttp_parse(struct chttp_context *ctx, chttp_parse_f *func)
 		error = chttp_find_endline(data, start, NULL, &end, 1, &binary);
 
 		// Incomplete line
-		if (error == -1) {
+		if (error < 0) {
 			break;
 		}
 
@@ -360,14 +357,14 @@ chttp_parse(struct chttp_context *ctx, chttp_parse_f *func)
 
 		data->data[end - 1] = '\0';
 
-		if (first) {
+		if (!ctx->seen_first) {
 			func(ctx, start, end - 1);
 
 			if (ctx->error) {
 				return;
 			}
 
-			first = 0;
+			ctx->seen_first = 1;
 		} else if (start + 1 == end) {
 			ctx->state = CHTTP_STATE_RESP_BODY;
 
