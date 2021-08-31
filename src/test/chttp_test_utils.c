@@ -17,7 +17,7 @@ chttp_test_convert(struct chttp_text_context *ctx)
 
 	assert(ctx);
 
-	test = (struct chttp_test*)((void*)ctx - offsetof(struct chttp_test, context));
+	test = (struct chttp_test*)((uint8_t*)ctx - offsetof(struct chttp_test, context));
 	chttp_test_ok(test);
 
 	return test;

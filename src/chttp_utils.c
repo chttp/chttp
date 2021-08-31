@@ -15,7 +15,7 @@ chttp_context_debug(struct chttp_context *ctx)
 
 	printf("chttp_ctx state=%d error=%d version=%d data_last=%p resp_last=%p\n"
 	    "\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u\n",
-	    ctx->state, ctx->error, ctx->version, ctx->data_last, ctx->resp_last,
+	    ctx->state, ctx->error, ctx->version, (void*)ctx->data_last, ctx->resp_last,
 	    ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked);
 
 	chttp_dpage_debug(ctx->data);
@@ -28,7 +28,7 @@ chttp_dpage_debug(struct chttp_dpage *data)
 		chttp_dpage_ok(data);
 
 		printf("\tchttp_dpage free=%u length=%zu offset=%zu ptr=%p (%p)\n",
-		    data->free, data->length, data->offset, data, data->data);
+		    data->free, data->length, data->offset, (void*)data, data->data);
 
 		if (data->offset) {
 			chttp_print_hex(data->data, data->offset);

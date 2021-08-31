@@ -58,7 +58,8 @@ _body_chunk_end(struct chttp_context *ctx)
 	chttp_tcp_read(ctx);
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
-		return _body_chunk_end(ctx);
+		_body_chunk_end(ctx);
+		return;
 	}
 
 	chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
@@ -129,7 +130,8 @@ _body_chunk_start(struct chttp_context *ctx)
 	chttp_tcp_read(ctx);
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
-		return _body_chunk_start(ctx);
+		_body_chunk_start(ctx);
+		return;
 	}
 
 	chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
@@ -277,7 +279,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 			assert(ctx->state == CHTTP_STATE_RESP_BODY);
 
-			buf += ret_dpage;
+			buf = (uint8_t*)buf + ret_dpage;
 			buf_len -= ret_dpage;
 
 			if (ctx->resp_last) {
@@ -312,7 +314,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		assert(ret <= buf_len);
 	}
 
-	buf += ret;
+	buf = (uint8_t*)buf + ret;
 	buf_len -= ret;
 
 	if (ctx->length > 0) {

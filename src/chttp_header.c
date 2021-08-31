@@ -315,7 +315,7 @@ chttp_parse_response(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	return chttp_parse_headers(ctx, &_parse_resp_status);
+	chttp_parse_headers(ctx, &_parse_resp_status);
 }
 void
 chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
