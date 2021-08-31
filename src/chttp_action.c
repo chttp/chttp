@@ -85,7 +85,7 @@ chttp_receive(struct chttp_context *ctx)
 		chttp_tcp_read(ctx);
 
 		if (ctx->state >= CHTTP_STATE_CLOSED) {
-			ctx->error = CHTTP_ERR_NETOWRK;
+			chttp_error(ctx, CHTTP_ERR_NETOWRK);
 			return;
 		}
 
@@ -119,6 +119,20 @@ chttp_try_close(struct chttp_context *ctx)
 		chttp_tcp_close(ctx);
 		ctx->state = CHTTP_STATE_CLOSED;
 	}
+}
+
+void
+chttp_error(struct chttp_context *ctx, enum chttp_error error)
+{
+	chttp_context_ok(ctx);
+	assert(error > CHTTP_ERR_NONE);
+
+	ctx->error = error;
+
+	chttp_finish(ctx);
+	assert(ctx->state == CHTTP_STATE_DONE);
+
+	ctx->state = CHTTP_STATE_DONE_ERROR;
 }
 
 void

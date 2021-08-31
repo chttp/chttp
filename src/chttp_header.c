@@ -255,12 +255,12 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 	assert(strlen((char*)&data->data[start]) == len);
 
 	if (len < 14) {
-		ctx->error = CHTTP_ERR_RESP_PARSE;
+		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 		return;
 	}
 
 	if (strncmp((char*)&data->data[start], "HTTP/1.", 7)) {
-		ctx->error = CHTTP_ERR_RESP_PARSE;
+		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 		return;
 	}
 
@@ -271,7 +271,7 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 	} else if (data->data[start] == '1') {
 		ctx->version = CHTTP_H_VERSION_1_1;
 	} else {
-		ctx->error = CHTTP_ERR_RESP_PARSE;
+		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 		return;
 	}
 
@@ -281,7 +281,7 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 	    data->data[start + 1] < '0' || data->data[start + 1] > '9' ||
 	    data->data[start + 2] < '0' || data->data[start + 2] > '9' ||
 	    data->data[start + 3] < '0' || data->data[start + 3] > '9') {
-		ctx->error = CHTTP_ERR_RESP_PARSE;
+		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 		return;
 	}
 
@@ -292,7 +292,7 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 	start += 4;
 
 	if (ctx->status == 0 || data->data[start] != ' ') {
-		ctx->error = CHTTP_ERR_RESP_PARSE;
+		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 		return;
 	}
 
@@ -301,7 +301,7 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 
 	while (start < end) {
 		if (data->data[start] < ' ' || data->data[start] > '~') {
-			ctx->error = CHTTP_ERR_RESP_PARSE;
+			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 			return;
 		}
 		start++;
@@ -351,8 +351,7 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 		}
 
 		if (error || binary) {
-			ctx->error = CHTTP_ERR_RESP_PARSE;
-			chttp_finish(ctx);
+			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 			return;
 		}
 
@@ -362,7 +361,6 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 			func(ctx, start, end - 1);
 
 			if (ctx->error) {
-				chttp_finish(ctx);
 				return;
 			}
 

@@ -124,8 +124,7 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 		return 0;
 
 	} else if (ret < 0) {
-		// TODO errors
-		chttp_finish(ctx);
+		chttp_error(ctx, CHTTP_ERR_NETOWRK);
 		return 0;
 	}
 

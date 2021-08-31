@@ -27,8 +27,8 @@ chttp_dpage_debug(struct chttp_dpage *data)
 	while (data) {
 		chttp_dpage_ok(data);
 
-		printf("\tchttp_dpage free=%u length=%zu offset=%zu ptr=%p\n",
-		    data->free, data->length, data->offset, data);
+		printf("\tchttp_dpage free=%u length=%zu offset=%zu ptr=%p (%p)\n",
+		    data->free, data->length, data->offset, data, data->data);
 
 		if (data->offset) {
 			chttp_print_hex(data->data, data->offset);
@@ -108,6 +108,8 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "cannot parse response";
 		case CHTTP_ERR_RESP_LENGTH:
 			return "cannot parse response body length";
+		case CHTTP_ERR_RESP_CHUNK:
+			return "cannot parse response body chunk";
 		case CHTTP_ERR_RESP_BODY:
 			return "cannot parse response body";
 	}

@@ -38,7 +38,8 @@ enum chttp_state {
 	CHTTP_STATE_RESP_BODY,
 	CHTTP_STATE_IDLE,
 	CHTTP_STATE_CLOSED,
-	CHTTP_STATE_DONE
+	CHTTP_STATE_DONE,
+	CHTTP_STATE_DONE_ERROR
 };
 
 enum chttp_error {
@@ -49,6 +50,7 @@ enum chttp_error {
 	CHTTP_ERR_NETOWRK,
 	CHTTP_ERR_RESP_PARSE,
 	CHTTP_ERR_RESP_LENGTH,
+	CHTTP_ERR_RESP_CHUNK,
 	CHTTP_ERR_RESP_BODY
 };
 
@@ -151,6 +153,7 @@ extern const char *CHTTP_HEADER_REASON;
 void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
 void chttp_receive(struct chttp_context *ctx);
 void chttp_try_close(struct chttp_context *ctx);
+void chttp_error(struct chttp_context *ctx, enum chttp_error error);
 void chttp_finish(struct chttp_context *ctx);
 
 void chttp_body_length(struct chttp_context *ctx, int do_error);

@@ -31,4 +31,7 @@ chttp_init_dynamic $random
 chttp_url /
 chttp_send $server_host $server_port
 chttp_status_match 200
-chttp_body_match 0123456789012345678901234567890123456789
+
+random_range 0 20
+
+chttp_body_match 0123456789012345678901234567890123456789 $random

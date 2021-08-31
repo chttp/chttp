@@ -227,10 +227,10 @@ chttp_test_cmd_chttp_header_exists(struct chttp_text_context *ctx, struct chttp_
 }
 
 static void
-_test_body_match(struct chttp_text_context *ctx, const char *expected, int sub)
+_test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, size_t size)
 {
 	char *body;
-	size_t body_len, size, old_size;
+	size_t body_len, old_size, calls;
 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->context);
@@ -239,7 +239,11 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub)
 
 	body = NULL;
 	body_len = 0;
-	size = 1024;
+	calls = 0;
+
+	if (size == 0) {
+		size = 1024;
+	}
 
 	do {
 		old_size = size;
@@ -251,9 +255,15 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub)
 
 		body_len += chttp_get_body(ctx->context, body + body_len,
 			size - body_len);
+
+		calls++;
 	} while (ctx->context->state == CHTTP_STATE_RESP_BODY);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes", body_len);
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
+		body_len, calls);
+
+	chttp_test_ERROR(ctx->context->error, "chttp error %s",
+		chttp_error_msg(ctx->context));
 
 	body[body_len] = '\0';
 
@@ -271,10 +281,17 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub)
 void
 chttp_test_cmd_chttp_body_match(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
-	_test_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	long size = 0;
 
-	_test_body_match(ctx, cmd->params[0].value, 0);
+	_test_context_ok(ctx);
+	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
+
+	if (cmd->param_count == 2) {
+		size = chttp_test_parse_long(cmd->params[1].value);
+		chttp_test_ERROR(size < 0, "invalid size");
+	}
+
+	_test_body_match(ctx, cmd->params[0].value, 0, size);
 }
 
 void
@@ -283,5 +300,5 @@ chttp_test_cmd_chttp_body_submatch(struct chttp_text_context *ctx, struct chttp_
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	_test_body_match(ctx, cmd->params[0].value, 1);
+	_test_body_match(ctx, cmd->params[0].value, 1, 0);
 }

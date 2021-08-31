@@ -409,21 +409,21 @@ _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 
 	for (i = start, count = 0; i < end; i++) {
 		if (data->data[i] < ' ') {
-			ctx->error = CHTTP_ERR_RESP_PARSE;
+			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 			return;
 		} else if (data->data[i] == ' ') {
 			data->data[i] = '\0';
 			count++;
 
 			if (data->data[i + 1] <= ' ') {
-				ctx->error = CHTTP_ERR_RESP_PARSE;
+				chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 				return;
 			}
 		}
 	}
 
 	if (count != 2) {
-		ctx->error = CHTTP_ERR_RESP_PARSE;
+		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 		return;
 	}
 }
