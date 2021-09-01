@@ -168,6 +168,7 @@ _server_finish(struct chttp_text_context *ctx)
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry, *temp;
 	int ret;
+	size_t finished = 0;
 
 	server = _server_context_ok(ctx);
 
@@ -201,10 +202,11 @@ _server_finish(struct chttp_text_context *ctx)
 
 		_server_cmdentry_free(cmdentry);
 
-		chttp_test_ERROR(1, "all commands must be finished");
+		finished++;
 	}
 
 	assert(TAILQ_EMPTY(&server->cmd_list));
+	chttp_test_ERROR(finished, "all commands must be finished");
 
 	if (server->chttp) {
 		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
