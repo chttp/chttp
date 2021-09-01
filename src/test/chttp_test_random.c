@@ -77,10 +77,9 @@ chttp_test_cmd_random_range(struct chttp_text_context *ctx, struct chttp_test_cm
 
 	val = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(val < 0, "invalid random range");
+	chttp_test_ERROR(ctx->random->low > val, "low is greater than high");
 
 	ctx->random->high = val;
-
-	chttp_test_ERROR(ctx->random->low > ctx->random->high, "low is greater than high");
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "random range %ld to %ld", ctx->random->low,
 		ctx->random->high);
@@ -94,9 +93,7 @@ chttp_test_var_random(struct chttp_text_context *ctx)
 
 	_random_init(ctx);
 
-	rval = random();
-	rval %= (ctx->random->high - ctx->random->low) + 1;
-	rval += ctx->random->low;
+	rval = chttp_test_random(ctx->random->low, ctx->random->high);
 
 	ret = snprintf(ctx->random->random_str, sizeof(ctx->random->random_str), "%ld", rval);
 	assert((size_t)ret < sizeof(ctx->random->random_str));

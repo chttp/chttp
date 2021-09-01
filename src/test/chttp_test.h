@@ -114,6 +114,7 @@ void chttp_test_sleep_ms(long ms);
 int chttp_test_join_thread(pthread_t thread, volatile int *stopped,
 	unsigned long timeout_ms);
 size_t chttp_test_line_pos(struct chttp_test *test);
+long chttp_test_random(long low, long high);
 
 #define chttp_test_ok(test)						\
 	do {								\

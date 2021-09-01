@@ -194,3 +194,17 @@ chttp_test_line_pos(struct chttp_test *test)
 
 	return (test->lines - test->lines_multi);
 }
+
+long
+chttp_test_random(long low, long high)
+{
+	long rval;
+
+	assert(high >= low);
+
+	rval = random();
+	rval %= (high - low) + 1;
+	rval += low;
+
+	return rval;
+}
