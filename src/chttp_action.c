@@ -128,6 +128,7 @@ chttp_error(struct chttp_context *ctx, enum chttp_error error)
 	assert(error > CHTTP_ERR_NONE);
 
 	ctx->error = error;
+	ctx->status = 0;
 
 	chttp_finish(ctx);
 	assert(ctx->state == CHTTP_STATE_DONE);
