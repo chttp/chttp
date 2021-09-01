@@ -323,7 +323,7 @@ void
 chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 {
 	struct chttp_dpage *data;
-	size_t start, end;
+	size_t start, end, i;
 	int binary, error;
 
 	chttp_context_ok(ctx);
@@ -359,6 +359,14 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 
 		data->data[end - 1] = '\0';
 
+		for (i = end - 2; i > start; i--) {
+			if (data->data[i] == ' ') {
+				data->data[i] = '\0';
+			} else {
+				break;
+			}
+		}
+
 		if (!ctx->seen_first) {
 			func(ctx, start, end - 1);
 
@@ -387,7 +395,7 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 }
 
 const char *
-chttp_get_header(struct chttp_context *ctx, const char *name)
+chttp_get_header_pos(struct chttp_context *ctx, const char *name, size_t pos)
 {
 	struct chttp_dpage *data;
 	size_t name_len, start, mid, end;
@@ -417,10 +425,20 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 
 			if (first && name == _CHTTP_HEADER_FIRST) {
 				assert_zero(start);
+
+				if (pos) {
+					return NULL;
+				}
+
 				return ((char*)data->data);
 			} else if (first && name == CHTTP_HEADER_REASON) {
 				assert_zero(start);
 				assert(end >= 14);
+
+				if (pos) {
+					return NULL;
+				}
+
 				return ((char*)data->data + 13);
 			}
 
@@ -441,6 +459,11 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 				continue;
 			}
 
+			if (pos > 0) {
+				pos--;
+				continue;
+			}
+
 			// Found a match
 			mid++;
 
@@ -453,4 +476,12 @@ chttp_get_header(struct chttp_context *ctx, const char *name)
 	}
 
 	return NULL;
+}
+
+const char *
+chttp_get_header(struct chttp_context *ctx, const char *name)
+{
+	chttp_context_ok(ctx);
+
+	return chttp_get_header_pos(ctx, name, 0);
 }

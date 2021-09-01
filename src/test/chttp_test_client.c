@@ -75,16 +75,39 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_text_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_method(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
-	char *url;
-
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	url = cmd->params[0].value;
+	chttp_set_method(ctx->chttp, cmd->params[0].value);
+}
 
-	chttp_set_url(ctx->chttp, url);
+void
+chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	chttp_set_url(ctx->chttp, cmd->params[0].value);
+}
+
+void
+chttp_test_cmd_chttp_add_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 2);
+
+	chttp_add_header(ctx->chttp, cmd->params[0].value, cmd->params[1].value);
+}
+
+void
+chttp_test_cmd_chttp_delete_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	chttp_delete_header(ctx->chttp, cmd->params[0].value);
 }
 
 void
@@ -155,7 +178,7 @@ static void
 _test_header_match(struct chttp_text_context *ctx, const char *header, const char *expected,
     int sub)
 {
-	const char *header_value;
+	const char *header_value, *dup;
 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);
@@ -163,6 +186,9 @@ _test_header_match(struct chttp_text_context *ctx, const char *header, const cha
 
 	header_value = chttp_get_header(ctx->chttp, header);
 	chttp_test_ERROR(!header_value, "header %s not found", header);
+
+	dup = chttp_get_header_pos(ctx->chttp, header, 1);
+	chttp_test_warn(dup != NULL, "duplicate %s header found", header);
 
 	if (!expected) {
 		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "header exists %s", header);

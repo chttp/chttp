@@ -486,7 +486,7 @@ static void
 _server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	const char *header, *header_value, *expected;
+	const char *header, *header_value, *expected, *dup;
 	size_t len;
 	int sub = 0;
 
@@ -504,6 +504,7 @@ _server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 		header = "_METHOD";
 		expected = cmd->params[0].value;
 		header_value = chttp_get_header(server->context, _CHTTP_HEADER_FIRST);
+		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_url_match")) {
 		assert(cmd->param_count == 1);
 
@@ -514,18 +515,21 @@ _server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 		assert(header_value);
 		len = strlen(header_value);
 		header_value += len + 1;
+		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_header_match")) {
 		assert(cmd->param_count == 2);
 
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
 		header_value = chttp_get_header(server->context, header);
+		dup = chttp_get_header_pos(server->context, header, 1);
 	} else if (!strcmp(cmd->name, "server_header_submatch")) {
 		assert(cmd->param_count == 2);
 
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
 		header_value = chttp_get_header(server->context, header);
+		dup = chttp_get_header_pos(server->context, header, 1);
 		sub = 1;
 	} else if (!strcmp(cmd->name, "server_header_exists")) {
 		assert(cmd->param_count == 1);
@@ -533,11 +537,13 @@ _server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 		header = cmd->params[0].value;
 		expected = NULL;
 		header_value = chttp_get_header(server->context, header);
+		dup = chttp_get_header_pos(server->context, header, 1);
 	}else {
 		assert_zero("INVALID SERVER MATCH");
 	}
 
 	chttp_test_ERROR(!header_value, "header %s not found", header);
+	chttp_test_ERROR(dup != NULL, "duplicate %s header found", header);
 
 	if (!expected) {
 		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* header exists %s", header);
@@ -790,6 +796,38 @@ chttp_test_cmd_server_send_response_partial(struct chttp_text_context *ctx,
 	}
 
 	_server_send_response(server, cmd, 1, 1);
+}
+
+void
+chttp_test_cmd_server_send_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_send_printf(server, "%s\r\n", cmd->params[0].value);
+}
+
+void
+chttp_test_cmd_server_send_header_done(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	_server_send_printf(server, "\r\n");
 }
 
 void
