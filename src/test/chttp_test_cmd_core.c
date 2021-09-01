@@ -53,7 +53,6 @@ chttp_test_cmd_connect_or_skip(struct chttp_text_context *ctx, struct chttp_test
 
 	host = cmd->params[0].value;
 	port = chttp_test_parse_long(cmd->params[1].value);
-	chttp_test_ERROR_string(host);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
 	chttp_context_init_buf(chttp_buf, sizeof(chttp_buf));

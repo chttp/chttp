@@ -80,6 +80,9 @@ chttp_context_free(struct chttp_context *ctx)
 	}
 
 	assert(ctx->state == CHTTP_STATE_DONE);
+	assert(ctx->addr.sock == -1);
+
+	ctx->addr.magic = 0;
 
 	chttp_dpage_free(ctx->data);
 

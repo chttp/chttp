@@ -126,10 +126,16 @@ chttp_test_parse_long(const char *str)
 void
 chttp_test_ERROR_param_count(struct chttp_test_cmd *cmd, size_t count)
 {
+	size_t i;
+
 	assert(cmd);
 	chttp_test_ERROR_string(cmd->name);
 	chttp_test_ERROR(cmd->param_count != count,
 		"invalid parameter count, found %zu, expected %zu", cmd->param_count, count);
+
+	for (i = 0; i < cmd->param_count; i++) {
+		chttp_test_ERROR(cmd->params[i].len == 0, "empty parameter found");
+	}
 }
 
 void

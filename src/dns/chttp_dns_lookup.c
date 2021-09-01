@@ -19,7 +19,8 @@ _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 	assert(ai_src);
 	assert(ai_src->ai_addr);
 
-	addr_dest->magic = 0;
+	memset(addr_dest, 0, sizeof(*addr_dest));
+
 	addr_dest->sock = -1;
 
 	switch (ai_src->ai_addr->sa_family) {
@@ -80,6 +81,8 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port)
 	if (!ctx->addr.magic) {
 		ctx->error = CHTTP_ERR_DNS;
 	}
+
+	assert(ctx->addr.magic == CHTTP_ADDR_MAGIC);
 
 	freeaddrinfo(ai_res_list);
 }

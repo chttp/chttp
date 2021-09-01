@@ -138,6 +138,24 @@ _body_chunk_start(struct chttp_context *ctx)
 }
 
 void
+_body_chunk_parse(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+
+	_body_chunk_end(ctx);
+
+	if (ctx->state == CHTTP_STATE_RESP_BODY) {
+		_body_chunk_start(ctx);
+
+		if (ctx->state == CHTTP_STATE_IDLE) {
+			chttp_try_close(ctx);
+		}
+	} else {
+		assert(ctx->error);
+	}
+}
+
+void
 chttp_body_length(struct chttp_context *ctx, int response)
 {
 	const char *header = NULL;
@@ -146,6 +164,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
 	assert_zero(ctx->length);
+	assert_zero(ctx->chunked);
 
 	if (ctx->version == CHTTP_H_VERSION_1_0) {
 		ctx->close = 1;
@@ -156,6 +175,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	if (header && !strcmp(header, "close")) {
 		ctx->close = 1;
 	} else if (header && !strcmp(header, "keep-alive")) {
+		// TODO request override (ctx->req_close) ?
 		ctx->close = 0;
 	}
 
@@ -226,6 +246,8 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		return 0;
 	}
 
+	assert(ctx->length);
+
 	ret_dpage = 0;
 	ret = 0;
 
@@ -261,18 +283,11 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			}
 
 			if (ctx->chunked && ctx->length == 0) {
-				_body_chunk_end(ctx);
-
-				if (ctx->state == CHTTP_STATE_RESP_BODY) {
-					_body_chunk_start(ctx);
-				}
+				_body_chunk_parse(ctx);
 
 				if (ctx->error) {
 					return 0;
-				}
-
-				if (ctx->state == CHTTP_STATE_IDLE) {
-					chttp_try_close(ctx);
+				} else if (ctx->state >= CHTTP_STATE_IDLE) {
 					return ret_dpage;
 				}
 			}
@@ -290,14 +305,17 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			memcpy(buf, ctx->resp_last, buf_len);
 
 			ctx->resp_last += buf_len;
-			assert(chttp_dpage_resp_start(ctx) < ctx->data_last->offset);
+
+			chttp_dpage_resp_start(ctx);
 
 			if (ctx->length > 0) {
 				assert(buf_len <= (size_t)ctx->length);
 				ctx->length -= buf_len;
 			}
 
-			return (buf_len);
+			assert(ctx->length);
+
+			return buf_len;
 		}
 	}
 
@@ -333,11 +351,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	if (ctx->chunked && ctx->length == 0) {
-		_body_chunk_end(ctx);
-
-		if (ctx->state == CHTTP_STATE_RESP_BODY) {
-			_body_chunk_start(ctx);
-		}
+		_body_chunk_parse(ctx);
 
 		if (ctx->error) {
 			return 0;

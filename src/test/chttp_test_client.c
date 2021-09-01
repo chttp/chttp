@@ -83,7 +83,6 @@ chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	url = cmd->params[0].value;
-	chttp_test_ERROR_string(url);
 
 	chttp_set_url(ctx->chttp, url);
 }
@@ -95,7 +94,6 @@ chttp_test_cmd_chttp_send_only(struct chttp_text_context *ctx, struct chttp_test
 
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	chttp_test_ERROR_string(cmd->params[0].value);
 
 	port = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
@@ -162,12 +160,11 @@ _test_header_match(struct chttp_text_context *ctx, const char *header, const cha
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);
 	assert(header);
-	assert(expected);
 
 	header_value = chttp_get_header(ctx->chttp, header);
 	chttp_test_ERROR(!header_value, "header %s not found", header);
 
-	if (!*expected) {
+	if (!expected) {
 		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "header exists %s", header);
 		return;
 	}
@@ -189,7 +186,6 @@ chttp_test_cmd_chttp_reason_match(struct chttp_text_context *ctx, struct chttp_t
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
-	chttp_test_ERROR_string(cmd->params[0].value);
 
 	_test_header_match(ctx, CHTTP_HEADER_REASON, cmd->params[0].value, 0);
 }
@@ -199,8 +195,6 @@ chttp_test_cmd_chttp_header_match(struct chttp_text_context *ctx, struct chttp_t
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	chttp_test_ERROR_string(cmd->params[0].value);
-	chttp_test_ERROR_string(cmd->params[1].value);
 
 	_test_header_match(ctx, cmd->params[0].value, cmd->params[1].value, 0);
 }
@@ -210,8 +204,6 @@ chttp_test_cmd_chttp_header_submatch(struct chttp_text_context *ctx, struct chtt
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
-	chttp_test_ERROR_string(cmd->params[0].value);
-	chttp_test_ERROR_string(cmd->params[1].value);
 
 	_test_header_match(ctx, cmd->params[0].value, cmd->params[1].value, 1);
 }
@@ -221,9 +213,8 @@ chttp_test_cmd_chttp_header_exists(struct chttp_text_context *ctx, struct chttp_
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
-	chttp_test_ERROR_string(cmd->params[0].value);
 
-	_test_header_match(ctx, cmd->params[0].value, "", 1);
+	_test_header_match(ctx, cmd->params[0].value, NULL, 1);
 }
 
 static void

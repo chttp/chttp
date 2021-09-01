@@ -115,6 +115,8 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 		ctx->has_host = 1;
 	}
 
+	// TODO close (dont forget delete)
+
 	name_len = strlen(name);
 	value_len = strlen(value);
 
