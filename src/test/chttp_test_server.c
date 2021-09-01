@@ -44,6 +44,9 @@ struct chttp_test_server {
 	char					port_str[16];
 
 	struct chttp_context			*chttp;
+
+	pthread_mutex_t				flush_lock;
+	pthread_cond_t				flush_signal;
 };
 
 #define _server_ok(server)						\
@@ -183,8 +186,10 @@ _server_finish(struct chttp_text_context *ctx)
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* thread joined");
 
-	pthread_mutex_destroy(&server->cmd_lock);
-	pthread_cond_destroy(&server->cmd_signal);
+	assert_zero(pthread_mutex_destroy(&server->cmd_lock));
+	assert_zero(pthread_mutex_destroy(&server->flush_lock));
+	assert_zero(pthread_cond_destroy(&server->cmd_signal));
+	assert_zero(pthread_cond_destroy(&server->flush_signal));
 
 	TAILQ_FOREACH_SAFE(cmdentry, &server->cmd_list, entry, temp) {
 		assert(cmdentry->magic == _SERVER_CMDENTRY);
@@ -195,6 +200,8 @@ _server_finish(struct chttp_text_context *ctx)
 			cmdentry->cmd.name);
 
 		_server_cmdentry_free(cmdentry);
+
+		chttp_test_ERROR(1, "all commands must be finished");
 	}
 
 	assert(TAILQ_EMPTY(&server->cmd_list));
@@ -299,7 +306,9 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 	server->http_sock = -1;
 	TAILQ_INIT(&server->cmd_list);
 	assert_zero(pthread_mutex_init(&server->cmd_lock, NULL));
+	assert_zero(pthread_mutex_init(&server->flush_lock, NULL));
 	assert_zero(pthread_cond_init(&server->cmd_signal, NULL));
+	assert_zero(pthread_cond_init(&server->flush_signal, NULL));
 
 	_server_LOCK(server);
 
@@ -946,6 +955,38 @@ chttp_test_cmd_server_sleep_ms(struct chttp_text_context *ctx, struct chttp_test
 	chttp_test_sleep_ms(ms);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* slept %ldms", ms);
+}
+
+void
+chttp_test_cmd_server_flush_async(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	if (cmd->async) {
+		assert_zero(pthread_mutex_lock(&server->flush_lock));
+
+		assert_zero(pthread_cond_signal(&server->flush_signal));
+		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* flush signal sent");
+
+		assert_zero(pthread_mutex_unlock(&server->flush_lock));
+
+		return;
+	}
+
+	assert_zero(pthread_mutex_lock(&server->flush_lock));
+
+	_server_cmd_async(server, cmd);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* waiting for flush...");
+
+	assert_zero(pthread_cond_wait(&server->flush_signal, &server->flush_lock));
+
+	assert_zero(pthread_mutex_unlock(&server->flush_lock));
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* flushed");
 }
 
 static void

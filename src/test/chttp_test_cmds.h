@@ -100,6 +100,7 @@ CHTTP_TEST_CMD(server_send_chunked)
 CHTTP_TEST_CMD(server_end_chunked)
 CHTTP_TEST_CMD(server_send_raw)
 CHTTP_TEST_CMD(server_sleep_ms)
+CHTTP_TEST_CMD(server_flush_async)
 CHTTP_TEST_VAR(server_host)
 CHTTP_TEST_VAR(server_port)
 
