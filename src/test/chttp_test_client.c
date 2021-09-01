@@ -252,7 +252,6 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);
 	chttp_test_ERROR(ctx->chttp->state != CHTTP_STATE_RESP_BODY, "chttp no body found");
-	assert(expected);
 
 	body = NULL;
 	body_len = 0;
@@ -279,12 +278,17 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
 
+	if (!expected) {
+		free(body);
+		return;
+	}
+
 	chttp_test_ERROR(ctx->chttp->error, "chttp error %s",
 		chttp_error_msg(ctx->chttp));
 
 	body[body_len] = '\0';
 
-	if (sub && *expected) {
+	if (sub) {
 		chttp_test_ERROR(!strstr(body, expected), "value %s not found in body", expected);
 	} else if (!sub) {
 		chttp_test_ERROR(strcmp(body, expected), "bodies dont match");
@@ -318,6 +322,15 @@ chttp_test_cmd_chttp_body_submatch(struct chttp_text_context *ctx, struct chttp_
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	_test_body_match(ctx, cmd->params[0].value, 1, 0);
+}
+
+void
+chttp_test_cmd_chttp_body_read(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	_test_body_match(ctx, NULL, 0, 0);
 }
 
 void

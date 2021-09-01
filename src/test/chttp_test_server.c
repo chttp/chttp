@@ -926,6 +926,28 @@ chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx, struct chttp_test
 	_server_send_buf(server, cmd->params[0].value, cmd->params[0].len);
 }
 
+void
+chttp_test_cmd_server_sleep_ms(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+	long ms;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	ms = chttp_test_parse_long(cmd->params[0].value);
+	chttp_test_ERROR(ms < 0, "invalid sleep time");
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	chttp_test_sleep_ms(ms);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "*SERVER* slept %ldms", ms);
+}
+
 static void
 _server_cmd(struct chttp_test_server *server, struct _server_cmdentry *cmdentry)
 {
