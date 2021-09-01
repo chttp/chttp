@@ -319,3 +319,21 @@ chttp_test_cmd_chttp_body_submatch(struct chttp_text_context *ctx, struct chttp_
 
 	_test_body_match(ctx, cmd->params[0].value, 1, 0);
 }
+
+void
+chttp_test_cmd_chttp_take_error(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	chttp_context_ok(ctx->chttp);
+
+	chttp_test_ERROR(!ctx->chttp->error, "chttp error not found");
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "chttp error %s",
+		chttp_error_msg(ctx->chttp));
+
+	chttp_finish(ctx->chttp);
+
+	ctx->chttp->error = 0;
+}

@@ -78,6 +78,7 @@ CHTTP_TEST_CMD(chttp_header_submatch)
 CHTTP_TEST_CMD(chttp_header_exists)
 CHTTP_TEST_CMD(chttp_body_match)
 CHTTP_TEST_CMD(chttp_body_submatch)
+CHTTP_TEST_CMD(chttp_take_error)
 
 CHTTP_TEST_CMD(server_init)
 CHTTP_TEST_CMD(server_accept)
