@@ -1,5 +1,8 @@
 *.o
 *.so
+*.gcda
+*.gcno
+*.gcov
 src/*.a
 src/chttp_client
 src/chttp_test

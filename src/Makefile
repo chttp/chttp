@@ -5,6 +5,9 @@ CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I.
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
+GCOV=gcov
+GCOVFLAGS=-fprofile-arcs -ftest-coverage --coverage
+GCOVLIBFLAGS=-lgcov
 
 INCLUDES=$(wildcard *.h data/*.h)
 SOURCE=$(wildcard *.c dns/*.c tcp/*.c)
@@ -15,14 +18,21 @@ TEST=$(wildcard test/*.c)
 TEST_INCLUDES=$(wildcard test/*.h)
 TEST_OBJS=$(TEST:.c=.o)
 
-.PHONY:		all clean lib allclean
+.PHONY:		all clean lib cleanall
 
 all:		chttp_client chttp_test lib
 lib:		libchttp.so libchttp.a
 
-allclean:
+cleanall:
 		$(MAKE) clean
-		$(MAKE) all
+		$(MAKE) all CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+
+gcov:		CFLAGS+=$(GCOVFLAGS)
+gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
+gcov:		cleanall
+		$(MAKE) -C .. check
+		$(GCOV) -r *.c dns/*.c tcp/*.c
+		$(MAKE) clean
 
 chttp_client:	libchttp.a $(CLIENT_OBJS)
 		$(CC) -o $@ $(CLIENT_OBJS) libchttp.a $(LIBFLAGS)
@@ -43,5 +53,5 @@ test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-		rm -f *.o dns/*.o tcp/*.o client/*.o test/*.o \
-		*.so *.a chttp_client chttp_test
+		rm -f *.o */*.o *.gcno */*.gcnoi *.gcda */*.gcda *.gcov */*.gcov \
+			*.so *.a chttp_client chttp_test
