@@ -4,8 +4,10 @@
 *.gcno
 *.gcov
 src/*.a
+src/coverage.info
 src/chttp_client
 src/chttp_test
+src/report
 nbproject
 .vscode
 chttp.code-workspace
