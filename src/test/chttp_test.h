@@ -83,6 +83,13 @@ struct chttp_test {
 	int					skip;
 };
 
+struct chttp_test_md5 {
+	uint32_t				i[2];
+	uint32_t				buf[4];
+	unsigned char				in[64];
+	unsigned char				digest[16];
+};
+
 #define CHTTP_TEST_TIMEOUT_SEC			10
 #define CHTTP_TEST_JOIN_INTERVAL_MS		25
 
@@ -112,6 +119,10 @@ int chttp_test_join_thread(pthread_t thread, volatile int *stopped,
 	unsigned long timeout_ms);
 size_t chttp_test_line_pos(struct chttp_test *test);
 long chttp_test_random(long low, long high);
+
+void chttp_test_md5_init(struct chttp_test_md5 *ctx);
+void chttp_test_md5_update(struct chttp_test_md5 *ctx, uint8_t *input, size_t len);
+void chttp_test_md5_final(struct chttp_test_md5 *ctx);
 
 #define chttp_test_ok(test)						\
 	do {								\
