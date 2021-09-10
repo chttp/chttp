@@ -36,8 +36,11 @@ chttp_set_version(struct chttp_context *ctx, enum chttp_version version)
 void
 chttp_set_method(struct chttp_context *ctx, const char *method)
 {
+	size_t method_len;
+
 	chttp_context_ok(ctx);
 	assert(method && *method);
+	assert_zero(ctx->data_start.data);
 
 	if (ctx->state != CHTTP_STATE_NONE) {
 		chttp_ABORT("invalid state, method must before url or headers");
@@ -47,13 +50,24 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 		ctx->is_head = 1;
 	}
 
-	chttp_dpage_append(ctx, method, strlen(method));
+	method_len = strlen(method);
+
+	chttp_dpage_append(ctx, method, method_len);
 
 	if (ctx->version == CHTTP_H_VERSION_DEFAULT) {
 		ctx->version = CHTTP_DEFAULT_H_VERSION;
 	}
 
 	ctx->state = CHTTP_STATE_INIT_METHOD;
+
+	// Mark the start
+	chttp_dpage_ok(ctx->data_last);
+	ctx->data_start.data = ctx->data_last;
+	ctx->data_start.offset = ctx->data_last->offset;
+	assert(ctx->data_start.offset >= method_len);
+	ctx->data_start.offset -= method_len;
+	assert_zero(strncmp((char*)&ctx->data_start.data->data[ctx->data_start.offset], method,
+		method_len));
 }
 
 void

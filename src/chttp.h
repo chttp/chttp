@@ -86,12 +86,19 @@ struct chttp_addr {
 	};
 };
 
+struct chttp_dpage_ptr {
+	struct chttp_dpage		*data;
+	size_t				offset;
+};
+
 struct chttp_context {
 	unsigned int			magic;
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
 
 	struct chttp_dpage		*data;
 	struct chttp_dpage		*data_last;
+
+	struct chttp_dpage_ptr		data_start;
 
 	uint8_t				*resp_last;
 
