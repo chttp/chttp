@@ -58,9 +58,6 @@ struct chttp_test {
 
 	struct chttp_text_context		context;
 
-	int					argc;
-	char					**argv;
-
 	pthread_t				thread;
 	volatile int				stopped;
 

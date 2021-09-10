@@ -10,7 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define _SERVER_IP				"127.0.0.1"
+#define _SERVER_IP_DEFAULT			"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500
 
 struct _server_cmdentry {
@@ -41,6 +41,7 @@ struct chttp_test_server {
 	int					sock;
 	int					port;
 	int					http_sock;
+	char					ip_str[128];
 	char					port_str[16];
 
 	struct chttp_context			*chttp;
@@ -247,7 +248,8 @@ _server_init_socket(struct chttp_test_server *server)
 	chttp_context_init_buf(chttp_buf, sizeof(chttp_buf));
 	chttp = (struct chttp_context*)chttp_buf;
 
-	chttp_dns_lookup(chttp, _SERVER_IP, 0);
+	chttp_dns_lookup(chttp, server->ip_str, 0);
+	chttp_test_ERROR(chttp->error, "server cannot resolve address %s", server->ip_str);
 	assert(chttp->addr.magic == CHTTP_ADDR_MAGIC);
 
 	server->sock = socket(chttp->addr.sa.sa_family, SOCK_STREAM, 0);
@@ -293,7 +295,7 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 	struct chttp_test_server *server;
 
 	assert(ctx);
-	chttp_test_ERROR_param_count(cmd, 0);
+	chttp_test_ERROR(cmd->param_count > 1, "too many parameters");
 	chttp_test_ERROR(ctx->server != NULL, "server context exists");
 
 	server = malloc(sizeof(*server));
@@ -311,6 +313,13 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 	assert_zero(pthread_mutex_init(&server->flush_lock, NULL));
 	assert_zero(pthread_cond_init(&server->cmd_signal, NULL));
 	assert_zero(pthread_cond_init(&server->flush_signal, NULL));
+
+	if (cmd->param_count == 1) {
+		snprintf(server->ip_str, sizeof(server->ip_str), "%s", cmd->params[0].value);
+	} else {
+		snprintf(server->ip_str, sizeof(server->ip_str), "%s", _SERVER_IP_DEFAULT);
+	}
+	chttp_test_ERROR_string(server->ip_str);
 
 	_server_LOCK(server);
 
@@ -387,8 +396,9 @@ chttp_test_var_server_host(struct chttp_text_context *ctx)
 
 	server = _server_context_ok(ctx);
 	assert(server->sock >= 0);
+	chttp_test_ERROR_string(server->ip_str);
 
-	return _SERVER_IP;
+	return server->ip_str;
 }
 
 char *
