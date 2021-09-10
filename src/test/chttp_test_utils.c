@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct chttp_test *
 chttp_test_convert(struct chttp_text_context *ctx)
@@ -135,6 +136,8 @@ chttp_test_ERROR_param_count(struct chttp_test_cmd *cmd, size_t count)
 
 	for (i = 0; i < cmd->param_count; i++) {
 		chttp_test_ERROR(cmd->params[i].len == 0, "empty parameter found");
+		// TODO remove
+		assert(cmd->params[i].len == strlen(cmd->params[i].value));
 	}
 }
 

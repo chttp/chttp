@@ -75,6 +75,28 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_text_context *ctx, struct chttp_t
 }
 
 void
+chttp_test_cmd_chttp_version(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long version;
+
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	version = chttp_test_parse_long(cmd->params[0].value);
+
+	switch (version) {
+		case 10:
+			chttp_set_version(ctx->chttp, CHTTP_H_VERSION_1_0);
+			return;
+		case 11:
+			chttp_set_version(ctx->chttp, CHTTP_H_VERSION_1_1);
+			return;
+	}
+
+	chttp_test_ERROR(1, "unsupported chttp version %ld", version);
+}
+
+void
 chttp_test_cmd_chttp_method(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
@@ -241,6 +263,33 @@ chttp_test_cmd_chttp_header_exists(struct chttp_text_context *ctx, struct chttp_
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	_test_header_match(ctx, cmd->params[0].value, NULL, 1);
+}
+
+void
+chttp_test_cmd_chttp_version_match(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long version;
+	enum chttp_version expected = -1;
+
+	_test_context_ok(ctx);
+	chttp_context_ok(ctx->chttp);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	version = chttp_test_parse_long(cmd->params[0].value);
+
+	switch (version) {
+		case 10:
+			expected = CHTTP_H_VERSION_1_0;
+			break;
+		case 11:
+			expected = CHTTP_H_VERSION_1_1;
+			break;
+		default:
+			chttp_test_ERROR(1, "unsupported chttp version %ld", version);
+	}
+
+	chttp_test_ERROR(expected != ctx->chttp->version, "version mismatch, expected %d, found %d",
+		expected, ctx->chttp->version);
 }
 
 static void

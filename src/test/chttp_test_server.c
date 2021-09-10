@@ -537,6 +537,19 @@ _server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 		len = strlen(header_value);
 		header_value += len + 1;
 		dup = NULL;
+	} else if (!strcmp(cmd->name, "server_version_match")) {
+		assert(cmd->param_count == 1);
+
+		header = "_VERSION";
+		expected = cmd->params[0].value;
+
+		header_value = chttp_get_header(server->chttp, _CHTTP_HEADER_FIRST);
+		assert(header_value);
+		len = strlen(header_value);
+		header_value += len + 1;
+		len = strlen(header_value);
+		header_value += len + 1;
+		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_header_match")) {
 		assert(cmd->param_count == 2);
 
@@ -612,6 +625,20 @@ chttp_test_cmd_server_method_match(struct chttp_text_context *ctx,
 
 void
 chttp_test_cmd_server_url_match(struct chttp_text_context *ctx,
+    struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	cmd->func = &_server_match_header;
+
+	_server_cmd_async(server, cmd);
+}
+
+void
+chttp_test_cmd_server_version_match(struct chttp_text_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
