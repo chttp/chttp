@@ -25,7 +25,7 @@ TEST=$(wildcard test/*.c)
 TEST_INCLUDES=$(wildcard test/*.h)
 TEST_OBJS=$(TEST:.c=.o)
 
-.PHONY:		all lib clean cleanall cleanobj cleanbin cleancov cleanreport
+.PHONY:		all lib gcov clean cleanall
 
 all:		chttp_client chttp_test lib
 lib:		libchttp.so libchttp.a
@@ -48,26 +48,26 @@ libchttp.a:	$(OBJS)
 test/%.o:	test/%.c $(INCLUDES) $(TEST_INCLUDES)
 		$(CC) $(CFLAGS) -c $< -o $@
 
-clean:		cleanobj cleanbin cleancov cleanreport
-cleanobj:
+clean:
 		$(RM) *.o */*.o *.so *.a
-cleanbin:
 		$(RM) chttp_client chttp_test
-cleancov:
-		$(RM) *.gcno */*.gcno *.gcda */*.gcda *.gcov */*.gcov coverage.info
-cleanreport:
+		$(RM) *.gcno */*.gcno *.gcda */*.gcda *.gcov */*.gcov
+		$(RM) coverage.info gcov.data
 		$(RMDIR) $(HTMLDIR)
 
 cleanall:
 		$(MAKE) clean
-		$(MAKE) all CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+		$(MAKE) all
 
-gcov:		CFLAGS+=$(GCOVFLAGS)
-gcov:		LIBFLAGS+=$(GCOVLIBFLAGS)
-gcov:		cleanall
-		$(MAKE) -C .. check
+gcov:		gcov.data
 		$(GCOV) -r *.c dns/*.c tcp/*.c
 		$(LCOV) --output-file coverage.info
 		$(LCOVHTML) coverage.info --output-directory $(HTMLDIR)
-		$(MAKE) cleanobj cleanbin cleancov
+
+gcov.data:	CFLAGS+=$(GCOVFLAGS)
+gcov.data:	LIBFLAGS+=$(GCOVLIBFLAGS)
+gcov.data:
+		$(MAKE) cleanall CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
+		$(MAKE) -C .. check
+		touch gcov.data
 
