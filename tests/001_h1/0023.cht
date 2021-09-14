@@ -12,4 +12,6 @@ chttp_send $server_host $server_port
 chttp_status_match 200
 chttp_body_md5
 
+server_flush_async
+
 equal $md5_client $md5_server

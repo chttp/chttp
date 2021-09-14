@@ -8,6 +8,7 @@ src/coverage.info
 src/chttp_client
 src/chttp_test
 src/report
+src/gcov.data
 nbproject
 .vscode
 chttp.code-workspace
