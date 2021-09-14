@@ -7,7 +7,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 struct chttp_test_random {
 	unsigned int				magic;
@@ -36,7 +35,6 @@ static void
 _random_init(struct chttp_text_context *ctx)
 {
 	struct chttp_test_random *random;
-	struct timespec now;
 
 	assert(ctx);
 
@@ -54,9 +52,7 @@ _random_init(struct chttp_text_context *ctx)
 
 		chttp_test_register_finish(ctx, "random", _random_finish);
 
-		// Seed random
-		assert_zero(clock_gettime(CLOCK_MONOTONIC, &now));
-		srandom(time(NULL) + now.tv_nsec);
+		chttp_test_random_seed();
 	}
 
 	assert(ctx->random->magic == _RANDOM_MAGIC);

@@ -118,7 +118,9 @@ void chttp_test_sleep_ms(long ms);
 int chttp_test_join_thread(pthread_t thread, volatile int *stopped,
 	unsigned long timeout_ms);
 size_t chttp_test_line_pos(struct chttp_test *test);
+void chttp_test_random_seed();
 long chttp_test_random(long low, long high);
+void chttp_test_fill_random(uint8_t *buf, size_t len);
 
 void chttp_test_md5_init(struct chttp_test_md5 *ctx);
 void chttp_test_md5_update(struct chttp_test_md5 *ctx, uint8_t *input, size_t len);

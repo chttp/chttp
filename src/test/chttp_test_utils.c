@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 struct chttp_test *
 chttp_test_convert(struct chttp_text_context *ctx)
@@ -198,11 +199,21 @@ chttp_test_line_pos(struct chttp_test *test)
 	return (test->lines - test->lines_multi);
 }
 
+void
+chttp_test_random_seed()
+{
+	struct timespec now;
+
+	assert_zero(clock_gettime(CLOCK_MONOTONIC, &now));
+	srandom(now.tv_sec + now.tv_nsec);
+}
+// Inclusive
 long
 chttp_test_random(long low, long high)
 {
 	long rval;
 
+	assert(low >= 0);
 	assert(high >= low);
 
 	rval = random();
@@ -210,4 +221,15 @@ chttp_test_random(long low, long high)
 	rval += low;
 
 	return rval;
+}
+
+void
+chttp_test_fill_random(uint8_t *buf, size_t len)
+{
+	size_t i;
+
+	for (i = 0; i < len; i++) {
+		// TODO write a wider char if possible
+		buf[i] = chttp_test_random(0, UINT8_MAX);
+	}
 }

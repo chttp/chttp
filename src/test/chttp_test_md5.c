@@ -65,7 +65,12 @@ chttp_test_md5_init(struct chttp_test_md5 *ctx)
 static void
 _md5_transform(uint32_t *buf, uint32_t *in)
 {
-	uint32_t a = buf[0], b = buf[1], c = buf[2], d = buf[3];
+	uint32_t a, b, c, d;
+
+	a = buf[0];
+	b = buf[1];
+	c = buf[2];
+	d = buf[3];
 
 	/* Round 1 */
 	#define S11 7
@@ -170,8 +175,10 @@ chttp_test_md5_update(struct chttp_test_md5 *ctx, uint8_t *input, size_t len)
 
 	mdi = (int)((ctx->i[0] >> 3) & 0x3F);
 
-	if ((ctx->i[0] + ((uint32_t)len << 3)) < ctx->i[0])
-	ctx->i[1]++;
+	if ((ctx->i[0] + ((uint32_t)len << 3)) < ctx->i[0]) {
+		ctx->i[1]++;
+	}
+
 	ctx->i[0] += ((uint32_t)len << 3);
 	ctx->i[1] += ((uint32_t)len >> 29);
 
@@ -195,17 +202,16 @@ void
 chttp_test_md5_final(struct chttp_test_md5 *ctx)
 {
 	uint32_t in[16];
+	unsigned int pad_len, i, ii;
 	int mdi;
-	unsigned int i, ii;
-	unsigned int padLen;
 
 	in[14] = ctx->i[0];
 	in[15] = ctx->i[1];
 
 	mdi = (int)((ctx->i[0] >> 3) & 0x3F);
+	pad_len = (mdi < 56) ? (56 - mdi) : (120 - mdi);
 
-	padLen = (mdi < 56) ? (56 - mdi) : (120 - mdi);
-	chttp_test_md5_update(ctx, PADDING, padLen);
+	chttp_test_md5_update(ctx, PADDING, pad_len);
 
 	for (i = 0, ii = 0; i < 14; i++, ii += 4) {
 		in[i] = (((uint32_t)ctx->in[ii+3]) << 24) |
@@ -213,6 +219,7 @@ chttp_test_md5_final(struct chttp_test_md5 *ctx)
 			(((uint32_t)ctx->in[ii+1]) << 8) |
 			((uint32_t)ctx->in[ii]);
 	}
+
 	_md5_transform(ctx->buf, in);
 
 	/* store buffer in digest */

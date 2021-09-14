@@ -311,9 +311,11 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, 
 	}
 
 	do {
-		old_size = size;
-		size *= 2;
-		assert(size / 2 == old_size);
+		if (calls) {
+			old_size = size;
+			size *= 2;
+			assert(size / 2 == old_size);
+		}
 
 		body = realloc(body, size + 1);
 		assert(body);

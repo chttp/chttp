@@ -1,0 +1,13 @@
+chttp_test "Random body"
+
+server_init
+server_accept
+server_read_request
+server_send_response_partial 200
+server_send_random_body
+
+chttp_init
+chttp_url /
+chttp_send $server_host $server_port
+chttp_status_match 200
+chttp_body_read

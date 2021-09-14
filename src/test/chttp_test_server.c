@@ -12,6 +12,8 @@
 
 #define _SERVER_IP_DEFAULT			"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500
+#define _SERVER_MAX_RANDOM_BODYLEN		(2 * 1024 * 1024)
+#define _SERVER_MAX_RANDOM_CHUNKLEN		(2 * 1024)
 
 struct _server_cmdentry {
 	unsigned int				magic;
@@ -708,7 +710,7 @@ chttp_test_cmd_server_header_not_exists(struct chttp_text_context *ctx,
 }
 
 void
-_server_send_buf(struct chttp_test_server *server, const char *buf, size_t len)
+_server_send_buf(struct chttp_test_server *server, const uint8_t *buf, size_t len)
 {
 	ssize_t ret;
 
@@ -732,7 +734,7 @@ _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 	len = vsnprintf(buf, sizeof(buf), fmt, ap);
 	assert(len < sizeof(buf));
 
-	_server_send_buf(server, buf, len);
+	_server_send_buf(server, (uint8_t*)buf, len);
 
 	va_end(ap);
 }
@@ -971,7 +973,103 @@ chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx, struct chttp_test
 
 	chttp_test_unescape(&cmd->params[0]);
 
-	_server_send_buf(server, cmd->params[0].value, cmd->params[0].len);
+	_server_send_buf(server, (uint8_t*)cmd->params[0].value, cmd->params[0].len);
+}
+
+void
+chttp_test_cmd_server_send_random_body(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+	long bodylen, chunklen;
+	size_t sent, send_size, partial, len;
+	size_t chunks, subchunks;
+	uint8_t buf[1024];
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR(cmd->param_count > 2, "Too many params");
+
+	bodylen = -1;
+	chunklen = -1;
+
+	if (cmd->param_count > 0) {
+		bodylen = chttp_test_parse_long(cmd->params[0].value);
+	}
+	if (cmd->param_count > 1) {
+		chunklen = chttp_test_parse_long(cmd->params[1].value);
+	}
+
+	chttp_test_random_seed();
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	if (bodylen < 0) {
+		bodylen = chttp_test_random(0, _SERVER_MAX_RANDOM_BODYLEN);
+	}
+
+	if (chunklen) {
+		_server_send_printf(server, "Transfer-Encoding: chunked\r\n\r\n");
+	} else {
+		_server_send_printf(server, "Content-Length: %zd\r\n\r\n", bodylen);
+	}
+
+	sent = 0;
+	chunks = subchunks = 0;
+	assert(bodylen >= 0);
+
+	while (sent < (size_t)bodylen) {
+		if (chunklen < 0) {
+			send_size = chttp_test_random(1, _SERVER_MAX_RANDOM_CHUNKLEN);
+		} else if (chunklen == 0) {
+			send_size = bodylen;
+		} else {
+			send_size = chunklen;
+		}
+
+		if (send_size > bodylen - sent) {
+			send_size = bodylen - sent;
+		}
+
+		if (chunklen) {
+			_server_send_printf(server, "%x\r\n", (unsigned int)send_size);
+		}
+
+		partial = 0;
+
+		while (partial < send_size) {
+			len = send_size - partial;
+			if (len > sizeof(buf)) {
+				len = sizeof(buf);
+			}
+
+			chttp_test_fill_random(buf, len);
+
+			_server_send_buf(server, buf, len);
+			partial += len;
+
+			subchunks++;
+		}
+
+		assert(partial == send_size);
+		sent += partial;
+
+		chunks++;
+
+		if (chunklen) {
+			_server_send_printf(server, "\r\n");
+		}
+	}
+
+	assert(sent == (size_t)bodylen);
+
+	if (chunklen) {
+		_server_send_printf(server, "0\r\n\r\n");
+	}
+
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
+		"(%zu %zu)", sent, chunks, subchunks);
 }
 
 void
