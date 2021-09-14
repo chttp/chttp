@@ -13,7 +13,7 @@
 #define _SERVER_IP_DEFAULT			"127.0.0.1"
 #define _SERVER_JOIN_TIMEOUT_MS			2500
 #define _SERVER_MAX_RANDOM_BODYLEN		(2 * 1024 * 1024)
-#define _SERVER_MAX_RANDOM_CHUNKLEN		(2 * 1024)
+#define _SERVER_MAX_RANDOM_CHUNKLEN		(32 * 1024)
 
 struct _server_cmdentry {
 	unsigned int				magic;
@@ -980,10 +980,11 @@ void
 chttp_test_cmd_server_send_random_body(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
+	struct chttp_test_md5 md5;
 	long bodylen, chunklen;
 	size_t sent, send_size, partial, len;
 	size_t chunks, subchunks;
-	uint8_t buf[1024];
+	uint8_t buf[8192];
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR(cmd->param_count > 2, "Too many params");
@@ -999,6 +1000,7 @@ chttp_test_cmd_server_send_random_body(struct chttp_text_context *ctx, struct ch
 	}
 
 	chttp_test_random_seed();
+	chttp_test_md5_init(&md5);
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -1047,8 +1049,10 @@ chttp_test_cmd_server_send_random_body(struct chttp_text_context *ctx, struct ch
 			chttp_test_fill_random(buf, len);
 
 			_server_send_buf(server, buf, len);
-			partial += len;
 
+			chttp_test_md5_update(&md5, buf, len);
+
+			partial += len;
 			subchunks++;
 		}
 
@@ -1070,6 +1074,11 @@ chttp_test_cmd_server_send_random_body(struct chttp_text_context *ctx, struct ch
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
 		"(%zu %zu)", sent, chunks, subchunks);
+
+	chttp_test_md5_final(&md5);
+	chttp_test_md5_store_server(ctx, &md5);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* body md5 %s", ctx->md5_server);
 }
 
 void

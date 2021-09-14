@@ -7,7 +7,10 @@
 
 #include "test/chttp_test.h"
 
-static unsigned char PADDING[64] = {
+#include <stdlib.h>
+#include <string.h>
+
+static unsigned char _MD5_PADDING[64] = {
 	0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -51,15 +54,18 @@ static unsigned char PADDING[64] = {
 	} while (0)
 
 void
-chttp_test_md5_init(struct chttp_test_md5 *ctx)
+chttp_test_md5_init(struct chttp_test_md5 *md5)
 {
-	ctx->i[0] = 0;
-	ctx->i[1] = 0;
+	md5->i[0] = 0;
+	md5->i[1] = 0;
 
-	ctx->buf[0] = (uint32_t)0x67452301;
-	ctx->buf[1] = (uint32_t)0xefcdab89;
-	ctx->buf[2] = (uint32_t)0x98badcfe;
-	ctx->buf[3] = (uint32_t)0x10325476;
+	md5->buf[0] = (uint32_t)0x67452301;
+	md5->buf[1] = (uint32_t)0xefcdab89;
+	md5->buf[2] = (uint32_t)0x98badcfe;
+	md5->buf[3] = (uint32_t)0x10325476;
+
+	md5->magic = CHTTP_TEST_MD5_MAGIC;
+	md5->ready = 0;
 }
 
 static void
@@ -167,68 +173,123 @@ _md5_transform(uint32_t *buf, uint32_t *in)
 }
 
 void
-chttp_test_md5_update(struct chttp_test_md5 *ctx, uint8_t *input, size_t len)
+chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len)
 {
 	uint32_t in[16];
 	int mdi;
 	unsigned int i, ii;
 
-	mdi = (int)((ctx->i[0] >> 3) & 0x3F);
+	assert(md5->magic == CHTTP_TEST_MD5_MAGIC);
+	assert_zero(md5->ready);
 
-	if ((ctx->i[0] + ((uint32_t)len << 3)) < ctx->i[0]) {
-		ctx->i[1]++;
+	mdi = (int)((md5->i[0] >> 3) & 0x3F);
+
+	if ((md5->i[0] + ((uint32_t)len << 3)) < md5->i[0]) {
+		md5->i[1]++;
 	}
 
-	ctx->i[0] += ((uint32_t)len << 3);
-	ctx->i[1] += ((uint32_t)len >> 29);
+	md5->i[0] += ((uint32_t)len << 3);
+	md5->i[1] += ((uint32_t)len >> 29);
 
 	while (len--) {
-		ctx->in[mdi++] = *input++;
+		md5->in[mdi++] = *input++;
 
 		if (mdi == 0x40) {
 			for (i = 0, ii = 0; i < 16; i++, ii += 4) {
-				in[i] = (((uint32_t)ctx->in[ii+3]) << 24) |
-					(((uint32_t)ctx->in[ii+2]) << 16) |
-					(((uint32_t)ctx->in[ii+1]) << 8) |
-					((uint32_t)ctx->in[ii]);
+				in[i] = (((uint32_t)md5->in[ii+3]) << 24) |
+					(((uint32_t)md5->in[ii+2]) << 16) |
+					(((uint32_t)md5->in[ii+1]) << 8) |
+					((uint32_t)md5->in[ii]);
 			}
-			_md5_transform(ctx->buf, in);
+			_md5_transform(md5->buf, in);
 			mdi = 0;
 		}
 	}
 }
 
 void
-chttp_test_md5_final(struct chttp_test_md5 *ctx)
+chttp_test_md5_final(struct chttp_test_md5 *md5)
 {
 	uint32_t in[16];
 	unsigned int pad_len, i, ii;
 	int mdi;
 
-	in[14] = ctx->i[0];
-	in[15] = ctx->i[1];
+	assert(md5->magic == CHTTP_TEST_MD5_MAGIC);
+	assert_zero(md5->ready);
 
-	mdi = (int)((ctx->i[0] >> 3) & 0x3F);
+	in[14] = md5->i[0];
+	in[15] = md5->i[1];
+
+	mdi = (int)((md5->i[0] >> 3) & 0x3F);
 	pad_len = (mdi < 56) ? (56 - mdi) : (120 - mdi);
 
-	chttp_test_md5_update(ctx, PADDING, pad_len);
+	chttp_test_md5_update(md5, _MD5_PADDING, pad_len);
 
 	for (i = 0, ii = 0; i < 14; i++, ii += 4) {
-		in[i] = (((uint32_t)ctx->in[ii+3]) << 24) |
-			(((uint32_t)ctx->in[ii+2]) << 16) |
-			(((uint32_t)ctx->in[ii+1]) << 8) |
-			((uint32_t)ctx->in[ii]);
+		in[i] = (((uint32_t)md5->in[ii+3]) << 24) |
+			(((uint32_t)md5->in[ii+2]) << 16) |
+			(((uint32_t)md5->in[ii+1]) << 8) |
+			((uint32_t)md5->in[ii]);
 	}
 
-	_md5_transform(ctx->buf, in);
+	_md5_transform(md5->buf, in);
 
 	/* store buffer in digest */
 	for (i = 0, ii = 0; i < 4; i++, ii += 4) {
-		ctx->digest[ii] = (unsigned char)(ctx->buf[i] & 0xFF);
-		ctx->digest[ii+1] = (unsigned char)((ctx->buf[i] >> 8) & 0xFF);
-		ctx->digest[ii+2] = (unsigned char)((ctx->buf[i] >> 16) & 0xFF);
-		ctx->digest[ii+3] = (unsigned char)((ctx->buf[i] >> 24) & 0xFF);
+		md5->digest[ii] = (unsigned char)(md5->buf[i] & 0xFF);
+		md5->digest[ii+1] = (unsigned char)((md5->buf[i] >> 8) & 0xFF);
+		md5->digest[ii+2] = (unsigned char)((md5->buf[i] >> 16) & 0xFF);
+		md5->digest[ii+3] = (unsigned char)((md5->buf[i] >> 24) & 0xFF);
 	}
+
+	md5->ready = 1;
+}
+
+void
+_md5_store(struct chttp_test_md5 *md5, char *md5_buf)
+{
+	int len;
+
+	assert(md5->magic == CHTTP_TEST_MD5_MAGIC);
+	assert(md5->ready);
+	assert(CHTTP_TEST_MD5_BUFLEN > 32);
+
+	len = snprintf(md5_buf, CHTTP_TEST_MD5_BUFLEN,
+		"%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x"
+		"%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x",
+			md5->digest[0], md5->digest[1], md5->digest[2], md5->digest[3],
+			md5->digest[4], md5->digest[5], md5->digest[6], md5->digest[7],
+			md5->digest[8], md5->digest[9], md5->digest[10], md5->digest[11],
+			md5->digest[12], md5->digest[13], md5->digest[14], md5->digest[15]);
+	assert(len == 32);
+}
+
+void
+chttp_test_md5_store_server(struct chttp_text_context *ctx, struct chttp_test_md5 *md5)
+{
+	_md5_store(md5, ctx->md5_server);
+}
+
+void
+chttp_test_md5_store_client(struct chttp_text_context *ctx, struct chttp_test_md5 *md5)
+{
+	_md5_store(md5, ctx->md5_client);
+}
+
+char *
+chttp_test_var_md5_server(struct chttp_text_context *ctx)
+{
+	assert(strlen(ctx->md5_server) == 32);
+
+	return ctx->md5_server;
+}
+
+char *
+chttp_test_var_md5_client(struct chttp_text_context *ctx)
+{
+	assert(strlen(ctx->md5_client) == 32);
+
+	return ctx->md5_client;
 }
 
 /*
@@ -245,7 +306,8 @@ int main(int argc, char **argv) {
 	printf("%2.2x%2.2x%2.2x%2.2x", md5.digest[0], md5.digest[1], md5.digest[2], md5.digest[3]);
 	printf("%2.2x%2.2x%2.2x%2.2x", md5.digest[4], md5.digest[5], md5.digest[6], md5.digest[7]);
 	printf("%2.2x%2.2x%2.2x%2.2x", md5.digest[8], md5.digest[9], md5.digest[10], md5.digest[11]);
-	printf("%2.2x%2.2x%2.2x%2.2x\n", md5.digest[12], md5.digest[13], md5.digest[14], md5.digest[15]);
+	printf("%2.2x%2.2x%2.2x%2.2x\n", md5.digest[12], md5.digest[13], md5.digest[14],
+		md5.digest[15]);
 
 	printf("expected: ca2b67db58c83f0e184663098bcb74b8\n");
 }

@@ -84,6 +84,11 @@ struct chttp_test {
 };
 
 struct chttp_test_md5 {
+	unsigned int				magic;
+#define CHTTP_TEST_MD5_MAGIC			0x4E4330A7
+
+	int					ready;
+
 	uint32_t				i[2];
 	uint32_t				buf[4];
 	unsigned char				in[64];
@@ -122,9 +127,11 @@ void chttp_test_random_seed();
 long chttp_test_random(long low, long high);
 void chttp_test_fill_random(uint8_t *buf, size_t len);
 
-void chttp_test_md5_init(struct chttp_test_md5 *ctx);
-void chttp_test_md5_update(struct chttp_test_md5 *ctx, uint8_t *input, size_t len);
-void chttp_test_md5_final(struct chttp_test_md5 *ctx);
+void chttp_test_md5_init(struct chttp_test_md5 *md5);
+void chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len);
+void chttp_test_md5_final(struct chttp_test_md5 *md5);
+void chttp_test_md5_store_server(struct chttp_text_context *ctx, struct chttp_test_md5 *md5);
+void chttp_test_md5_store_client(struct chttp_text_context *ctx, struct chttp_test_md5 *md5);
 
 #define chttp_test_ok(test)						\
 	do {								\

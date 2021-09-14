@@ -10,4 +10,6 @@ chttp_init
 chttp_url /
 chttp_send $server_host $server_port
 chttp_status_match 200
-chttp_body_read
+chttp_body_md5
+
+equal $md5_client $md5_server

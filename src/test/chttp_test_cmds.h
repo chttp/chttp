@@ -9,17 +9,21 @@
 #define _CHTTP_TEST_CMDS_H_INCLUDED_
 
 #define CHTTP_TEST_MAX_PARAMS		16
+#define CHTTP_TEST_MD5_BUFLEN		33
 
 struct chttp_test_server;
 struct chttp_test_random;
 
+// TODO typo
 struct chttp_text_context {
 	struct chttp_context		chttp_static;
 	struct chttp_context		*chttp;
 
 	struct chttp_test_server	*server;
-
 	struct chttp_test_random	*random;
+
+	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
+	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
 };
 
 struct chttp_test_cmd;
@@ -61,6 +65,7 @@ struct chttp_test_cmd {
 CHTTP_TEST_CMD(chttp_test)
 CHTTP_TEST_CMD(sleep_ms)
 CHTTP_TEST_CMD(connect_or_skip)
+CHTTP_TEST_CMD(equal)
 
 CHTTP_TEST_CMD(chttp_init)
 CHTTP_TEST_CMD(chttp_init_dynamic)
@@ -81,6 +86,7 @@ CHTTP_TEST_CMD(chttp_version_match)
 CHTTP_TEST_CMD(chttp_body_match)
 CHTTP_TEST_CMD(chttp_body_submatch)
 CHTTP_TEST_CMD(chttp_body_read)
+CHTTP_TEST_CMD(chttp_body_md5)
 CHTTP_TEST_CMD(chttp_take_error)
 
 CHTTP_TEST_CMD(server_init)
@@ -110,6 +116,9 @@ CHTTP_TEST_VAR(server_port)
 
 CHTTP_TEST_CMD(random_range)
 CHTTP_TEST_VAR(random)
+
+CHTTP_TEST_VAR(md5_server)
+CHTTP_TEST_VAR(md5_client)
 
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR

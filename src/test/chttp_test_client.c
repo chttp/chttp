@@ -334,8 +334,7 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, 
 		return;
 	}
 
-	chttp_test_ERROR(ctx->chttp->error, "chttp error %s",
-		chttp_error_msg(ctx->chttp));
+	chttp_test_ERROR(ctx->chttp->error, "chttp error %s", chttp_error_msg(ctx->chttp));
 
 	body[body_len] = '\0';
 
@@ -357,6 +356,7 @@ chttp_test_cmd_chttp_body_match(struct chttp_text_context *ctx, struct chttp_tes
 
 	_test_context_ok(ctx);
 	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
+	chttp_test_ERROR(cmd->param_count < 1, "missing parameters");
 
 	if (cmd->param_count == 2) {
 		size = chttp_test_parse_long(cmd->params[1].value);
@@ -382,6 +382,43 @@ chttp_test_cmd_chttp_body_read(struct chttp_text_context *ctx, struct chttp_test
 	chttp_test_ERROR_param_count(cmd, 0);
 
 	_test_body_match(ctx, NULL, 0, 0);
+}
+
+void
+chttp_test_cmd_chttp_body_md5(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_md5 md5;
+	uint8_t buf[8192];
+	size_t body_len, len, calls;
+
+	_test_context_ok(ctx);
+	chttp_context_ok(ctx->chttp);
+	chttp_test_ERROR(ctx->chttp->state != CHTTP_STATE_RESP_BODY, "chttp no body found");
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	chttp_test_md5_init(&md5);
+
+	body_len = 0;
+	calls = 0;
+
+	do {
+		len = chttp_get_body(ctx->chttp, buf, sizeof(buf));
+
+		chttp_test_md5_update(&md5, buf, len);
+
+		body_len += len;
+		calls++;
+	} while (ctx->chttp->state == CHTTP_STATE_RESP_BODY);
+
+	chttp_test_ERROR(ctx->chttp->error, "chttp error %s", chttp_error_msg(ctx->chttp));
+
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
+		body_len, calls);
+
+	chttp_test_md5_final(&md5);
+	chttp_test_md5_store_client(ctx, &md5);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "body md5 %s", ctx->md5_client);
 }
 
 void

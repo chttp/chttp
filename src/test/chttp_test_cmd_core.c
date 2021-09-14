@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 void
@@ -81,4 +82,19 @@ chttp_test_cmd_connect_or_skip(struct chttp_text_context *ctx, struct chttp_test
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "valid address found %s:%ld", host, port);
 
 	return;
+}
+
+void
+chttp_test_cmd_equal(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+{
+	int ret;
+
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 2);
+
+	ret = strcmp(cmd->params[0].value, cmd->params[1].value);
+
+	chttp_test_ERROR(ret, "not equal '%s' != '%s'", cmd->params[0].value, cmd->params[1].value);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "equal '%s'", cmd->params[0].value);
 }
