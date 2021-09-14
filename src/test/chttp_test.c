@@ -9,7 +9,7 @@
 #include <string.h>
 
 static void
-_finish_test(struct chttp_text_context *ctx)
+_finish_test(struct chttp_test_context *ctx)
 {
 	struct chttp_test *test;
 
@@ -159,7 +159,7 @@ main(int argc, char **argv)
 }
 
 void
-chttp_test_register_finish(struct chttp_text_context *ctx, const char *name,
+chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
     chttp_test_finish_f *func)
 {
 	struct chttp_test *test;
@@ -187,7 +187,7 @@ chttp_test_register_finish(struct chttp_text_context *ctx, const char *name,
 }
 
 void
-chttp_test_run_finish(struct chttp_text_context *ctx, const char *name)
+chttp_test_run_finish(struct chttp_test_context *ctx, const char *name)
 {
 	struct chttp_test *test;
 	struct chttp_test_finish *finish, *temp;

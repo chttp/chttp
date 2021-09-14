@@ -9,7 +9,7 @@
 #include <string.h>
 
 static inline void
-_test_context_ok(struct chttp_text_context *ctx)
+_test_context_ok(struct chttp_test_context *ctx)
 {
 	assert(ctx);
 	chttp_test_ERROR(!ctx->chttp, "chttp context does not exist");
@@ -18,7 +18,7 @@ _test_context_ok(struct chttp_text_context *ctx)
 }
 
 static void
-_test_client_finish(struct chttp_text_context *ctx)
+_test_client_finish(struct chttp_test_context *ctx)
 {
 	assert(ctx);
 	chttp_test_ERROR(!ctx->chttp, "chttp context does not exist");
@@ -32,7 +32,7 @@ _test_client_finish(struct chttp_text_context *ctx)
 }
 
 void
-chttp_test_cmd_chttp_init(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_init(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	assert(ctx);
 
@@ -50,7 +50,7 @@ chttp_test_cmd_chttp_init(struct chttp_text_context *ctx, struct chttp_test_cmd 
 }
 
 void
-chttp_test_cmd_chttp_init_dynamic(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_init_dynamic(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long size = 0;
 
@@ -75,7 +75,7 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_text_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_chttp_version(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_version(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long version;
 
@@ -97,7 +97,7 @@ chttp_test_cmd_chttp_version(struct chttp_text_context *ctx, struct chttp_test_c
 }
 
 void
-chttp_test_cmd_chttp_method(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_method(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -106,7 +106,7 @@ chttp_test_cmd_chttp_method(struct chttp_text_context *ctx, struct chttp_test_cm
 }
 
 void
-chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_url(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -115,7 +115,7 @@ chttp_test_cmd_chttp_url(struct chttp_text_context *ctx, struct chttp_test_cmd *
 }
 
 void
-chttp_test_cmd_chttp_add_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_add_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
@@ -124,7 +124,7 @@ chttp_test_cmd_chttp_add_header(struct chttp_text_context *ctx, struct chttp_tes
 }
 
 void
-chttp_test_cmd_chttp_delete_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_delete_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -133,7 +133,7 @@ chttp_test_cmd_chttp_delete_header(struct chttp_text_context *ctx, struct chttp_
 }
 
 void
-chttp_test_cmd_chttp_send_only(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long port;
 
@@ -149,7 +149,7 @@ chttp_test_cmd_chttp_send_only(struct chttp_text_context *ctx, struct chttp_test
 }
 
 void
-chttp_test_cmd_chttp_receive(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_receive(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test *test;
 
@@ -168,7 +168,7 @@ chttp_test_cmd_chttp_receive(struct chttp_text_context *ctx, struct chttp_test_c
 }
 
 void
-chttp_test_cmd_chttp_send(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_send(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 
@@ -180,7 +180,7 @@ chttp_test_cmd_chttp_send(struct chttp_text_context *ctx, struct chttp_test_cmd 
 }
 
 void
-chttp_test_cmd_chttp_status_match(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_status_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long status;
 
@@ -197,7 +197,7 @@ chttp_test_cmd_chttp_status_match(struct chttp_text_context *ctx, struct chttp_t
 }
 
 static void
-_test_header_match(struct chttp_text_context *ctx, const char *header, const char *expected,
+_test_header_match(struct chttp_test_context *ctx, const char *header, const char *expected,
     int sub)
 {
 	const char *header_value, *dup;
@@ -230,7 +230,7 @@ _test_header_match(struct chttp_text_context *ctx, const char *header, const cha
 }
 
 void
-chttp_test_cmd_chttp_reason_match(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_reason_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -239,7 +239,7 @@ chttp_test_cmd_chttp_reason_match(struct chttp_text_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_chttp_header_match(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_header_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
@@ -248,7 +248,7 @@ chttp_test_cmd_chttp_header_match(struct chttp_text_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_chttp_header_submatch(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_header_submatch(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
@@ -257,7 +257,7 @@ chttp_test_cmd_chttp_header_submatch(struct chttp_text_context *ctx, struct chtt
 }
 
 void
-chttp_test_cmd_chttp_header_exists(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_header_exists(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -266,7 +266,7 @@ chttp_test_cmd_chttp_header_exists(struct chttp_text_context *ctx, struct chttp_
 }
 
 void
-chttp_test_cmd_chttp_version_match(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_version_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long version;
 	enum chttp_version expected = -1;
@@ -293,7 +293,7 @@ chttp_test_cmd_chttp_version_match(struct chttp_text_context *ctx, struct chttp_
 }
 
 static void
-_test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, size_t size)
+_test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, size_t size)
 {
 	char *body;
 	size_t body_len, old_size, calls;
@@ -350,7 +350,7 @@ _test_body_match(struct chttp_text_context *ctx, const char *expected, int sub, 
 }
 
 void
-chttp_test_cmd_chttp_body_match(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_body_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long size = 0;
 
@@ -367,7 +367,7 @@ chttp_test_cmd_chttp_body_match(struct chttp_text_context *ctx, struct chttp_tes
 }
 
 void
-chttp_test_cmd_chttp_body_submatch(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_body_submatch(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -376,7 +376,7 @@ chttp_test_cmd_chttp_body_submatch(struct chttp_text_context *ctx, struct chttp_
 }
 
 void
-chttp_test_cmd_chttp_body_read(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_body_read(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
@@ -385,7 +385,7 @@ chttp_test_cmd_chttp_body_read(struct chttp_text_context *ctx, struct chttp_test
 }
 
 void
-chttp_test_cmd_chttp_body_md5(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_md5 md5;
 	uint8_t buf[8192];
@@ -422,7 +422,7 @@ chttp_test_cmd_chttp_body_md5(struct chttp_text_context *ctx, struct chttp_test_
 }
 
 void
-chttp_test_cmd_chttp_take_error(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_take_error(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);

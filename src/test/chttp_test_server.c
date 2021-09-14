@@ -28,7 +28,7 @@ struct chttp_test_server {
 	unsigned int				magic;
 #define _SERVER_MAGIC				0xF3969B6A
 
-	struct chttp_text_context		*ctx;
+	struct chttp_test_context		*ctx;
 
 	pthread_t				thread;
 
@@ -63,7 +63,7 @@ extern const char *_CHTTP_HEADER_FIRST;
 static void *_server_thread(void *arg);
 
 static inline struct chttp_test_server *
-_server_context_ok(struct chttp_text_context *ctx)
+_server_context_ok(struct chttp_test_context *ctx)
 {
 	assert(ctx);
 	chttp_test_ERROR(!ctx->server, "server context does not exist");
@@ -166,7 +166,7 @@ _server_cmd_async(struct chttp_test_server *server, struct chttp_test_cmd *cmd)
 }
 
 static void
-_server_finish(struct chttp_text_context *ctx)
+_server_finish(struct chttp_test_context *ctx)
 {
 	struct chttp_test_server *server;
 	struct _server_cmdentry *cmdentry, *temp;
@@ -292,7 +292,7 @@ _server_init_socket(struct chttp_test_server *server)
 }
 
 void
-chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
@@ -345,7 +345,7 @@ chttp_test_cmd_server_init(struct chttp_text_context *ctx, struct chttp_test_cmd
 }
 
 void
-chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	struct sockaddr_storage saddr;
@@ -392,7 +392,7 @@ chttp_test_cmd_server_accept(struct chttp_text_context *ctx, struct chttp_test_c
 }
 
 char *
-chttp_test_var_server_host(struct chttp_text_context *ctx)
+chttp_test_var_server_host(struct chttp_test_context *ctx)
 {
 	struct chttp_test_server *server;
 
@@ -404,7 +404,7 @@ chttp_test_var_server_host(struct chttp_text_context *ctx)
 }
 
 char *
-chttp_test_var_server_port(struct chttp_text_context *ctx)
+chttp_test_var_server_port(struct chttp_test_context *ctx)
 {
 	struct chttp_test_server *server;
 
@@ -452,7 +452,7 @@ _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 }
 
 void
-chttp_test_cmd_server_read_request(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	struct chttp_test *test;
@@ -506,7 +506,7 @@ chttp_test_cmd_server_read_request(struct chttp_text_context *ctx, struct chttp_
 }
 
 static void
-_server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+_server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	const char *header, *header_value, *expected, *dup;
@@ -612,7 +612,7 @@ _server_match_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
 }
 
 void
-chttp_test_cmd_server_method_match(struct chttp_text_context *ctx,
+chttp_test_cmd_server_method_match(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -626,7 +626,7 @@ chttp_test_cmd_server_method_match(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_url_match(struct chttp_text_context *ctx,
+chttp_test_cmd_server_url_match(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -640,7 +640,7 @@ chttp_test_cmd_server_url_match(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_version_match(struct chttp_text_context *ctx,
+chttp_test_cmd_server_version_match(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -654,7 +654,7 @@ chttp_test_cmd_server_version_match(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_match(struct chttp_text_context *ctx,
+chttp_test_cmd_server_header_match(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -668,7 +668,7 @@ chttp_test_cmd_server_header_match(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
+chttp_test_cmd_server_header_submatch(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -682,7 +682,7 @@ chttp_test_cmd_server_header_submatch(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_exists(struct chttp_text_context *ctx,
+chttp_test_cmd_server_header_exists(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -696,7 +696,7 @@ chttp_test_cmd_server_header_exists(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_header_not_exists(struct chttp_text_context *ctx,
+chttp_test_cmd_server_header_not_exists(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -795,7 +795,7 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 }
 
 void
-chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
+chttp_test_cmd_server_send_response(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -822,7 +822,7 @@ chttp_test_cmd_server_send_response(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_send_response_H1_0(struct chttp_text_context *ctx,
+chttp_test_cmd_server_send_response_H1_0(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -849,7 +849,7 @@ chttp_test_cmd_server_send_response_H1_0(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_send_response_partial(struct chttp_text_context *ctx,
+chttp_test_cmd_server_send_response_partial(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -876,7 +876,7 @@ chttp_test_cmd_server_send_response_partial(struct chttp_text_context *ctx,
 }
 
 void
-chttp_test_cmd_server_send_header(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
@@ -892,7 +892,7 @@ chttp_test_cmd_server_send_header(struct chttp_text_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_server_send_header_done(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_header_done(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
@@ -908,7 +908,7 @@ chttp_test_cmd_server_send_header_done(struct chttp_text_context *ctx, struct ch
 }
 
 void
-chttp_test_cmd_server_start_chunked(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_start_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
@@ -924,7 +924,7 @@ chttp_test_cmd_server_start_chunked(struct chttp_text_context *ctx, struct chttp
 }
 
 void
-chttp_test_cmd_server_send_chunked(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
@@ -943,7 +943,7 @@ chttp_test_cmd_server_send_chunked(struct chttp_text_context *ctx, struct chttp_
 }
 
 void
-chttp_test_cmd_server_end_chunked(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
@@ -959,7 +959,7 @@ chttp_test_cmd_server_end_chunked(struct chttp_text_context *ctx, struct chttp_t
 }
 
 void
-chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_raw(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 
@@ -977,7 +977,7 @@ chttp_test_cmd_server_send_raw(struct chttp_text_context *ctx, struct chttp_test
 }
 
 void
-chttp_test_cmd_server_send_random_body(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	struct chttp_test_md5 md5;
@@ -1082,7 +1082,7 @@ chttp_test_cmd_server_send_random_body(struct chttp_text_context *ctx, struct ch
 }
 
 void
-chttp_test_cmd_server_sleep_ms(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_sleep_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 	long ms;
@@ -1104,7 +1104,7 @@ chttp_test_cmd_server_sleep_ms(struct chttp_text_context *ctx, struct chttp_test
 }
 
 void
-chttp_test_cmd_server_flush_async(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_server_flush_async(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
 

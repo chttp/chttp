@@ -40,7 +40,7 @@ RB_HEAD(chttp_test_tree, chttp_test_cmdentry);
 
 struct chttp_test;
 
-typedef void (chttp_test_finish_f)(struct chttp_text_context*);
+typedef void (chttp_test_finish_f)(struct chttp_test_context*);
 
 struct chttp_test_finish {
 	unsigned int				magic;
@@ -56,7 +56,7 @@ struct chttp_test {
 	unsigned int				magic;
 #define CHTTP_TEST_MAGIC			0xD1C4671E
 
-	struct chttp_text_context		context;
+	struct chttp_test_context		context;
 
 	pthread_t				thread;
 	volatile int				stopped;
@@ -98,9 +98,9 @@ struct chttp_test_md5 {
 #define CHTTP_TEST_TIMEOUT_SEC			10
 #define CHTTP_TEST_JOIN_INTERVAL_MS		25
 
-void chttp_test_register_finish(struct chttp_text_context *ctx, const char *name,
+void chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
 	chttp_test_finish_f *func);
-void chttp_test_run_finish(struct chttp_text_context *ctx, const char *name);
+void chttp_test_run_finish(struct chttp_test_context *ctx, const char *name);
 void chttp_test_run_all_finish(struct chttp_test *test);
 
 void chttp_test_cmds_init(struct chttp_test *test);
@@ -110,9 +110,9 @@ void chttp_test_unescape(struct chttp_test_param *param);
 int chttp_test_readline(struct chttp_test *test, size_t append_len);
 void chttp_test_parse_cmd(struct chttp_test *test);
 
-struct chttp_test *chttp_test_convert(struct chttp_text_context *ctx);
-void chttp_test_skip(struct chttp_text_context *ctx);
-void __chttp_attr_printf_p(3) chttp_test_log(struct chttp_text_context *ctx,
+struct chttp_test *chttp_test_convert(struct chttp_test_context *ctx);
+void chttp_test_skip(struct chttp_test_context *ctx);
+void __chttp_attr_printf_p(3) chttp_test_log(struct chttp_test_context *ctx,
 	enum chttp_test_verbocity level, const char *fmt, ...);
 void __chttp_attr_printf chttp_test_warn(int condition, const char *fmt, ...);
 void __chttp_attr_printf chttp_test_ERROR(int condition, const char *fmt, ...);
@@ -130,8 +130,8 @@ void chttp_test_fill_random(uint8_t *buf, size_t len);
 void chttp_test_md5_init(struct chttp_test_md5 *md5);
 void chttp_test_md5_update(struct chttp_test_md5 *md5, uint8_t *input, size_t len);
 void chttp_test_md5_final(struct chttp_test_md5 *md5);
-void chttp_test_md5_store_server(struct chttp_text_context *ctx, struct chttp_test_md5 *md5);
-void chttp_test_md5_store_client(struct chttp_text_context *ctx, struct chttp_test_md5 *md5);
+void chttp_test_md5_store_server(struct chttp_test_context *ctx, struct chttp_test_md5 *md5);
+void chttp_test_md5_store_client(struct chttp_test_context *ctx, struct chttp_test_md5 *md5);
 
 #define chttp_test_ok(test)						\
 	do {								\

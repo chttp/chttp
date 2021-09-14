@@ -12,7 +12,7 @@
 #include <time.h>
 
 void
-chttp_test_cmd_chttp_test(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_test(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test *test;
 
@@ -26,7 +26,7 @@ chttp_test_cmd_chttp_test(struct chttp_text_context *ctx, struct chttp_test_cmd 
 }
 
 void
-chttp_test_cmd_sleep_ms(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_sleep_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long ms;
 
@@ -42,7 +42,7 @@ chttp_test_cmd_sleep_ms(struct chttp_text_context *ctx, struct chttp_test_cmd *c
 }
 
 void
-chttp_test_cmd_connect_or_skip(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_context *chttp;
 	char chttp_buf[CHTTP_CTX_SIZE];
@@ -85,7 +85,7 @@ chttp_test_cmd_connect_or_skip(struct chttp_text_context *ctx, struct chttp_test
 }
 
 void
-chttp_test_cmd_equal(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_equal(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	int ret;
 

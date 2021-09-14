@@ -63,7 +63,7 @@ _test_var_register(struct chttp_test *test, const char *name, chttp_test_var_f *
 }
 
 static void
-_test_cmds_free(struct chttp_text_context *ctx)
+_test_cmds_free(struct chttp_test_context *ctx)
 {
 	struct chttp_test *test;
 	struct chttp_test_cmdentry *entry, *next;

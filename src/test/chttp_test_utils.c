@@ -13,7 +13,7 @@
 #include <time.h>
 
 struct chttp_test *
-chttp_test_convert(struct chttp_text_context *ctx)
+chttp_test_convert(struct chttp_test_context *ctx)
 {
 	struct chttp_test *test;
 
@@ -26,7 +26,7 @@ chttp_test_convert(struct chttp_text_context *ctx)
 }
 
 void __chttp_attr_printf_p(3)
-chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
+chttp_test_log(struct chttp_test_context *ctx, enum chttp_test_verbocity level,
     const char *fmt, ...)
 {
 	struct chttp_test *test;
@@ -59,7 +59,7 @@ chttp_test_log(struct chttp_text_context *ctx, enum chttp_test_verbocity level,
 }
 
 void
-chttp_test_skip(struct chttp_text_context *ctx)
+chttp_test_skip(struct chttp_test_context *ctx)
 {
 	struct chttp_test *test;
 

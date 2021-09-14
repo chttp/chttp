@@ -14,8 +14,7 @@
 struct chttp_test_server;
 struct chttp_test_random;
 
-// TODO typo
-struct chttp_text_context {
+struct chttp_test_context {
 	struct chttp_context		chttp_static;
 	struct chttp_context		*chttp;
 
@@ -27,8 +26,8 @@ struct chttp_text_context {
 };
 
 struct chttp_test_cmd;
-typedef void (chttp_test_cmd_f)(struct chttp_text_context *, struct chttp_test_cmd *);
-typedef char *(chttp_test_var_f)(struct chttp_text_context *);
+typedef void (chttp_test_cmd_f)(struct chttp_test_context *, struct chttp_test_cmd *);
+typedef char *(chttp_test_var_f)(struct chttp_test_context *);
 
 struct chttp_test_param {
 	char				*value;

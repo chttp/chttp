@@ -19,7 +19,7 @@ struct chttp_test_random {
 };
 
 static void
-_random_finish(struct chttp_text_context *ctx)
+_random_finish(struct chttp_test_context *ctx)
 {
 	assert(ctx);
 	assert(ctx->random);
@@ -32,7 +32,7 @@ _random_finish(struct chttp_text_context *ctx)
 }
 
 static void
-_random_init(struct chttp_text_context *ctx)
+_random_init(struct chttp_test_context *ctx)
 {
 	struct chttp_test_random *random;
 
@@ -59,7 +59,7 @@ _random_init(struct chttp_text_context *ctx)
 }
 
 void
-chttp_test_cmd_random_range(struct chttp_text_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_random_range(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long val;
 
@@ -82,7 +82,7 @@ chttp_test_cmd_random_range(struct chttp_text_context *ctx, struct chttp_test_cm
 }
 
 char *
-chttp_test_var_random(struct chttp_text_context *ctx)
+chttp_test_var_random(struct chttp_test_context *ctx)
 {
 	long rval;
 	int ret;
