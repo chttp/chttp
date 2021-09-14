@@ -20,15 +20,31 @@ _test_context_ok(struct chttp_test_context *ctx)
 static void
 _test_client_finish(struct chttp_test_context *ctx)
 {
+	size_t allocs = 0;
+	struct chttp_dpage *data;
+
 	assert(ctx);
 	chttp_test_ERROR(!ctx->chttp, "chttp context does not exist");
 	chttp_context_ok(ctx->chttp);
 	chttp_test_ERROR(ctx->chttp->error, "chttp context has an error (%s)",
 		chttp_error_msg(ctx->chttp));
 
+	if (ctx->chttp->free) {
+		allocs++;
+	}
+
+	data = ctx->chttp->data;
+	while(data) {
+		if (data->free) {
+			allocs++;
+		}
+		data = data->next;
+	}
+
 	chttp_context_free(ctx->chttp);
 	ctx->chttp = NULL;
 
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "context contained %zu allocations", allocs);
 }
 
 void
