@@ -147,7 +147,7 @@ main(int argc, char **argv)
 		return 1;
 	} else if (test.skip) {
 		chttp_test_run_all_finish(&test);
-		chttp_test_log(&test.context, CHTTP_LOG_FORCE, "SKIPPED");
+		chttp_test_log(NULL, CHTTP_LOG_FORCE, "SKIPPED");
 		return 0;
 	}
 

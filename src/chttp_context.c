@@ -38,6 +38,7 @@ _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 	memset(ctx, 0, CHTTP_CTX_SIZE);
 
 	ctx->magic = CHTTP_CTX_MAGIC;
+	ctx->addr.sock = -1;
 
 	if (dpage_size > sizeof(struct chttp_dpage)) {
 		ctx->data = (struct chttp_dpage*)ctx->_data;

@@ -71,6 +71,12 @@ struct chttp_dpage {
 #define CHTTP_DPAGE_MIN_SIZE		2048
 #define CHTTP_DPAGE_SIZE		(sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN_SIZE)
 
+struct chttp_dpage_ptr {
+	struct chttp_dpage		*data;
+	size_t				offset;
+	size_t				length;
+};
+
 struct chttp_addr {
 	unsigned int			magic;
 #define CHTTP_ADDR_MAGIC		0x8A7CEC19
@@ -84,11 +90,6 @@ struct chttp_addr {
 		struct sockaddr_in	sa4;
 		struct sockaddr_in6	sa6;
 	};
-};
-
-struct chttp_dpage_ptr {
-	struct chttp_dpage		*data;
-	size_t				offset;
 };
 
 struct chttp_context {

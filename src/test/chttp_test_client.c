@@ -161,7 +161,7 @@ chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test
 
 	chttp_send(ctx->chttp, cmd->params[0].value, port, 0);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent");
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent to %s:%ld", cmd->params[0].value, port);
 }
 
 void
