@@ -180,8 +180,9 @@ chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_
 void
 chttp_dpage_shift_full(struct chttp_context *ctx)
 {
-	struct chttp_dpage *dpage;
-	size_t start, leftover;
+	struct chttp_dpage *dpage, *dpage_new;
+	size_t start, leftover_len;
+	uint8_t *leftover;
 
 	chttp_context_ok(ctx);
 	chttp_dpage_ok(ctx->data_start.dpage);
@@ -195,26 +196,35 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 	}
 
 	start = chttp_dpage_resp_start(ctx);
-	leftover = dpage->offset - start;
+	leftover_len = dpage->offset - start;
 
 	// Incomplete line
-	if (leftover) {
-		// TODO you can reset_end here and potentially shift back
+	if (leftover_len) {
+		leftover = chttp_dpage_start_ptr_convert(ctx);
+		ctx->data_start.dpage = NULL;
 
-		chttp_dpage_get(ctx, leftover + 1);
+		// Try and shift back
+		if (ctx->data_end.dpage && ctx->data_end.dpage != dpage && dpage->offset) {
+			chttp_dpage_reset_end(ctx);
+			dpage_new = chttp_dpage_get(ctx, leftover_len + 1);
+		} else {
+			// Move over to a new dpage
+			dpage_new = chttp_dpage_get(ctx, leftover_len + 1);
+			assert(dpage_new != dpage);
 
-		// Move over to a new dpage
-		assert(ctx->dpage_last != dpage);
-		assert(leftover < ctx->dpage_last->length);
-		assert_zero(ctx->dpage_last->offset);
+			dpage->offset -= leftover_len;
+		}
 
-		chttp_dpage_append(ctx, ctx->data_start.dpage->data + ctx->data_start.offset,
-			leftover);
+		assert(ctx->dpage_last == dpage_new);
+		assert(dpage_new->offset + leftover_len < dpage_new->length);
 
-		dpage->offset -= leftover;
-		ctx->data_start.dpage = ctx->dpage_last;
-		ctx->data_start.offset = 0;
-		dpage = ctx->dpage_last;
+		memmove(&dpage_new->data[dpage_new->offset], leftover, leftover_len);
+
+		ctx->data_start.dpage = dpage_new;
+		ctx->data_start.offset = dpage_new->offset;
+
+		dpage_new->offset += leftover_len;
+		dpage = dpage_new;
 	}
 
 	// Make sure we have an available dpage
@@ -223,10 +233,11 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 	if (ctx->dpage_last != dpage) {
 		chttp_dpage_ok(ctx->dpage_last);
 		assert_zero(ctx->dpage_last->offset);
-		assert_zero(leftover);
+		assert_zero(leftover_len);
 
 		ctx->data_start.dpage = ctx->dpage_last;
 		ctx->data_start.offset = 0;
+		ctx->data_start.length = 0;
 	}
 }
 
