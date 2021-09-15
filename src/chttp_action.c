@@ -87,7 +87,7 @@ chttp_receive(struct chttp_context *ctx)
 
 	ctx->state = CHTTP_STATE_RESP_HEADERS;
 
-	chttp_dpage_reset(ctx);
+	chttp_dpage_reset_all(ctx);
 
 	do {
 		chttp_tcp_read(ctx);
@@ -106,6 +106,7 @@ chttp_receive(struct chttp_context *ctx)
 
 	assert_zero(ctx->error);
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
+	chttp_dpage_ok(ctx->data_end.dpage);
 
 	chttp_body_length(ctx, 1);
 
@@ -153,7 +154,7 @@ chttp_finish(struct chttp_context *ctx)
 		chttp_tcp_close(ctx);
 	}
 
-	chttp_dpage_reset(ctx);
+	chttp_dpage_reset_all(ctx);
 
 	ctx->state = CHTTP_STATE_DONE;
 }

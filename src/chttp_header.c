@@ -401,6 +401,10 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 				ctx->data_start.dpage = NULL;
 			}
 
+			ctx->data_end.dpage = dpage;
+			ctx->data_end.offset = end + 1;
+			ctx->data_end.length = 0;
+
 			return;
 		}
 

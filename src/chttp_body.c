@@ -54,7 +54,9 @@ _body_chunk_end(struct chttp_context *ctx)
 			}
 		}
 	} else {
+		chttp_dpage_reset_end(ctx);
 		chttp_dpage_get(ctx, 2);
+
 		ctx->data_start.dpage = ctx->dpage_last;
 		ctx->data_start.offset = ctx->dpage_last->offset;
 		ctx->data_start.length = 0;
@@ -132,7 +134,9 @@ _body_chunk_start(struct chttp_context *ctx)
 			return;
 		}
 	} else {
+		chttp_dpage_reset_end(ctx);
 		chttp_dpage_get(ctx, 5);
+
 		ctx->data_start.dpage = ctx->dpage_last;
 		ctx->data_start.offset = ctx->dpage_last->offset;
 		ctx->data_start.length = 0;
@@ -331,7 +335,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		}
 	}
 
-	assert_zero(ctx->data_start.dpage);
+	chttp_dpage_reset_end(ctx);
 
 	len = buf_len;
 

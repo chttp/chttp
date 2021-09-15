@@ -14,7 +14,7 @@ chttp_context_debug(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 
 	printf("chttp_ctx state=%d error=%d version=%d data_last=%p\n"
-		"data_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
+		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u\n",
 		ctx->state, ctx->error, ctx->version, (void*)ctx->dpage_last,
 		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
