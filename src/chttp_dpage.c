@@ -211,6 +211,7 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 			// Move over to a new dpage
 			dpage_new = chttp_dpage_get(ctx, leftover_len + 1);
 			assert(dpage_new != dpage);
+			assert_zero(dpage_new->offset);
 
 			dpage->offset -= leftover_len;
 		}
