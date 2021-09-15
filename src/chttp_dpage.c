@@ -220,12 +220,11 @@ chttp_dpage_resp_start(struct chttp_context *ctx)
 uint8_t *
 chttp_dpage_start_ptr_convert(struct chttp_context *ctx)
 {
-	chttp_context_ok(ctx);
-	chttp_dpage_ok(ctx->data_start.dpage);
-	assert(ctx->data_start.dpage == ctx->dpage_last);
-	assert(ctx->data_start.offset <= ctx->data_start.dpage->offset);
+	size_t start;
 
-	return ctx->data_start.dpage->data + ctx->data_start.offset;
+	start = chttp_dpage_resp_start(ctx);
+
+	return ctx->data_start.dpage->data + start;
 }
 
 void

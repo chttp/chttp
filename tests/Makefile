@@ -4,6 +4,7 @@ CHTTP_TEST=../src/chttp_test
 V=vv
 CHTS=$(sort $(wildcard */*.cht))
 VALGRIND=
+GDB=gdb --args
 
 .PHONY:	all test check chttp_test valgrind verbose
 

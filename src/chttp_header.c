@@ -50,25 +50,24 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 		ctx->is_head = 1;
 	}
 
-	method_len = strlen(method);
-
-	chttp_dpage_append(ctx, method, method_len);
-
 	if (ctx->version == CHTTP_H_VERSION_DEFAULT) {
 		ctx->version = CHTTP_DEFAULT_H_VERSION;
 	}
 
-	ctx->state = CHTTP_STATE_INIT_METHOD;
+	method_len = strlen(method);
 
 	// Mark the start
-	chttp_dpage_ok(ctx->dpage_last);
-	ctx->data_start.dpage = ctx->dpage_last;
-	ctx->data_start.offset = ctx->dpage_last->offset;
-	assert(ctx->data_start.offset >= method_len);
-	ctx->data_start.offset -= method_len;
+	ctx->data_start.dpage = chttp_dpage_get(ctx, method_len);
+	chttp_dpage_ok(ctx->data_start.dpage);
+	ctx->data_start.offset = ctx->data_start.dpage->offset;
 	ctx->data_start.length = 0;
-	assert_zero(strncmp((char*)&ctx->data_start.dpage->data[ctx->data_start.offset], method,
-		method_len));
+
+	chttp_dpage_append(ctx, method, method_len);
+
+	assert(ctx->data_start.dpage == ctx->dpage_last);
+	assert_zero(strncmp((char*)chttp_dpage_start_ptr_convert(ctx), method, method_len));
+
+	ctx->state = CHTTP_STATE_INIT_METHOD;
 }
 
 void
