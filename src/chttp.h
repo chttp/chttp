@@ -96,12 +96,12 @@ struct chttp_context {
 	unsigned int			magic;
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
 
+	// TODO rename all the data to dpage
 	struct chttp_dpage		*data;
 	struct chttp_dpage		*data_last;
 
 	struct chttp_dpage_ptr		data_start;
-
-	uint8_t				*resp_last;
+	struct chttp_dpage_ptr		data_end;
 
 	struct chttp_addr		addr;
 
@@ -142,6 +142,7 @@ struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
 void chttp_dpage_shift_full(struct chttp_context *ctx);
 size_t chttp_dpage_resp_start(struct chttp_context *ctx);
+uint8_t *chttp_dpage_start_ptr_convert(struct chttp_context *ctx);
 void chttp_dpage_free(struct chttp_dpage *data);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 

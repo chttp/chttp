@@ -66,6 +66,7 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 	ctx->data_start.offset = ctx->data_last->offset;
 	assert(ctx->data_start.offset >= method_len);
 	ctx->data_start.offset -= method_len;
+	ctx->data_start.length = 0;
 	assert_zero(strncmp((char*)&ctx->data_start.data->data[ctx->data_start.offset], method,
 		method_len));
 }
@@ -348,12 +349,14 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 	data = ctx->data_last;
 
 	// First parse
-	if (!ctx->resp_last) {
+	if (!ctx->data_start.data) {
 		assert(data == ctx->data);
 		assert(data->offset);
 		assert_zero(ctx->seen_first);
 
-		ctx->resp_last = data->data;
+		ctx->data_start.data = data;
+		ctx->data_start.offset = 0;
+		ctx->data_start.length = 0;
 	}
 
 	start = chttp_dpage_resp_start(ctx);
@@ -393,15 +396,17 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 			ctx->state = CHTTP_STATE_RESP_BODY;
 
 			if (end + 1 < data->offset) {
-				ctx->resp_last = &data->data[end + 1];
+				assert(ctx->data_start.data == data);
+				ctx->data_start.offset = end + 1;
 			} else {
-				ctx->resp_last = NULL;
+				ctx->data_start.data = NULL;
 			}
 
 			return;
 		}
 
-		ctx->resp_last = &data->data[end + 1];
+		assert(ctx->data_start.data == data);
+		ctx->data_start.offset = end + 1;
 		start = end;
 	}
 

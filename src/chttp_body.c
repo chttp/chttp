@@ -22,7 +22,9 @@ _body_chunk_end(struct chttp_context *ctx)
 	assert_zero(ctx->length);
 	chttp_dpage_ok(ctx->data_last);
 
-	if (ctx->resp_last) {
+	if (ctx->data_start.data) {
+		chttp_dpage_ok(ctx->data_start.data);
+
 		start = chttp_dpage_resp_start(ctx);
 
 		error = chttp_find_endline(ctx->data_last, start, NULL, &end, 1,
@@ -41,9 +43,11 @@ _body_chunk_end(struct chttp_context *ctx)
 				end++;
 
 				if (end == ctx->data_last->offset) {
-					ctx->resp_last = NULL;
+					ctx->data_start.data = NULL;
 				} else {
-					ctx->resp_last = &ctx->data_last->data[end];
+					ctx->data_start.data = ctx->data_last;
+					ctx->data_start.offset = end;
+					ctx->data_start.length = 0;
 				}
 
 				return;
@@ -51,10 +55,12 @@ _body_chunk_end(struct chttp_context *ctx)
 		}
 	} else {
 		chttp_dpage_get(ctx, 2);
-		ctx->resp_last = &ctx->data_last->data[ctx->data_last->offset];
+		ctx->data_start.data = ctx->data_last;
+		ctx->data_start.offset = ctx->data_last->offset;
+		ctx->data_start.length = 0;
 	}
 
-	assert(ctx->resp_last);
+	chttp_dpage_ok(ctx->data_start.data);
 	chttp_tcp_read(ctx);
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
@@ -80,7 +86,9 @@ _body_chunk_start(struct chttp_context *ctx)
 	assert_zero(ctx->length);
 	chttp_dpage_ok(ctx->data_last);
 
-	if (ctx->resp_last) {
+	if (ctx->data_start.data) {
+		chttp_dpage_ok(ctx->data_start.data);
+
 		start = chttp_dpage_resp_start(ctx);
 
 		error = chttp_find_endline(ctx->data_last, start, NULL, &end, 1,
@@ -105,16 +113,18 @@ _body_chunk_start(struct chttp_context *ctx)
 			end++;
 
 			if (end == ctx->data_last->offset) {
-				ctx->resp_last = NULL;
+				ctx->data_start.data = NULL;
 			} else {
-				ctx->resp_last = &ctx->data_last->data[end];
+				ctx->data_start.data = ctx->data_last;
+				ctx->data_start.offset = end;
+				ctx->data_start.length = 0;
 			}
 
 			if (ctx->length == 0) {
 				_body_chunk_end(ctx);
 
 				if (ctx->state == CHTTP_STATE_RESP_BODY) {
-					assert_zero(ctx->resp_last);
+					assert_zero(ctx->data_start.data);
 					ctx->state = CHTTP_STATE_IDLE;
 				}
 			}
@@ -122,11 +132,13 @@ _body_chunk_start(struct chttp_context *ctx)
 			return;
 		}
 	} else {
-		chttp_dpage_get(ctx, 3);
-		ctx->resp_last = &ctx->data_last->data[ctx->data_last->offset];
+		chttp_dpage_get(ctx, 5);
+		ctx->data_start.data = ctx->data_last;
+		ctx->data_start.offset = ctx->data_last->offset;
+		ctx->data_start.length = 0;
 	}
 
-	assert(ctx->resp_last);
+	chttp_dpage_ok(ctx->data_start.data);
 	chttp_tcp_read(ctx);
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
@@ -251,8 +263,8 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 	ret_dpage = 0;
 	ret = 0;
 
-	if (ctx->resp_last) {
-		chttp_dpage_ok(ctx->data_last);
+	if (ctx->data_start.data) {
+		chttp_dpage_ok(ctx->data_start.data);
 		assert(ctx->length);
 
 		start = chttp_dpage_resp_start(ctx);
@@ -268,13 +280,13 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		if (ret_dpage <= buf_len) {
 			assert(ret_dpage);
 
-			memcpy(buf, ctx->resp_last, ret_dpage);
+			memcpy(buf, chttp_dpage_start_ptr_convert(ctx), ret_dpage);
 
 			if (start + ret_dpage < ctx->data_last->offset) {
-				ctx->resp_last += ret_dpage;
+				ctx->data_start.offset += ret_dpage;
 			} else {
 				assert(start + ret_dpage == ctx->data_last->offset);
-				ctx->resp_last = NULL;
+				ctx->data_start.data = NULL;
 			}
 
 			if (ctx->length > 0) {
@@ -297,14 +309,14 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			buf = (uint8_t*)buf + ret_dpage;
 			buf_len -= ret_dpage;
 
-			if (ctx->resp_last) {
+			if (ctx->data_start.data) {
 				return ret_dpage + chttp_get_body(ctx, buf, buf_len);
 			}
 		} else {
 			// Not enough room
-			memcpy(buf, ctx->resp_last, buf_len);
+			memcpy(buf, chttp_dpage_start_ptr_convert(ctx), buf_len);
 
-			ctx->resp_last += buf_len;
+			ctx->data_start.offset += buf_len;
 
 			chttp_dpage_resp_start(ctx);
 
@@ -319,7 +331,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		}
 	}
 
-	assert_zero(ctx->resp_last);
+	assert_zero(ctx->data_start.data);
 
 	len = buf_len;
 

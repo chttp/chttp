@@ -96,6 +96,9 @@ chttp_dpage_reset(struct chttp_context *ctx)
 	if (ctx->data) {
 		ctx->data_last = ctx->data;
 	}
+
+	memset(&ctx->data_start, 0, sizeof(ctx->data_start));
+	memset(&ctx->data_end, 0, sizeof(ctx->data_end));
 }
 
 struct chttp_dpage *
@@ -159,7 +162,7 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 	size_t start, leftover;
 
 	chttp_context_ok(ctx);
-	assert(ctx->resp_last);
+	chttp_dpage_ok(ctx->data_start.data);
 
 	data = ctx->data_last;
 
@@ -181,10 +184,12 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 		assert(leftover < ctx->data_last->length);
 		assert_zero(ctx->data_last->offset);
 
-		chttp_dpage_append(ctx, ctx->resp_last, leftover);
+		chttp_dpage_append(ctx, ctx->data_start.data->data + ctx->data_start.offset,
+			leftover);
 
 		data->offset -= leftover;
-		ctx->resp_last = ctx->data_last->data;
+		ctx->data_start.data = ctx->data_last;
+		ctx->data_start.offset = 0;
 		data = ctx->data_last;
 	}
 
@@ -196,22 +201,32 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 		assert_zero(ctx->data_last->offset);
 		assert_zero(leftover);
 
-		ctx->resp_last = ctx->data_last->data;
+		ctx->data_start.data = ctx->data_last;
+		ctx->data_start.offset = 0;
 	}
 }
 
+// TODO rename
 size_t
 chttp_dpage_resp_start(struct chttp_context *ctx)
 {
-	size_t start;
-
 	chttp_context_ok(ctx);
-	assert(ctx->resp_last);
+	chttp_dpage_ok(ctx->data_start.data);
+	assert(ctx->data_start.data == ctx->data_last);
+	assert(ctx->data_start.offset <= ctx->data_start.data->offset);
 
-	start = ctx->resp_last - ctx->data_last->data;
-	assert(start <= ctx->data_last->offset);
+	return ctx->data_start.offset;
+}
 
-	return start;
+uint8_t *
+chttp_dpage_start_ptr_convert(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	chttp_dpage_ok(ctx->data_start.data);
+	assert(ctx->data_start.data == ctx->data_last);
+	assert(ctx->data_start.offset <= ctx->data_start.data->offset);
+
+	return ctx->data_start.data->data + ctx->data_start.offset;
 }
 
 void
