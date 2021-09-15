@@ -20,14 +20,14 @@ _body_chunk_end(struct chttp_context *ctx)
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
 	assert(ctx->chunked);
 	assert_zero(ctx->length);
-	chttp_dpage_ok(ctx->data_last);
+	chttp_dpage_ok(ctx->dpage_last);
 
-	if (ctx->data_start.data) {
-		chttp_dpage_ok(ctx->data_start.data);
+	if (ctx->data_start.dpage) {
+		chttp_dpage_ok(ctx->data_start.dpage);
 
 		start = chttp_dpage_resp_start(ctx);
 
-		error = chttp_find_endline(ctx->data_last, start, NULL, &end, 1,
+		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1,
 			NULL);
 
 		if (error > 0) {
@@ -42,10 +42,10 @@ _body_chunk_end(struct chttp_context *ctx)
 			} else {
 				end++;
 
-				if (end == ctx->data_last->offset) {
-					ctx->data_start.data = NULL;
+				if (end == ctx->dpage_last->offset) {
+					ctx->data_start.dpage = NULL;
 				} else {
-					ctx->data_start.data = ctx->data_last;
+					ctx->data_start.dpage = ctx->dpage_last;
 					ctx->data_start.offset = end;
 					ctx->data_start.length = 0;
 				}
@@ -55,12 +55,12 @@ _body_chunk_end(struct chttp_context *ctx)
 		}
 	} else {
 		chttp_dpage_get(ctx, 2);
-		ctx->data_start.data = ctx->data_last;
-		ctx->data_start.offset = ctx->data_last->offset;
+		ctx->data_start.dpage = ctx->dpage_last;
+		ctx->data_start.offset = ctx->dpage_last->offset;
 		ctx->data_start.length = 0;
 	}
 
-	chttp_dpage_ok(ctx->data_start.data);
+	chttp_dpage_ok(ctx->data_start.dpage);
 	chttp_tcp_read(ctx);
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
@@ -84,14 +84,14 @@ _body_chunk_start(struct chttp_context *ctx)
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
 	assert(ctx->chunked);
 	assert_zero(ctx->length);
-	chttp_dpage_ok(ctx->data_last);
+	chttp_dpage_ok(ctx->dpage_last);
 
-	if (ctx->data_start.data) {
-		chttp_dpage_ok(ctx->data_start.data);
+	if (ctx->data_start.dpage) {
+		chttp_dpage_ok(ctx->data_start.dpage);
 
 		start = chttp_dpage_resp_start(ctx);
 
-		error = chttp_find_endline(ctx->data_last, start, NULL, &end, 1,
+		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1,
 			NULL);
 
 		if (error > 0) {
@@ -101,7 +101,7 @@ _body_chunk_start(struct chttp_context *ctx)
 			chttp_dpage_shift_full(ctx);
 		} else {
 			errno = 0;
-			len_start = (char*)&ctx->data_last->data[start];
+			len_start = (char*)&ctx->dpage_last->data[start];
 			ctx->length = strtol(len_start, &len_end, 16);
 
 			if (ctx->length < 0 || ctx->length == LONG_MAX || errno ||
@@ -112,10 +112,10 @@ _body_chunk_start(struct chttp_context *ctx)
 
 			end++;
 
-			if (end == ctx->data_last->offset) {
-				ctx->data_start.data = NULL;
+			if (end == ctx->dpage_last->offset) {
+				ctx->data_start.dpage = NULL;
 			} else {
-				ctx->data_start.data = ctx->data_last;
+				ctx->data_start.dpage = ctx->dpage_last;
 				ctx->data_start.offset = end;
 				ctx->data_start.length = 0;
 			}
@@ -124,7 +124,7 @@ _body_chunk_start(struct chttp_context *ctx)
 				_body_chunk_end(ctx);
 
 				if (ctx->state == CHTTP_STATE_RESP_BODY) {
-					assert_zero(ctx->data_start.data);
+					assert_zero(ctx->data_start.dpage);
 					ctx->state = CHTTP_STATE_IDLE;
 				}
 			}
@@ -133,12 +133,12 @@ _body_chunk_start(struct chttp_context *ctx)
 		}
 	} else {
 		chttp_dpage_get(ctx, 5);
-		ctx->data_start.data = ctx->data_last;
-		ctx->data_start.offset = ctx->data_last->offset;
+		ctx->data_start.dpage = ctx->dpage_last;
+		ctx->data_start.offset = ctx->dpage_last->offset;
 		ctx->data_start.length = 0;
 	}
 
-	chttp_dpage_ok(ctx->data_start.data);
+	chttp_dpage_ok(ctx->data_start.dpage);
 	chttp_tcp_read(ctx);
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
@@ -263,14 +263,14 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 	ret_dpage = 0;
 	ret = 0;
 
-	if (ctx->data_start.data) {
-		chttp_dpage_ok(ctx->data_start.data);
+	if (ctx->data_start.dpage) {
+		chttp_dpage_ok(ctx->data_start.dpage);
 		assert(ctx->length);
 
 		start = chttp_dpage_resp_start(ctx);
 
 		// Figure out how much data we have left
-		ret_dpage = ctx->data_last->offset - start;
+		ret_dpage = ctx->dpage_last->offset - start;
 
 		if (ctx->length >= 0 && ret_dpage > (size_t)ctx->length) {
 			ret_dpage = ctx->length;
@@ -282,11 +282,11 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 			memcpy(buf, chttp_dpage_start_ptr_convert(ctx), ret_dpage);
 
-			if (start + ret_dpage < ctx->data_last->offset) {
+			if (start + ret_dpage < ctx->dpage_last->offset) {
 				ctx->data_start.offset += ret_dpage;
 			} else {
-				assert(start + ret_dpage == ctx->data_last->offset);
-				ctx->data_start.data = NULL;
+				assert(start + ret_dpage == ctx->dpage_last->offset);
+				ctx->data_start.dpage = NULL;
 			}
 
 			if (ctx->length > 0) {
@@ -309,7 +309,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			buf = (uint8_t*)buf + ret_dpage;
 			buf_len -= ret_dpage;
 
-			if (ctx->data_start.data) {
+			if (ctx->data_start.dpage) {
 				return ret_dpage + chttp_get_body(ctx, buf, buf_len);
 			}
 		} else {
@@ -331,7 +331,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		}
 	}
 
-	assert_zero(ctx->data_start.data);
+	assert_zero(ctx->data_start.dpage);
 
 	len = buf_len;
 

@@ -21,7 +21,7 @@ static void
 _test_client_finish(struct chttp_test_context *ctx)
 {
 	size_t allocs = 0;
-	struct chttp_dpage *data;
+	struct chttp_dpage *dpage;
 
 	assert(ctx);
 	chttp_test_ERROR(!ctx->chttp, "chttp context does not exist");
@@ -33,12 +33,12 @@ _test_client_finish(struct chttp_test_context *ctx)
 		allocs++;
 	}
 
-	data = ctx->chttp->data;
-	while(data) {
-		if (data->free) {
+	dpage = ctx->chttp->dpage;
+	while(dpage) {
+		if (dpage->free) {
 			allocs++;
 		}
-		data = data->next;
+		dpage = dpage->next;
 	}
 
 	chttp_context_free(ctx->chttp);

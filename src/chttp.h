@@ -72,7 +72,7 @@ struct chttp_dpage {
 #define CHTTP_DPAGE_SIZE		(sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN_SIZE)
 
 struct chttp_dpage_ptr {
-	struct chttp_dpage		*data;
+	struct chttp_dpage		*dpage;
 	size_t				offset;
 	size_t				length;
 };
@@ -96,9 +96,8 @@ struct chttp_context {
 	unsigned int			magic;
 #define CHTTP_CTX_MAGIC			0x81D0C9BA
 
-	// TODO rename all the data to dpage
-	struct chttp_dpage		*data;
-	struct chttp_dpage		*data_last;
+	struct chttp_dpage		*dpage;
+	struct chttp_dpage		*dpage_last;
 
 	struct chttp_dpage_ptr		data_start;
 	struct chttp_dpage_ptr		data_end;
@@ -136,14 +135,14 @@ void chttp_context_free(struct chttp_context *ctx);
 
 size_t chttp_dpage_size(int min);
 struct chttp_dpage *chttp_dpage_alloc(size_t dpage_size);
-void chttp_dpage_init(struct chttp_dpage *data, size_t dpage_size);
+void chttp_dpage_init(struct chttp_dpage *dpage, size_t dpage_size);
 void chttp_dpage_reset(struct chttp_context *ctx);
 struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
 void chttp_dpage_shift_full(struct chttp_context *ctx);
 size_t chttp_dpage_resp_start(struct chttp_context *ctx);
 uint8_t *chttp_dpage_start_ptr_convert(struct chttp_context *ctx);
-void chttp_dpage_free(struct chttp_dpage *data);
+void chttp_dpage_free(struct chttp_dpage *dpage);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 
 typedef void (chttp_parse_f)(struct chttp_context*, size_t, size_t);
@@ -156,7 +155,7 @@ void chttp_parse_response(struct chttp_context *ctx);
 void chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func);
 const char *chttp_get_header(struct chttp_context *ctx, const char *name);
 const char *chttp_get_header_pos(struct chttp_context *ctx, const char *name, size_t pos);
-int chttp_find_endline(struct chttp_dpage *data, size_t start, size_t *mid, size_t *end,
+int chttp_find_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary);
 extern const char *CHTTP_HEADER_REASON;
 
@@ -180,7 +179,7 @@ size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_tcp_close(struct chttp_context *ctx);
 
 void chttp_context_debug(struct chttp_context *ctx);
-void chttp_dpage_debug(struct chttp_dpage *data);
+void chttp_dpage_debug(struct chttp_dpage *dpage);
 void chttp_print_hex(void *buf, size_t buf_len);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
 const char *chttp_error_msg(struct chttp_context *ctx);
@@ -192,10 +191,10 @@ const char *chttp_error_msg(struct chttp_context *ctx);
 		assert(ctx);						\
 		assert((ctx)->magic == CHTTP_CTX_MAGIC);		\
 	} while (0)
-#define chttp_dpage_ok(data)						\
+#define chttp_dpage_ok(dpage)						\
 	do {								\
-		assert(data);						\
-		assert((data)->magic == CHTTP_DPAGE_MAGIC);		\
+		assert(dpage);						\
+		assert((dpage)->magic == CHTTP_DPAGE_MAGIC);		\
 	} while (0)
 #define chttp_addr_ok(ctx)						\
 	do {								\

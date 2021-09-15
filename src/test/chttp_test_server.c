@@ -417,28 +417,28 @@ chttp_test_var_server_port(struct chttp_test_context *ctx)
 static void
 _server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
 {
-	struct chttp_dpage *data;
+	struct chttp_dpage *dpage;
 	size_t len, count, i;
 
 	chttp_context_ok(ctx);
-	chttp_dpage_ok(ctx->data_last);
+	chttp_dpage_ok(ctx->dpage_last);
 	assert_zero(ctx->seen_first);
 
-	data = ctx->data_last;
+	dpage = ctx->dpage_last;
 	len = end - start;
 
 	// TODO remove
-	assert(strlen((char*)&data->data[start]) == len);
+	assert(strlen((char*)&dpage->data[start]) == len);
 
 	for (i = start, count = 0; i < end; i++) {
-		if (data->data[i] < ' ') {
+		if (dpage->data[i] < ' ') {
 			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 			return;
-		} else if (data->data[i] == ' ') {
-			data->data[i] = '\0';
+		} else if (dpage->data[i] == ' ') {
+			dpage->data[i] = '\0';
 			count++;
 
-			if (data->data[i + 1] <= ' ') {
+			if (dpage->data[i + 1] <= ' ') {
 				chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
 				return;
 			}
@@ -498,7 +498,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
-		chttp_dpage_debug(server->chttp->data);
+		chttp_dpage_debug(server->chttp->dpage);
 	}
 
 	server->http_sock = server->chttp->addr.sock;

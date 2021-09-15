@@ -96,14 +96,14 @@ chttp_tcp_read(struct chttp_context *ctx)
 	size_t ret;
 
 	chttp_context_ok(ctx);
-	chttp_dpage_ok(ctx->data_last);
-	assert(ctx->data_last->offset < ctx->data_last->length);
+	chttp_dpage_ok(ctx->dpage_last);
+	assert(ctx->dpage_last->offset < ctx->dpage_last->length);
 
-	ret = chttp_tcp_read_buf(ctx, ctx->data_last->data + ctx->data_last->offset,
-		ctx->data_last->length - ctx->data_last->offset);
+	ret = chttp_tcp_read_buf(ctx, ctx->dpage_last->data + ctx->dpage_last->offset,
+		ctx->dpage_last->length - ctx->dpage_last->offset);
 
-	ctx->data_last->offset += ret;
-	assert(ctx->data_last->offset <= ctx->data_last->length);
+	ctx->dpage_last->offset += ret;
+	assert(ctx->dpage_last->offset <= ctx->dpage_last->length);
 }
 
 size_t

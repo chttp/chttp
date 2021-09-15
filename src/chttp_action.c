@@ -23,12 +23,12 @@ _finalize_request(struct chttp_context *ctx, const char *host)
 void
 chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 {
-	struct chttp_dpage *data;
+	struct chttp_dpage *dpage;
 	ssize_t ret;
 	size_t offset;
 
 	chttp_context_ok(ctx);
-	assert(ctx->data_start.data);
+	assert(ctx->data_start.dpage);
 	assert(host && *host);
 	assert(port > 0);
 	(void)tls;
@@ -58,17 +58,17 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 
 	offset = ctx->data_start.offset;
 
-	for (data = ctx->data_start.data; data; data = data->next) {
-		chttp_dpage_ok(data);
-		assert(offset < data->offset);
+	for (dpage = ctx->data_start.dpage; dpage; dpage = dpage->next) {
+		chttp_dpage_ok(dpage);
+		assert(offset < dpage->offset);
 
-		if (!data->offset) {
+		if (!dpage->offset) {
 			continue;
 		}
 
 		// TODO turn into tcp
-		ret = send(ctx->addr.sock, data->data + offset, data->offset - offset, MSG_NOSIGNAL);
-		assert(ret > 0 && (size_t)ret == (data->offset - offset)); // TODO partial send
+		ret = send(ctx->addr.sock, dpage->data + offset, dpage->offset - offset, MSG_NOSIGNAL);
+		assert(ret > 0 && (size_t)ret == (dpage->offset - offset)); // TODO partial send
 
 		offset = 0;
 	}

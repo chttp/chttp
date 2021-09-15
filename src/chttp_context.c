@@ -41,10 +41,10 @@ _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 	ctx->addr.sock = -1;
 
 	if (dpage_size > sizeof(struct chttp_dpage)) {
-		ctx->data = (struct chttp_dpage*)ctx->_data;
-		ctx->data_last = ctx->data;
+		ctx->dpage = (struct chttp_dpage*)ctx->_data;
+		ctx->dpage_last = ctx->dpage;
 
-		chttp_dpage_init(ctx->data, dpage_size);
+		chttp_dpage_init(ctx->dpage, dpage_size);
 	}
 }
 
@@ -85,10 +85,10 @@ chttp_context_free(struct chttp_context *ctx)
 
 	ctx->addr.magic = 0;
 
-	chttp_dpage_free(ctx->data);
+	chttp_dpage_free(ctx->dpage);
 
 	ctx->magic = 0;
-	ctx->data = NULL;
+	ctx->dpage = NULL;
 
 	if (ctx->free) {
 		free(ctx);

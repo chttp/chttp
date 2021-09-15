@@ -16,28 +16,28 @@ chttp_context_debug(struct chttp_context *ctx)
 	printf("chttp_ctx state=%d error=%d version=%d data_last=%p\n"
 		"data_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u\n",
-		ctx->state, ctx->error, ctx->version, (void*)ctx->data_last,
-		(void*)ctx->data_start.data, ctx->data_start.offset, ctx->data_start.length,
-		(void*)ctx->data_end.data, ctx->data_end.offset, ctx->data_end.length,
+		ctx->state, ctx->error, ctx->version, (void*)ctx->dpage_last,
+		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
+		(void*)ctx->data_end.dpage, ctx->data_end.offset, ctx->data_end.length,
 		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked);
 
-	chttp_dpage_debug(ctx->data);
+	chttp_dpage_debug(ctx->dpage);
 }
 
 void
-chttp_dpage_debug(struct chttp_dpage *data)
+chttp_dpage_debug(struct chttp_dpage *dpage)
 {
-	while (data) {
-		chttp_dpage_ok(data);
+	while (dpage) {
+		chttp_dpage_ok(dpage);
 
 		printf("\tchttp_dpage free=%u length=%zu offset=%zu ptr=%p (%p)\n",
-		    data->free, data->length, data->offset, (void*)data, data->data);
+		    dpage->free, dpage->length, dpage->offset, (void*)dpage, dpage->data);
 
-		if (data->offset) {
-			chttp_print_hex(data->data, data->offset);
+		if (dpage->offset) {
+			chttp_print_hex(dpage->data, dpage->offset);
 		}
 
-		data = data->next;
+		dpage = dpage->next;
 	}
 }
 
