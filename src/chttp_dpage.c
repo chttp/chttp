@@ -178,6 +178,23 @@ chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_
 }
 
 void
+chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t buffer_len,
+    struct chttp_dpage_ptr *dptr)
+{
+	chttp_context_ok(ctx);
+	assert(dptr);
+
+	dptr->dpage = chttp_dpage_get(ctx, buffer_len);
+	chttp_dpage_ok(dptr->dpage);
+	dptr->offset = dptr->dpage->offset;
+	dptr->length = buffer_len;
+
+	chttp_dpage_append(ctx, buffer, buffer_len);
+
+	assert(dptr->dpage == ctx->dpage_last);
+}
+
+void
 chttp_dpage_shift_full(struct chttp_context *ctx)
 {
 	struct chttp_dpage *dpage, *dpage_new;

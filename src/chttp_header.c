@@ -36,8 +36,6 @@ chttp_set_version(struct chttp_context *ctx, enum chttp_version version)
 void
 chttp_set_method(struct chttp_context *ctx, const char *method)
 {
-	size_t method_len;
-
 	chttp_context_ok(ctx);
 	assert(method && *method);
 	assert_zero(ctx->data_start.dpage);
@@ -54,18 +52,7 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 		ctx->version = CHTTP_DEFAULT_H_VERSION;
 	}
 
-	method_len = strlen(method);
-
-	// Mark the start
-	ctx->data_start.dpage = chttp_dpage_get(ctx, method_len);
-	chttp_dpage_ok(ctx->data_start.dpage);
-	ctx->data_start.offset = ctx->data_start.dpage->offset;
-	ctx->data_start.length = 0;
-
-	chttp_dpage_append(ctx, method, method_len);
-
-	assert(ctx->data_start.dpage == ctx->dpage_last);
-	assert_zero(strncmp((char*)chttp_dpage_start_ptr_convert(ctx), method, method_len));
+	chttp_dpage_append_mark(ctx, method, strlen(method), &ctx->data_start);
 
 	ctx->state = CHTTP_STATE_INIT_METHOD;
 }

@@ -56,10 +56,9 @@ chttp_tcp_connect(struct chttp_context *ctx)
 
 	chttp_context_ok(ctx);
 	chttp_addr_ok(ctx);
+	assert(ctx->addr.state == CHTTP_ADDR_RESOLVED);
 
 	addr = &ctx->addr;
-
-	assert(addr->state == CHTTP_ADDR_RESOLVED);
 
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
 
@@ -153,6 +152,11 @@ chttp_tcp_close(struct chttp_context *ctx)
 
 	assert_zero(close(ctx->addr.sock));
 
-	ctx->addr.state = CHTTP_ADDR_RESOLVED;
+	if (ctx->addr.len) {
+		ctx->addr.state = CHTTP_ADDR_RESOLVED;
+	} else  {
+		ctx->addr.state = CHTTP_ADDR_NONE;
+	}
+
 	ctx->addr.sock = -1;
 }

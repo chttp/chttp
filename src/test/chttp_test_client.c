@@ -149,7 +149,7 @@ chttp_test_cmd_chttp_delete_header(struct chttp_test_context *ctx, struct chttp_
 }
 
 void
-chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long port;
 
@@ -159,9 +159,26 @@ chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test
 	port = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
-	chttp_send(ctx->chttp, cmd->params[0].value, port, 0);
+	chttp_connect(ctx->chttp, cmd->params[0].value, port, 0);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent to %s:%ld", cmd->params[0].value, port);
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "connection made to %s:%ld",
+		cmd->params[0].value, port);
+}
+
+void
+chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+
+	// TODO split this into 2 commands
+	if (cmd->param_count > 0) {
+		chttp_test_cmd_chttp_connect(ctx, cmd);
+		chttp_test_ERROR(ctx->chttp->error, "chttp connect error");
+	}
+
+	chttp_send(ctx->chttp);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request sent");
 }
 
 void

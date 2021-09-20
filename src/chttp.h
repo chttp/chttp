@@ -105,6 +105,7 @@ struct chttp_context {
 
 	struct chttp_dpage_ptr		data_start;
 	struct chttp_dpage_ptr		data_end;
+	struct chttp_dpage_ptr		hostname;
 
 	struct chttp_addr		addr;
 
@@ -144,6 +145,8 @@ void chttp_dpage_reset_all(struct chttp_context *ctx);
 void chttp_dpage_reset_end(struct chttp_context *ctx);
 struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
 void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
+void chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t buffer_len,
+	struct chttp_dpage_ptr *dptr);
 void chttp_dpage_shift_full(struct chttp_context *ctx);
 size_t chttp_dpage_resp_start(struct chttp_context *ctx);
 uint8_t *chttp_dpage_start_ptr_convert(struct chttp_context *ctx);
@@ -164,7 +167,8 @@ int chttp_find_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, siz
 	int has_return, int *binary);
 extern const char *CHTTP_HEADER_REASON;
 
-void chttp_send(struct chttp_context *ctx, const char *host, int port, int tls);
+void chttp_connect(struct chttp_context *ctx, const char *host, int port, int tls);
+void chttp_send(struct chttp_context *ctx);
 void chttp_receive(struct chttp_context *ctx);
 void chttp_try_close(struct chttp_context *ctx);
 void chttp_error(struct chttp_context *ctx, enum chttp_error error);

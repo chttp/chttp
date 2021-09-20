@@ -39,7 +39,8 @@ main(int argc, char **argv)
 	chttp_context_debug(context);
 	chttp_delete_header(context, "header1");
 	chttp_delete_header(context, "header2");
-	chttp_send(context, "ec2.rezsoft.org", 80, 0);
+	chttp_connect(context, "ec2.rezsoft.org", 80, 0);
+	chttp_send(context);
 	chttp_context_debug(context);
 	chttp_receive(context);
 	chttp_context_debug(context);
@@ -59,7 +60,8 @@ main(int argc, char **argv)
 	chttp_delete_header(&scontext, "x");
 	chttp_delete_header(&scontext, "a");
 	chttp_add_header(&scontext, "x", "2");
-	chttp_send(&scontext, "textglass.org", 80, 0);
+	chttp_connect(&scontext, "textglass.org", 80, 0);
+	chttp_send(context);
 	chttp_context_debug(&scontext);
 	chttp_receive(&scontext);
 	chttp_context_debug(&scontext);

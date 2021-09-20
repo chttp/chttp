@@ -484,7 +484,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 			"network error");
 
 		chttp_parse_headers(server->chttp, &_server_parse_request_url);
-		chttp_test_ERROR(server->chttp->error, "%s",
+		chttp_test_ERROR(server->chttp->error, "*SERVER* %s",
 			chttp_error_msg(server->chttp));
 	} while (server->chttp->state == CHTTP_STATE_RESP_HEADERS);
 
@@ -492,7 +492,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	assert(server->chttp->state == CHTTP_STATE_RESP_BODY);
 
 	chttp_body_length(server->chttp, 0);
-	chttp_test_ERROR(server->chttp->length, "request bodies not supported");
+	chttp_test_ERROR(server->chttp->length, "*SERVER* request bodies not supported");
 
 	assert(server->chttp->state == CHTTP_STATE_IDLE);
 

@@ -5,15 +5,23 @@
 
 #include "chttp.h"
 
+#include <string.h>
+
 static void
-_finalize_request(struct chttp_context *ctx, const char *host)
+_finalize_request(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
-	assert(host && *host);
 	assert(ctx->state == CHTTP_STATE_INIT_HEADER);
 
 	if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
-		chttp_add_header(ctx, "Host", host);
+		if(ctx->hostname.dpage) {
+			assert(ctx->hostname.length);
+			// TODO get the pointer automatically
+			chttp_add_header(ctx, "Host",
+				(char*)(ctx->hostname.dpage->data + ctx->hostname.offset));
+		} else {
+			chttp_ABORT("host header is missing");
+		}
 		assert(ctx->has_host);
 	}
 
@@ -21,22 +29,33 @@ _finalize_request(struct chttp_context *ctx, const char *host)
 }
 
 void
-chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
+chttp_connect(struct chttp_context *ctx, const char *host, int port, int tls)
 {
-	struct chttp_dpage *dpage;
-	size_t offset;
+	size_t len;
 
 	chttp_context_ok(ctx);
-	assert(ctx->data_start.dpage);
 	assert(host && *host);
 	assert(port > 0);
 	(void)tls;
 
-	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
-		chttp_ABORT("invalid state, request must be setup before sending");
+	if (ctx->addr.state) {
+		chttp_addr_ok(ctx);
+		chttp_ABORT("invalid state, you can only connect once");
 	}
 
-	_finalize_request(ctx, host);
+	if (ctx->state == CHTTP_STATE_NONE) {
+		len = strlen(host);
+
+		chttp_dpage_append_mark(ctx, host, len + 1, &ctx->hostname);
+	} else if (ctx->state == CHTTP_STATE_INIT_HEADER) {
+		if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
+			chttp_add_header(ctx, "Host", host);
+			assert(ctx->has_host);
+		}
+	} else {
+		// TODO explain better
+		chttp_ABORT("invalid state, connection must be setup before sending");
+	}
 
 	chttp_dns_lookup(ctx, host, port);
 
@@ -44,6 +63,29 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 		chttp_finish(ctx);
 		return;
 	}
+
+	chttp_addr_ok(ctx);
+	assert(ctx->addr.state == CHTTP_ADDR_RESOLVED);
+}
+
+void
+chttp_send(struct chttp_context *ctx)
+{
+	struct chttp_dpage *dpage;
+	size_t offset;
+
+	chttp_context_ok(ctx);
+	assert(ctx->data_start.dpage);
+
+	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
+		chttp_ABORT("invalid state, request must be setup before sending");
+	}
+
+	if (ctx->addr.state != CHTTP_ADDR_RESOLVED) {
+		chttp_ABORT("invalid state, connection must be setup before sending");
+	}
+
+	_finalize_request(ctx);
 
 	chttp_tcp_connect(ctx);
 
