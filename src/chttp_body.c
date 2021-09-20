@@ -25,7 +25,7 @@ _body_chunk_end(struct chttp_context *ctx)
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
 
-		start = chttp_dpage_resp_start(ctx);
+		start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
 
 		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1,
 			NULL);
@@ -91,7 +91,7 @@ _body_chunk_start(struct chttp_context *ctx)
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
 
-		start = chttp_dpage_resp_start(ctx);
+		start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
 
 		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1,
 			NULL);
@@ -271,7 +271,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		chttp_dpage_ok(ctx->data_start.dpage);
 		assert(ctx->length);
 
-		start = chttp_dpage_resp_start(ctx);
+		start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
 
 		// Figure out how much data we have left
 		ret_dpage = ctx->dpage_last->offset - start;
@@ -284,7 +284,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		if (ret_dpage <= buf_len) {
 			assert(ret_dpage);
 
-			memcpy(buf, chttp_dpage_start_ptr_convert(ctx), ret_dpage);
+			memcpy(buf, chttp_dpage_ptr_convert(ctx, &ctx->data_start), ret_dpage);
 
 			if (start + ret_dpage < ctx->dpage_last->offset) {
 				ctx->data_start.offset += ret_dpage;
@@ -318,11 +318,11 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			}
 		} else {
 			// Not enough room
-			memcpy(buf, chttp_dpage_start_ptr_convert(ctx), buf_len);
+			memcpy(buf, chttp_dpage_ptr_convert(ctx, &ctx->data_start), buf_len);
 
 			ctx->data_start.offset += buf_len;
 
-			chttp_dpage_resp_start(ctx);
+			chttp_dpage_ptr_start(ctx, &ctx->data_start);
 
 			if (ctx->length > 0) {
 				assert(buf_len <= (size_t)ctx->length);

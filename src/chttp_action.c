@@ -16,9 +16,8 @@ _finalize_request(struct chttp_context *ctx)
 	if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
 		if(ctx->hostname.dpage) {
 			assert(ctx->hostname.length);
-			// TODO get the pointer automatically
 			chttp_add_header(ctx, "Host",
-				(char*)(ctx->hostname.dpage->data + ctx->hostname.offset));
+				(char*)chttp_dpage_ptr_convert(ctx, &ctx->hostname));
 		} else {
 			chttp_ABORT("host header is missing");
 		}

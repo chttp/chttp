@@ -212,12 +212,12 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 		return;
 	}
 
-	start = chttp_dpage_resp_start(ctx);
+	start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
 	leftover_len = dpage->offset - start;
 
 	// Incomplete line
 	if (leftover_len) {
-		leftover = chttp_dpage_start_ptr_convert(ctx);
+		leftover = chttp_dpage_ptr_convert(ctx, &ctx->data_start);
 		ctx->data_start.dpage = NULL;
 
 		// Try and shift back
@@ -260,24 +260,25 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 }
 
 size_t
-chttp_dpage_resp_start(struct chttp_context *ctx)
+chttp_dpage_ptr_start(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 {
 	chttp_context_ok(ctx);
-	chttp_dpage_ok(ctx->data_start.dpage);
-	assert(ctx->data_start.dpage == ctx->dpage_last);
-	assert(ctx->data_start.offset <= ctx->data_start.dpage->offset);
+	assert(dptr);
+	chttp_dpage_ok(dptr->dpage);
+	assert(dptr->dpage == ctx->dpage_last);
+	assert(dptr->offset <= dptr->dpage->offset);
 
-	return ctx->data_start.offset;
+	return dptr->offset;
 }
 
 uint8_t *
-chttp_dpage_start_ptr_convert(struct chttp_context *ctx)
+chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 {
 	size_t start;
 
-	start = chttp_dpage_resp_start(ctx);
+	start = chttp_dpage_ptr_start(ctx, dptr);
 
-	return ctx->data_start.dpage->data + start;
+	return dptr->dpage->data + start;
 }
 
 void

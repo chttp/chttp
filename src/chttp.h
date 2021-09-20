@@ -148,8 +148,8 @@ void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t bu
 void chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t buffer_len,
 	struct chttp_dpage_ptr *dptr);
 void chttp_dpage_shift_full(struct chttp_context *ctx);
-size_t chttp_dpage_resp_start(struct chttp_context *ctx);
-uint8_t *chttp_dpage_start_ptr_convert(struct chttp_context *ctx);
+size_t chttp_dpage_ptr_start(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
+uint8_t *chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
 void chttp_dpage_free(struct chttp_dpage *dpage);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
 
