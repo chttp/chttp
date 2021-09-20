@@ -181,13 +181,16 @@ void
 chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t buffer_len,
     struct chttp_dpage_ptr *dptr)
 {
+	struct chttp_dpage *dpage;
+
 	chttp_context_ok(ctx);
 	assert(dptr);
 
-	dptr->dpage = chttp_dpage_get(ctx, buffer_len);
-	chttp_dpage_ok(dptr->dpage);
-	dptr->offset = dptr->dpage->offset;
-	dptr->length = buffer_len;
+
+	dpage = chttp_dpage_get(ctx, buffer_len);
+	chttp_dpage_ok(dpage);
+
+	chttp_dpage_ptr_set(dptr, dpage, dpage->offset, buffer_len);
 
 	chttp_dpage_append(ctx, buffer, buffer_len);
 
@@ -218,7 +221,7 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 	// Incomplete line
 	if (leftover_len) {
 		leftover = chttp_dpage_ptr_convert(ctx, &ctx->data_start);
-		ctx->data_start.dpage = NULL;
+		chttp_dpage_ptr_reset(&ctx->data_start);
 
 		// Try and shift back
 		if (ctx->data_end.dpage && ctx->data_end.dpage != dpage && dpage->offset) {
@@ -238,8 +241,8 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 
 		memmove(&dpage_new->data[dpage_new->offset], leftover, leftover_len);
 
-		ctx->data_start.dpage = dpage_new;
-		ctx->data_start.offset = dpage_new->offset;
+		chttp_dpage_ptr_set(&ctx->data_start, dpage_new, dpage_new->offset,
+			ctx->data_start.length);
 
 		dpage_new->offset += leftover_len;
 		dpage = dpage_new;
@@ -253,10 +256,29 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 		assert_zero(ctx->dpage_last->offset);
 		assert_zero(leftover_len);
 
-		ctx->data_start.dpage = ctx->dpage_last;
-		ctx->data_start.offset = 0;
-		ctx->data_start.length = 0;
+		chttp_dpage_ptr_set(&ctx->data_start, ctx->dpage_last, 0, 0);
 	}
+}
+
+void
+chttp_dpage_ptr_set(struct chttp_dpage_ptr *dptr, struct chttp_dpage *dpage,
+    size_t offset, size_t len)
+{
+	assert(dptr);
+
+	if (dpage) {
+		chttp_dpage_ok(dpage);
+	}
+
+	dptr->dpage = dpage;
+	dptr->offset = offset;
+	dptr->length = len;
+}
+
+void
+chttp_dpage_ptr_reset(struct chttp_dpage_ptr *dptr)
+{
+	chttp_dpage_ptr_set(dptr, NULL, 0, 0);
 }
 
 size_t

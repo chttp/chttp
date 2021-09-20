@@ -340,9 +340,7 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 		assert(dpage->offset);
 		assert_zero(ctx->seen_first);
 
-		ctx->data_start.dpage = dpage;
-		ctx->data_start.offset = 0;
-		ctx->data_start.length = 0;
+		chttp_dpage_ptr_set(&ctx->data_start, dpage, 0, 0);
 	}
 
 	start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
@@ -385,12 +383,10 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 				assert(ctx->data_start.dpage == dpage);
 				ctx->data_start.offset = end + 1;
 			} else {
-				ctx->data_start.dpage = NULL;
+				chttp_dpage_ptr_reset(&ctx->data_start);
 			}
 
-			ctx->data_end.dpage = dpage;
-			ctx->data_end.offset = end + 1;
-			ctx->data_end.length = 0;
+			chttp_dpage_ptr_set(&ctx->data_end, dpage, end + 1, 0);
 
 			return;
 		}
