@@ -148,7 +148,7 @@ void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t bu
 void chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t buffer_len,
 	struct chttp_dpage_ptr *dptr);
 void chttp_dpage_shift_full(struct chttp_context *ctx);
-size_t chttp_dpage_ptr_start(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
+size_t chttp_dpage_ptr_offset(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
 uint8_t *chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
 void chttp_dpage_free(struct chttp_dpage *dpage);
 extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
@@ -177,6 +177,8 @@ void chttp_finish(struct chttp_context *ctx);
 void chttp_body_length(struct chttp_context *ctx, int do_error);
 size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
+void chttp_addr_init(struct chttp_addr *addr);
+void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
 void chttp_dns_cache_lookup();
 extern long CHTTP_DNS_CACHE_TTL;

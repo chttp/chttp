@@ -30,8 +30,6 @@ _finalize_request(struct chttp_context *ctx)
 void
 chttp_connect(struct chttp_context *ctx, const char *host, int port, int tls)
 {
-	size_t len;
-
 	chttp_context_ok(ctx);
 	assert(host && *host);
 	assert(port > 0);
@@ -43,9 +41,8 @@ chttp_connect(struct chttp_context *ctx, const char *host, int port, int tls)
 	}
 
 	if (ctx->state == CHTTP_STATE_NONE) {
-		len = strlen(host);
-
-		chttp_dpage_append_mark(ctx, host, len + 1, &ctx->hostname);
+		assert_zero(ctx->data_start.dpage);
+		chttp_dpage_append_mark(ctx, host, strlen(host) + 1, &ctx->hostname);
 	} else if (ctx->state == CHTTP_STATE_INIT_HEADER) {
 		if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
 			chttp_add_header(ctx, "Host", host);
@@ -141,7 +138,6 @@ chttp_receive(struct chttp_context *ctx)
 		}
 	} while (ctx->state == CHTTP_STATE_RESP_HEADERS);
 
-	assert_zero(ctx->error);
 	assert(ctx->state == CHTTP_STATE_RESP_BODY);
 	chttp_dpage_ok(ctx->data_end.dpage);
 
@@ -177,7 +173,6 @@ chttp_error(struct chttp_context *ctx, enum chttp_error error)
 	ctx->status = 0;
 
 	chttp_finish(ctx);
-	assert(ctx->state == CHTTP_STATE_DONE);
 
 	ctx->state = CHTTP_STATE_DONE_ERROR;
 }

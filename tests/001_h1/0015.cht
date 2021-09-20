@@ -8,5 +8,6 @@ server_send_raw "test: 123\n"
 
 chttp_init
 chttp_url /
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_take_error

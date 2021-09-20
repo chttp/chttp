@@ -20,5 +20,6 @@ chttp_add_header x3 final
 chttp_delete_header x3
 chttp_add_header x1 again
 chttp_delete_header x1
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_status_match 200

@@ -7,5 +7,6 @@ server_send_response
 
 chttp_init
 chttp_url /
-chttp_send ::1 $server_port
+chttp_connect ::1 $server_port
+chttp_send
 chttp_status_match 200

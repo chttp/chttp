@@ -29,7 +29,8 @@ random_range 4 32
 
 chttp_init_dynamic $random
 chttp_url /
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_status_match 200
 
 random_range 0 20

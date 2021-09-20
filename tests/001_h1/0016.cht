@@ -9,5 +9,6 @@ server_send_raw "Content-Length: 0\r\n\r\n"
 
 chttp_init
 chttp_url /
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_take_error

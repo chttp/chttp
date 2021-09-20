@@ -345,7 +345,7 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 		ctx->data_start.length = 0;
 	}
 
-	start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
+	start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 	for (; start < dpage->offset; start++) {
 		error = chttp_find_endline(dpage, start, NULL, &end, 1, &binary);

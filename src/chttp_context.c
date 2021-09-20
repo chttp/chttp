@@ -82,8 +82,7 @@ chttp_context_free(struct chttp_context *ctx)
 	assert(ctx->state == CHTTP_STATE_DONE);
 	assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
 
-	ctx->addr.magic = 0;
-
+	chttp_addr_reset(&ctx->addr);
 	chttp_dpage_free(ctx->dpage);
 
 	ctx->magic = 0;

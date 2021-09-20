@@ -12,6 +12,7 @@ server_end_chunked
 
 chttp_init
 chttp_url /
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_status_match 200
 chttp_body_match 0123456789

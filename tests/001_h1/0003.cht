@@ -7,7 +7,8 @@ server_send_response_H1_0 200 H10 "http 1.0 body"
 
 chttp_init
 chttp_url /
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_status_match 200
 chttp_reason_match H10
 chttp_body_match "http 1.0 body"

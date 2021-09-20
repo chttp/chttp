@@ -13,7 +13,8 @@ server_send_response_H1_0
 chttp_init
 chttp_version 10
 chttp_url /
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_status_match 200
 chttp_reason_match OK
 chttp_version_match 10

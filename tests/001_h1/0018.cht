@@ -10,6 +10,7 @@ server_send_raw "1\r\n11\r\n"
 
 chttp_init
 chttp_url /
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_body_read
 chttp_take_error

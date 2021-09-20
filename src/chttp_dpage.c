@@ -212,7 +212,7 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 		return;
 	}
 
-	start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
+	start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 	leftover_len = dpage->offset - start;
 
 	// Incomplete line
@@ -260,7 +260,7 @@ chttp_dpage_shift_full(struct chttp_context *ctx)
 }
 
 size_t
-chttp_dpage_ptr_start(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
+chttp_dpage_ptr_offset(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 {
 	chttp_context_ok(ctx);
 	assert(dptr);
@@ -274,11 +274,11 @@ chttp_dpage_ptr_start(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 uint8_t *
 chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr)
 {
-	size_t start;
+	size_t offset;
 
-	start = chttp_dpage_ptr_start(ctx, dptr);
+	offset = chttp_dpage_ptr_offset(ctx, dptr);
 
-	return dptr->dpage->data + start;
+	return dptr->dpage->data + offset;
 }
 
 void

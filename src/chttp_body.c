@@ -25,7 +25,7 @@ _body_chunk_end(struct chttp_context *ctx)
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
 
-		start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
+		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1,
 			NULL);
@@ -91,7 +91,7 @@ _body_chunk_start(struct chttp_context *ctx)
 	if (ctx->data_start.dpage) {
 		chttp_dpage_ok(ctx->data_start.dpage);
 
-		start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
+		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1,
 			NULL);
@@ -271,7 +271,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		chttp_dpage_ok(ctx->data_start.dpage);
 		assert(ctx->length);
 
-		start = chttp_dpage_ptr_start(ctx, &ctx->data_start);
+		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 		// Figure out how much data we have left
 		ret_dpage = ctx->dpage_last->offset - start;
@@ -322,7 +322,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 			ctx->data_start.offset += buf_len;
 
-			chttp_dpage_ptr_start(ctx, &ctx->data_start);
+			chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 			if (ctx->length > 0) {
 				assert(buf_len <= (size_t)ctx->length);

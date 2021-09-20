@@ -4,5 +4,6 @@ connect_or_skip ec2.rezsoft.org 80
 
 chttp_init
 chttp_url /
-chttp_send ec2.rezsoft.org 80
+chttp_connect ec2.rezsoft.org 80
+chttp_send
 chttp_status_match 200

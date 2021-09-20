@@ -161,7 +161,7 @@ chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_c
 
 	chttp_connect(ctx->chttp, cmd->params[0].value, port, 0);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "connection made to %s:%ld",
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "lookup made to %s:%ld",
 		cmd->params[0].value, port);
 }
 
@@ -169,12 +169,7 @@ void
 chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
-
-	// TODO split this into 2 commands
-	if (cmd->param_count > 0) {
-		chttp_test_cmd_chttp_connect(ctx, cmd);
-		chttp_test_ERROR(ctx->chttp->error, "chttp connect error");
-	}
+	chttp_test_ERROR_param_count(cmd, 0);
 
 	chttp_send(ctx->chttp);
 
@@ -204,11 +199,11 @@ void
 chttp_test_cmd_chttp_send(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
 
 	chttp_test_cmd_chttp_send_only(ctx, cmd);
 	chttp_test_ERROR(ctx->chttp->error, "chttp send error");
 
-	cmd->param_count = 0;
 	chttp_test_cmd_chttp_receive(ctx, cmd);
 }
 

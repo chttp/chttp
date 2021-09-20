@@ -12,6 +12,21 @@
 
 long CHTTP_DNS_CACHE_TTL;
 
+void
+chttp_addr_init(struct chttp_addr *addr)
+{
+	chttp_addr_reset(addr);
+
+	addr->magic = CHTTP_ADDR_MAGIC;
+	addr->sock = -1;
+}
+
+void
+chttp_addr_reset(struct chttp_addr *addr)
+{
+	memset(addr, 0, sizeof(*addr));
+}
+
 static void
 _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 {
@@ -19,10 +34,7 @@ _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 	assert(ai_src);
 	assert(ai_src->ai_addr);
 
-	memset(addr_dest, 0, sizeof(*addr_dest));
-
-	addr_dest->magic = CHTTP_ADDR_MAGIC;
-	addr_dest->sock = -1;
+	chttp_addr_init(addr_dest);
 
 	switch (ai_src->ai_addr->sa_family) {
 		case AF_INET:
@@ -61,6 +73,8 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port)
 	chttp_context_ok(ctx);
 	assert(host && *host);
 	assert(port >= 0 && port <= UINT16_MAX);
+
+	chttp_addr_reset(&ctx->addr);
 
 	//chttp_dns_cache_lookup(host);
 

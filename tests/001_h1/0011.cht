@@ -10,5 +10,6 @@ chttp_init
 chttp_url /
 chttp_delete_header user-agent
 chttp_add_header User-agent custom
-chttp_send $server_host $server_port
+chttp_connect $server_host $server_port
+chttp_send
 chttp_status_match 200

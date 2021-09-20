@@ -36,12 +36,11 @@ void
 chttp_tcp_import(struct chttp_context *ctx, int sock)
 {
 	chttp_context_ok(ctx);
-	assert_zero(ctx->addr.magic);
-	assert_zero(ctx->addr.len);
-	assert_zero(ctx->addr.sa.sa_family);
+	assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
 	assert(sock >= 0);
 
-	ctx->addr.magic = CHTTP_ADDR_MAGIC;
+	chttp_addr_init(&ctx->addr);
+
 	ctx->addr.state = CHTTP_ADDR_CONNECTED;
 	ctx->addr.sock = sock;
 
