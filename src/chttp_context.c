@@ -38,7 +38,6 @@ _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 	memset(ctx, 0, CHTTP_CTX_SIZE);
 
 	ctx->magic = CHTTP_CTX_MAGIC;
-	ctx->addr.sock = -1;
 
 	if (dpage_size > sizeof(struct chttp_dpage)) {
 		ctx->dpage = (struct chttp_dpage*)ctx->_data;
@@ -81,7 +80,7 @@ chttp_context_free(struct chttp_context *ctx)
 	}
 
 	assert(ctx->state == CHTTP_STATE_DONE);
-	assert(ctx->addr.sock == -1);
+	assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
 
 	ctx->addr.magic = 0;
 

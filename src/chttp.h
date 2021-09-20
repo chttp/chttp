@@ -31,8 +31,6 @@ enum chttp_state {
 	CHTTP_STATE_NONE = 0,
 	CHTTP_STATE_INIT_METHOD,
 	CHTTP_STATE_INIT_HEADER,
-	CHTTP_STATE_CONNECTING,
-	CHTTP_STATE_CONNECTED,
 	CHTTP_STATE_SENT,
 	CHTTP_STATE_RESP_HEADERS,
 	CHTTP_STATE_RESP_BODY,
@@ -52,6 +50,12 @@ enum chttp_error {
 	CHTTP_ERR_RESP_LENGTH,
 	CHTTP_ERR_RESP_CHUNK,
 	CHTTP_ERR_RESP_BODY
+};
+
+enum chttp_addr_state {
+	CHTTP_ADDR_NONE = 0,
+	CHTTP_ADDR_RESOLVED,
+	CHTTP_ADDR_CONNECTED
 };
 
 struct chttp_dpage {
@@ -81,8 +85,8 @@ struct chttp_addr {
 	unsigned int			magic;
 #define CHTTP_ADDR_MAGIC		0x8A7CEC19
 
+	enum chttp_addr_state		state;
 	socklen_t			len;
-
 	int				sock;
 
 	union {
@@ -175,6 +179,7 @@ extern long CHTTP_DNS_CACHE_TTL;
 
 void chttp_tcp_import(struct chttp_context *ctx, int sock);
 void chttp_tcp_connect(struct chttp_context *ctx);
+void chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_tcp_read(struct chttp_context *ctx);
 size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_tcp_close(struct chttp_context *ctx);
@@ -200,6 +205,11 @@ const char *chttp_error_msg(struct chttp_context *ctx);
 #define chttp_addr_ok(ctx)						\
 	do {								\
 		assert((ctx)->addr.magic == CHTTP_ADDR_MAGIC);		\
+	} while (0)
+#define chttp_addr_connected(ctx)					\
+	do {								\
+		assert((ctx)->addr.magic == CHTTP_ADDR_MAGIC);		\
+		assert((ctx)->addr.state == CHTTP_ADDR_CONNECTED);	\
 		assert((ctx)->addr.sock >= 0);				\
 	} while (0)
 #define chttp_ABORT(reason)						\

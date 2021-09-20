@@ -21,6 +21,7 @@ _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 
 	memset(addr_dest, 0, sizeof(*addr_dest));
 
+	addr_dest->magic = CHTTP_ADDR_MAGIC;
 	addr_dest->sock = -1;
 
 	switch (ai_src->ai_addr->sa_family) {
@@ -34,7 +35,6 @@ _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 			return;
 	}
 
-	addr_dest->magic = CHTTP_ADDR_MAGIC;
 	memcpy(&addr_dest->sa, ai_src->ai_addr, addr_dest->len);
 
 	switch (addr_dest->sa.sa_family) {
@@ -47,6 +47,8 @@ _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 		default:
 			chttp_ABORT("Incorrect address type");
 	}
+
+	addr_dest->state = CHTTP_ADDR_RESOLVED;
 }
 
 void
@@ -77,12 +79,11 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port)
 
 	// Always use the first address entry on a fresh lookup
 	_dns_addr_copy(&ctx->addr, ai_res_list, port);
+	chttp_addr_ok(ctx);
 
-	if (!ctx->addr.magic) {
+	if (ctx->addr.state == CHTTP_ADDR_NONE) {
 		ctx->error = CHTTP_ERR_DNS;
 	}
-
-	assert(ctx->addr.magic == CHTTP_ADDR_MAGIC);
 
 	freeaddrinfo(ai_res_list);
 }

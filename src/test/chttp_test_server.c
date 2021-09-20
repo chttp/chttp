@@ -502,6 +502,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	}
 
 	server->http_sock = server->chttp->addr.sock;
+	server->chttp->addr.state = CHTTP_ADDR_NONE;
 	server->chttp->addr.sock = -1;
 }
 

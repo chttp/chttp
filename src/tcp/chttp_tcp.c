@@ -42,9 +42,10 @@ chttp_tcp_import(struct chttp_context *ctx, int sock)
 	assert(sock >= 0);
 
 	ctx->addr.magic = CHTTP_ADDR_MAGIC;
+	ctx->addr.state = CHTTP_ADDR_CONNECTED;
 	ctx->addr.sock = sock;
 
-	chttp_addr_ok(ctx);
+	chttp_addr_connected(ctx);
 }
 
 void
@@ -54,11 +55,11 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	int val;
 
 	chttp_context_ok(ctx);
+	chttp_addr_ok(ctx);
 
 	addr = &ctx->addr;
 
-	assert(addr->magic == CHTTP_ADDR_MAGIC);
-	assert(addr->sock == -1);
+	assert(addr->state == CHTTP_ADDR_RESOLVED);
 
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
 
@@ -67,14 +68,14 @@ chttp_tcp_connect(struct chttp_context *ctx)
 		return;
 	}
 
-	ctx->state = CHTTP_STATE_CONNECTING;
-
 	val = 1;
 	setsockopt(addr->sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 	val = 1;
 	setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
 
 	val = connect(addr->sock, &addr->sa, addr->len);
+
+	addr->state = CHTTP_ADDR_CONNECTED;
 
 	// TODO non blocking timeout (EINPROGRESS)
 
@@ -85,9 +86,21 @@ chttp_tcp_connect(struct chttp_context *ctx)
 		return;
 	}
 
-	ctx->state = CHTTP_STATE_CONNECTED;
-
 	return;
+}
+
+void
+chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
+{
+	ssize_t ret;
+
+	chttp_context_ok(ctx);
+	chttp_addr_connected(ctx);
+	assert(buf);
+	assert(buf_len);
+
+	ret = send(ctx->addr.sock, buf, buf_len, MSG_NOSIGNAL);
+	assert(ret > 0 && (size_t)ret == buf_len); // TODO implement partial send
 }
 
 void
@@ -112,7 +125,7 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 	ssize_t ret;
 
 	chttp_context_ok(ctx);
-	chttp_addr_ok(ctx);
+	chttp_addr_connected(ctx);
 	assert(buf);
 	assert(buf_len);
 
@@ -135,9 +148,11 @@ void
 chttp_tcp_close(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
-	chttp_addr_ok(ctx);
+	chttp_addr_connected(ctx);
+	assert(ctx->state < CHTTP_STATE_CLOSED);
 
 	assert_zero(close(ctx->addr.sock));
 
+	ctx->addr.state = CHTTP_ADDR_RESOLVED;
 	ctx->addr.sock = -1;
 }

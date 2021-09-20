@@ -24,7 +24,6 @@ void
 chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 {
 	struct chttp_dpage *dpage;
-	ssize_t ret;
 	size_t offset;
 
 	chttp_context_ok(ctx);
@@ -53,8 +52,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 		return;
 	}
 
-	assert(ctx->state == CHTTP_STATE_CONNECTED);
-	chttp_addr_ok(ctx);
+	chttp_addr_connected(ctx);
 
 	offset = ctx->data_start.offset;
 
@@ -66,9 +64,7 @@ chttp_send(struct chttp_context *ctx, const char *host, int port, int tls)
 			continue;
 		}
 
-		// TODO turn into tcp
-		ret = send(ctx->addr.sock, dpage->data + offset, dpage->offset - offset, MSG_NOSIGNAL);
-		assert(ret > 0 && (size_t)ret == (dpage->offset - offset)); // TODO partial send
+		chttp_tcp_send(ctx, dpage->data + offset, dpage->offset - offset);
 
 		offset = 0;
 	}
@@ -150,7 +146,7 @@ chttp_finish(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	if (ctx->state >= CHTTP_STATE_CONNECTED && ctx->state < CHTTP_STATE_CLOSED) {
+	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
 		chttp_tcp_close(ctx);
 	}
 
