@@ -103,6 +103,7 @@ void
 chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 {
 	size_t name_len, value_len;
+	struct chttp_dpage *dpage;
 
 	chttp_context_ok(ctx);
 	assert(name && *name);
@@ -121,12 +122,14 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 	name_len = strlen(name);
 	value_len = strlen(value);
 
-	chttp_dpage_get(ctx, name_len + 2 + value_len + 2);
+	dpage = chttp_dpage_get(ctx, name_len + 2 + value_len + 2);
 
 	chttp_dpage_append(ctx, name, name_len);
 	chttp_dpage_append(ctx, ": ", 2);
 	chttp_dpage_append(ctx, value, value_len);
 	chttp_dpage_append(ctx, "\r\n", 2);
+
+	assert(dpage == ctx->dpage_last);
 }
 
 /*
