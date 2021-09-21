@@ -97,8 +97,9 @@ chttp_dpage_reset_all(struct chttp_context *ctx)
 		ctx->dpage_last = ctx->dpage;
 	}
 
-	memset(&ctx->data_start, 0, sizeof(ctx->data_start));
-	memset(&ctx->data_end, 0, sizeof(ctx->data_end));
+	chttp_dpage_ptr_reset(&ctx->data_start);
+	chttp_dpage_ptr_reset(&ctx->data_end);
+	chttp_dpage_ptr_reset(&ctx->hostname);
 }
 
 void
@@ -265,10 +266,7 @@ chttp_dpage_ptr_set(struct chttp_dpage_ptr *dptr, struct chttp_dpage *dpage,
     size_t offset, size_t len)
 {
 	assert(dptr);
-
-	if (dpage) {
-		chttp_dpage_ok(dpage);
-	}
+	chttp_dpage_ok(dpage);
 
 	dptr->dpage = dpage;
 	dptr->offset = offset;
@@ -278,7 +276,9 @@ chttp_dpage_ptr_set(struct chttp_dpage_ptr *dptr, struct chttp_dpage *dpage,
 void
 chttp_dpage_ptr_reset(struct chttp_dpage_ptr *dptr)
 {
-	chttp_dpage_ptr_set(dptr, NULL, 0, 0);
+	assert(dptr);
+
+	memset(dptr, 0, sizeof(*dptr));
 }
 
 size_t
