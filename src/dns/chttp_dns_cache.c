@@ -68,27 +68,27 @@ static int _dns_cache_cmp(const struct _dns_cache_entry *k1, const struct _dns_c
 RB_GENERATE_STATIC(_dns_cache_tree, _dns_cache_entry, tree_entry, _dns_cache_cmp)
 
 static inline void
-_dns_cache_ok()
+_dns_cache_ok(void)
 {
 	assert(_DNS_CACHE.magic == _DNS_CACHE_MAGIC);
 }
 
 static inline void
-_dns_cache_LOCK()
+_dns_cache_LOCK(void)
 {
 	_dns_cache_ok();
 	assert_zero(pthread_mutex_lock(&_DNS_CACHE.lock));
 }
 
 static inline void
-_dns_cache_UNLOCK()
+_dns_cache_UNLOCK(void)
 {
 	_dns_cache_ok();
 	assert_zero(pthread_mutex_unlock(&_DNS_CACHE.lock));
 }
 
 static void
-_dns_cache_init()
+_dns_cache_init(void)
 {
 	size_t i;
 
@@ -110,6 +110,9 @@ _dns_cache_init()
 static int
 _dns_cache_cmp(const struct _dns_cache_entry *k1, const struct _dns_cache_entry *k2)
 {
+	assert(k1);
+	assert(k2);
+
 	return strcmp(k1->hostname, k2->hostname);
 }
 

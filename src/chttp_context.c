@@ -12,7 +12,7 @@ static struct chttp_context *_context_alloc_size(size_t buffer_size);
 static void _context_init_size(struct chttp_context *ctx, size_t dpage_size);
 
 struct chttp_context *
-chttp_context_alloc()
+chttp_context_alloc(void)
 {
 	return (_context_alloc_size(chttp_dpage_size(0)));
 }

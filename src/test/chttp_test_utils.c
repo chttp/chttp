@@ -200,7 +200,7 @@ chttp_test_line_pos(struct chttp_test *test)
 }
 
 void
-chttp_test_random_seed()
+chttp_test_random_seed(void)
 {
 	struct timespec now;
 

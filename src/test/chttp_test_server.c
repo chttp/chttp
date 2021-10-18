@@ -119,7 +119,7 @@ _server_cmdentry_free(struct _server_cmdentry *cmdentry)
 }
 
 static struct _server_cmdentry *
-_server_cmdentry_alloc()
+_server_cmdentry_alloc(void)
 {
 	struct _server_cmdentry *cmdentry;
 

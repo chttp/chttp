@@ -123,7 +123,7 @@ void chttp_test_sleep_ms(long ms);
 int chttp_test_join_thread(pthread_t thread, volatile int *stopped,
 	unsigned long timeout_ms);
 size_t chttp_test_line_pos(struct chttp_test *test);
-void chttp_test_random_seed();
+void chttp_test_random_seed(void);
 long chttp_test_random(long low, long high);
 void chttp_test_fill_random(uint8_t *buf, size_t len);
 

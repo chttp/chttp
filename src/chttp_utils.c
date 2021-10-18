@@ -33,7 +33,7 @@ chttp_dpage_debug(struct chttp_dpage *dpage)
 		chttp_dpage_ok(dpage);
 
 		printf("\tchttp_dpage free=%u length=%zu offset=%zu ptr=%p (%p)\n",
-		    dpage->free, dpage->length, dpage->offset, (void*)dpage, dpage->data);
+			dpage->free, dpage->length, dpage->offset, (void*)dpage, (void*)dpage->data);
 
 		if (dpage->offset) {
 			chttp_print_hex(dpage->data, dpage->offset);

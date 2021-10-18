@@ -18,6 +18,9 @@ static int
 chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
     const struct chttp_test_cmdentry *k2)
 {
+	assert(k1);
+	assert(k2);
+
 	return strcmp(k1->name, k2->name);
 }
 

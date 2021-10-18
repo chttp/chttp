@@ -135,7 +135,7 @@ struct chttp_context {
 #define __chttp_attr_printf_p(fpos)	__attribute__((__format__( \
 						__printf__, (fpos), ((fpos) + 1))))
 
-struct chttp_context *chttp_context_alloc();
+struct chttp_context *chttp_context_alloc(void);
 void chttp_context_init(struct chttp_context *ctx);
 struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_free(struct chttp_context *ctx);
