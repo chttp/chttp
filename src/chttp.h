@@ -55,6 +55,8 @@ enum chttp_error {
 enum chttp_addr_state {
 	CHTTP_ADDR_NONE = 0,
 	CHTTP_ADDR_RESOLVED,
+	CHTTP_ADDR_CACHED,
+	CHTTP_ADDR_STALE,
 	CHTTP_ADDR_CONNECTED
 };
 

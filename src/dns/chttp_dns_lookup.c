@@ -10,8 +10,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-long CHTTP_DNS_CACHE_TTL;
-
 void
 chttp_addr_init(struct chttp_addr *addr)
 {
@@ -76,7 +74,7 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port)
 
 	chttp_addr_reset(&ctx->addr);
 
-	//chttp_dns_cache_lookup(host);
+	chttp_dns_cache_lookup();
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;

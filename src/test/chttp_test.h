@@ -8,8 +8,8 @@
 
 #include "chttp.h"
 #include "test/chttp_test_cmds.h"
-#include "data/tree.h"
 #include "data/queue.h"
+#include "data/tree.h"
 
 #include <stdio.h>
 #include <pthread.h>
