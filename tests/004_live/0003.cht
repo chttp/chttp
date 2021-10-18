@@ -1,0 +1,5 @@
+chttp_test "DNS test"
+
+connect_or_skip dns03.nulltech.systems 80
+
+dns_debug

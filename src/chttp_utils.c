@@ -83,6 +83,14 @@ chttp_print_hex(void *buf, size_t buf_len)
 	printf("\n");
 }
 
+size_t
+chttp_safe_add(size_t *dest, size_t value)
+{
+	assert(dest);
+
+        return __sync_add_and_fetch(dest, value);
+}
+
 void
 chttp_do_abort(const char *function, const char *file, int line, const char *reason)
 {

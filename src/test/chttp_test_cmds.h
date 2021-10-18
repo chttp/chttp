@@ -120,5 +120,7 @@ CHTTP_TEST_VAR(random)
 CHTTP_TEST_VAR(md5_server)
 CHTTP_TEST_VAR(md5_client)
 
+CHTTP_TEST_CMD(dns_debug)
+
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR

@@ -7,6 +7,7 @@
 #define _CHTTP_H_INCLUDED_
 
 #include <assert.h>
+#include <netdb.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <arpa/inet.h>
@@ -185,8 +186,11 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
+void chttp_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port);
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port);
 void chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest);
+void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src, int port);
+void chttp_dns_cache_debug(void);
 extern long CHTTP_DNS_CACHE_TTL;
 
 void chttp_tcp_import(struct chttp_context *ctx, int sock);
@@ -199,6 +203,7 @@ void chttp_tcp_close(struct chttp_context *ctx);
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *dpage);
 void chttp_print_hex(void *buf, size_t buf_len);
+size_t chttp_safe_add(size_t *dest, size_t value);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
 const char *chttp_error_msg(struct chttp_context *ctx);
 

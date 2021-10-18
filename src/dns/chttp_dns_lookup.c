@@ -6,7 +6,6 @@
 #include "chttp.h"
 
 #include <limits.h>
-#include <netdb.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -25,12 +24,13 @@ chttp_addr_reset(struct chttp_addr *addr)
 	memset(addr, 0, sizeof(*addr));
 }
 
-static void
-_dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
+void
+chttp_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 {
 	assert(addr_dest);
 	assert(ai_src);
 	assert(ai_src->ai_addr);
+	assert(port >= 0 && port <= UINT16_MAX);
 
 	chttp_addr_init(addr_dest);
 
@@ -88,10 +88,10 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, i
 		return;
 	}
 
-	//chttp_dns_cache_store(host, port);
+	chttp_dns_cache_store(host, host_len, ai_res_list, port);
 
 	// Always use the first address entry on a fresh lookup
-	_dns_addr_copy(&ctx->addr, ai_res_list, port);
+	chttp_addr_copy(&ctx->addr, ai_res_list, port);
 	chttp_addr_ok(ctx);
 
 	if (ctx->addr.state == CHTTP_ADDR_NONE) {
