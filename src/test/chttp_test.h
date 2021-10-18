@@ -24,7 +24,7 @@ enum chttp_test_verbocity {
 
 struct chttp_test_cmdentry {
 	unsigned int				magic;
-#define CHTTP_TEST_ENTRY			0x52C66713
+#define CHTTP_TEST_ENTRY_MAGIC			0x52C66713
 
 	RB_ENTRY(chttp_test_cmdentry)		entry;
 
@@ -44,7 +44,7 @@ typedef void (chttp_test_finish_f)(struct chttp_test_context*);
 
 struct chttp_test_finish {
 	unsigned int				magic;
-#define CHTTP_TEST_FINISH			0x0466CDF2
+#define CHTTP_TEST_FINISH_MAGIC			0x0466CDF2
 
 	TAILQ_ENTRY(chttp_test_finish)		entry;
 

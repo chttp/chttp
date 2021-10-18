@@ -159,7 +159,7 @@ chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_c
 	port = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
-	chttp_connect(ctx->chttp, cmd->params[0].value, port, 0);
+	chttp_connect(ctx->chttp, cmd->params[0].value, cmd->params[0].len, port, 0);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "lookup made to %s:%ld",
 		cmd->params[0].value, port);

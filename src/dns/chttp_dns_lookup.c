@@ -62,14 +62,15 @@ _dns_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 }
 
 void
-chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port)
+chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port)
 {
 	struct addrinfo *ai_res_list;
 	struct addrinfo hints;
 	int ret;
 
 	chttp_context_ok(ctx);
-	assert(host && *host);
+	assert(host);
+	assert(host_len);
 	assert(port >= 0 && port <= UINT16_MAX);
 
 	chttp_addr_reset(&ctx->addr);

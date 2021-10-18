@@ -172,7 +172,8 @@ int chttp_find_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, siz
 	int has_return, int *binary);
 extern const char *CHTTP_HEADER_REASON;
 
-void chttp_connect(struct chttp_context *ctx, const char *host, int port, int tls);
+void chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int port,
+	int tls);
 void chttp_send(struct chttp_context *ctx);
 void chttp_receive(struct chttp_context *ctx);
 void chttp_try_close(struct chttp_context *ctx);
@@ -184,7 +185,7 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
-void chttp_dns_lookup(struct chttp_context *ctx, const char *host, int port);
+void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port);
 void chttp_dns_cache_lookup();
 extern long CHTTP_DNS_CACHE_TTL;
 

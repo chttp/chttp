@@ -59,7 +59,7 @@ chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test
 	chttp_context_init_buf(chttp_buf, sizeof(chttp_buf));
 	chttp = (struct chttp_context*)chttp_buf;
 
-	chttp_dns_lookup(chttp, host, port);
+	chttp_dns_lookup(chttp, host, strlen(host), port);
 
 	if (chttp->error) {
 		chttp_context_free(chttp);

@@ -28,10 +28,11 @@ _finalize_request(struct chttp_context *ctx)
 }
 
 void
-chttp_connect(struct chttp_context *ctx, const char *host, int port, int tls)
+chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int port, int tls)
 {
 	chttp_context_ok(ctx);
-	assert(host && *host);
+	assert(host);
+	assert(host_len);
 	assert(port > 0);
 	(void)tls;
 
@@ -53,7 +54,7 @@ chttp_connect(struct chttp_context *ctx, const char *host, int port, int tls)
 		chttp_ABORT("invalid state, connection must be setup before sending");
 	}
 
-	chttp_dns_lookup(ctx, host, port);
+	chttp_dns_lookup(ctx, host, host_len, port);
 
 	if (ctx->error) {
 		chttp_finish(ctx);

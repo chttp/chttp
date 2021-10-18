@@ -32,7 +32,7 @@ _test_cmd_register(struct chttp_test *test, const char *name, chttp_test_cmd_f *
 
 	memset(entry, 0, sizeof(*entry));
 
-	entry->magic = CHTTP_TEST_ENTRY;
+	entry->magic = CHTTP_TEST_ENTRY_MAGIC;
 	entry->name = name;
 	entry->cmd_func = func;
 	entry->is_cmd = 1;
@@ -53,7 +53,7 @@ _test_var_register(struct chttp_test *test, const char *name, chttp_test_var_f *
 
 	memset(entry, 0, sizeof(*entry));
 
-	entry->magic = CHTTP_TEST_ENTRY;
+	entry->magic = CHTTP_TEST_ENTRY_MAGIC;
 	entry->name = name;
 	entry->var_func = func;
 	entry->is_var = 1;
@@ -72,7 +72,7 @@ _test_cmds_free(struct chttp_test_context *ctx)
 	chttp_test_ok(test);
 
 	RB_FOREACH_SAFE(entry, chttp_test_tree, &test->cmd_tree, next) {
-		assert(entry->magic == CHTTP_TEST_ENTRY);
+		assert(entry->magic == CHTTP_TEST_ENTRY_MAGIC);
 
 		RB_REMOVE(chttp_test_tree, &test->cmd_tree, entry);
 
@@ -114,7 +114,7 @@ chttp_test_cmds_get(struct chttp_test *test, const char *name)
 		return NULL;
 	}
 
-	assert(result->magic == CHTTP_TEST_ENTRY);
+	assert(result->magic == CHTTP_TEST_ENTRY_MAGIC);
 
 	return result;
 }

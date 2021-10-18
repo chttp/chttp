@@ -169,7 +169,7 @@ chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
 	assert(name && *name);
 
 	TAILQ_FOREACH(finish, &test->finish_list, entry) {
-		assert(finish->magic == CHTTP_TEST_FINISH);
+		assert(finish->magic == CHTTP_TEST_FINISH_MAGIC);
 		chttp_test_ERROR(!strcmp(finish->name, name),
 			"cannot register the same finish name twice");
 		chttp_test_ERROR(finish->func == func,
@@ -179,7 +179,7 @@ chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
 	finish = malloc(sizeof(*finish));
 	assert(finish);
 
-	finish->magic = CHTTP_TEST_FINISH;
+	finish->magic = CHTTP_TEST_FINISH_MAGIC;
 	finish->name = name;
 	finish->func = func;
 
@@ -196,7 +196,7 @@ chttp_test_run_finish(struct chttp_test_context *ctx, const char *name)
 	assert(name && *name);
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
-		assert(finish->magic == CHTTP_TEST_FINISH);
+		assert(finish->magic == CHTTP_TEST_FINISH_MAGIC);
 
 		if (strcmp(finish->name, name)) {
 			continue;
@@ -227,7 +227,7 @@ chttp_test_run_all_finish(struct chttp_test *test)
 	}
 
 	TAILQ_FOREACH_SAFE(finish, &test->finish_list, entry, temp) {
-		assert(finish->magic == CHTTP_TEST_FINISH);
+		assert(finish->magic == CHTTP_TEST_FINISH_MAGIC);
 
 		TAILQ_REMOVE(&test->finish_list, finish, entry);
 

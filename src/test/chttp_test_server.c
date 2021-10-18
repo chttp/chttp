@@ -250,7 +250,7 @@ _server_init_socket(struct chttp_test_server *server)
 	chttp_context_init_buf(chttp_buf, sizeof(chttp_buf));
 	chttp = (struct chttp_context*)chttp_buf;
 
-	chttp_dns_lookup(chttp, server->ip_str, 0);
+	chttp_dns_lookup(chttp, server->ip_str, strlen(server->ip_str), 0);
 	chttp_test_ERROR(chttp->error, "server cannot resolve address %s", server->ip_str);
 	assert(chttp->addr.magic == CHTTP_ADDR_MAGIC);
 
