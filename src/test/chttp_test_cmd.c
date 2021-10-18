@@ -14,7 +14,8 @@ static int chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
 
 RB_GENERATE_STATIC(chttp_test_tree, chttp_test_cmdentry, entry, chttp_test_entry_cmp)
 
-static int chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
+static int
+chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
     const struct chttp_test_cmdentry *k2)
 {
 	return strcmp(k1->name, k2->name);

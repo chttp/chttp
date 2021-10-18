@@ -75,7 +75,7 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, i
 
 	chttp_addr_reset(&ctx->addr);
 
-	chttp_dns_cache_lookup();
+	chttp_dns_cache_lookup(host, host_len, &ctx->addr);
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;

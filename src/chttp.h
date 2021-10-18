@@ -186,7 +186,7 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port);
-void chttp_dns_cache_lookup();
+void chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest);
 extern long CHTTP_DNS_CACHE_TTL;
 
 void chttp_tcp_import(struct chttp_context *ctx, int sock);
