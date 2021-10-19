@@ -187,6 +187,7 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port);
+int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port);
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port);
 void chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest);
 void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src, int port);
@@ -194,10 +195,12 @@ void chttp_dns_cache_debug(void);
 extern long CHTTP_DNS_CACHE_TTL;
 
 void chttp_tcp_import(struct chttp_context *ctx, int sock);
+int chttp_addr_connect(struct chttp_addr *addr);
 void chttp_tcp_connect(struct chttp_context *ctx);
 void chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_tcp_read(struct chttp_context *ctx);
 size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
+void chttp_addr_close(struct chttp_addr *addr);
 void chttp_tcp_close(struct chttp_context *ctx);
 
 void chttp_context_debug(struct chttp_context *ctx);
@@ -219,15 +222,27 @@ const char *chttp_error_msg(struct chttp_context *ctx);
 		assert(dpage);						\
 		assert((dpage)->magic == CHTTP_DPAGE_MAGIC);		\
 	} while (0)
-#define chttp_addr_ok(ctx)						\
+#define chttp_addr_ok(addr)						\
 	do {								\
-		assert((ctx)->addr.magic == CHTTP_ADDR_MAGIC);		\
+		assert(addr);						\
+		assert((addr)->magic == CHTTP_ADDR_MAGIC);		\
 	} while (0)
-#define chttp_addr_connected(ctx)					\
+#define chttp_caddr_ok(ctx)						\
 	do {								\
-		assert((ctx)->addr.magic == CHTTP_ADDR_MAGIC);		\
-		assert((ctx)->addr.state == CHTTP_ADDR_CONNECTED);	\
-		assert((ctx)->addr.sock >= 0);				\
+		assert(ctx);						\
+		chttp_addr_ok(&(ctx)->addr);				\
+	} while (0)
+#define chttp_addr_connected(addr)					\
+	do {								\
+		assert(addr);						\
+		assert((addr)->magic == CHTTP_ADDR_MAGIC);		\
+		assert((addr)->state == CHTTP_ADDR_CONNECTED);		\
+		assert((addr)->sock >= 0);				\
+	} while (0)
+#define chttp_caddr_connected(ctx)					\
+	do {								\
+		assert(ctx);						\
+		chttp_addr_connected(&(ctx)->addr);			\
 	} while (0)
 #define chttp_ABORT(reason)						\
 	chttp_do_abort(__func__, __FILE__, __LINE__, reason);

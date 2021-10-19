@@ -237,45 +237,41 @@ _server_finish(struct chttp_test_context *ctx)
 static void
 _server_init_socket(struct chttp_test_server *server)
 {
-	struct chttp_context *chttp;
-	char chttp_buf[CHTTP_CTX_SIZE];
+	struct chttp_addr caddr;
 	struct sockaddr_storage saddr;
-	struct sockaddr *addr;
+	struct sockaddr *paddr;
 	socklen_t len;
 	int val;
 
 	_server_ok(server);
 	assert(server->sock == -1);
 
-	chttp_context_init_buf(chttp_buf, sizeof(chttp_buf));
-	chttp = (struct chttp_context*)chttp_buf;
+	val = chttp_addr_lookup(&caddr, server->ip_str, strlen(server->ip_str), 0);
+	chttp_test_ERROR(val, "server cannot resolve address %s", server->ip_str);
+	assert(caddr.magic == CHTTP_ADDR_MAGIC);
 
-	chttp_dns_lookup(chttp, server->ip_str, strlen(server->ip_str), 0);
-	chttp_test_ERROR(chttp->error, "server cannot resolve address %s", server->ip_str);
-	assert(chttp->addr.magic == CHTTP_ADDR_MAGIC);
-
-	server->sock = socket(chttp->addr.sa.sa_family, SOCK_STREAM, 0);
+	server->sock = socket(caddr.sa.sa_family, SOCK_STREAM, 0);
 	assert(server->sock >= 0);
 
 	val = 1;
 	assert_zero(setsockopt(server->sock, SOL_SOCKET, SO_REUSEADDR,
 		&val, sizeof(val)));
 
-	assert_zero(bind(server->sock, &chttp->addr.sa, chttp->addr.len));
+	assert_zero(bind(server->sock, &caddr.sa, caddr.len));
 	assert_zero(listen(server->sock, 1));
 
-	addr = (struct sockaddr*)&saddr;
+	paddr = (struct sockaddr*)&saddr;
 	len = sizeof(saddr);
 
-	assert_zero(getsockname(server->sock, addr, &len));
-	assert(addr->sa_family == chttp->addr.sa.sa_family);
+	assert_zero(getsockname(server->sock, paddr, &len));
+	assert(paddr->sa_family == caddr.sa.sa_family);
 
-	switch (addr->sa_family) {
+	switch (paddr->sa_family) {
 		case AF_INET:
-			server->port = ntohs(((struct sockaddr_in*)addr)->sin_port);
+			server->port = ntohs(((struct sockaddr_in*)paddr)->sin_port);
 			break;
 		case AF_INET6:
-			server->port = ntohs(((struct sockaddr_in6*)addr)->sin6_port);
+			server->port = ntohs(((struct sockaddr_in6*)paddr)->sin6_port);
 			break;
 		default:
 			chttp_test_ERROR(1, "Invalid server socket family");
@@ -287,8 +283,6 @@ _server_init_socket(struct chttp_test_server *server)
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
 		server->port);
-
-	chttp_context_free(chttp);
 }
 
 void

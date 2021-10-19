@@ -44,10 +44,10 @@ chttp_test_cmd_sleep_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *c
 void
 chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
-	struct chttp_context *chttp;
-	char chttp_buf[CHTTP_CTX_SIZE];
+	struct chttp_addr addr;
 	char *host;
 	long port;
+	int ret;
 
 	assert(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
@@ -56,30 +56,25 @@ chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test
 	port = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
-	chttp_context_init_buf(chttp_buf, sizeof(chttp_buf));
-	chttp = (struct chttp_context*)chttp_buf;
+	ret = chttp_addr_lookup(&addr, host, strlen(host), port);
 
-	chttp_dns_lookup(chttp, host, strlen(host), port);
-
-	if (chttp->error) {
-		chttp_context_free(chttp);
+	if (ret) {
 		chttp_test_skip(ctx);
 		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
 		return;
 	}
 
-	chttp_tcp_connect(chttp);
+	ret = chttp_addr_connect(&addr);
 
-	if (chttp->error) {
-		chttp_context_free(chttp);
+	if (ret) {
 		chttp_test_skip(ctx);
 		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "cannot connect to %s:%ld", host, port);
 		return;
 	}
-
-	chttp_context_free(chttp);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "valid address found %s:%ld", host, port);
+
+	chttp_addr_close(&addr);
 
 	return;
 }
