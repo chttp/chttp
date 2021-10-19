@@ -4,52 +4,15 @@
  */
 
 #include "chttp.h"
-#include "data/queue.h"
-#include "data/tree.h"
+#include "dns/chttp_dns_cache.h"
 
-#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 
-#define _DNS_CACHE_PREALLOC_SIZE		100
-#define _DNS_CACHE_HOSTNAME_MAX			256
-
-
 long CHTTP_DNS_CACHE_TTL = 600;
 
-struct _dns_cache_entry {
-	unsigned int					magic;
-#define _DNS_CACHE_ENTRY_MAGIC				0x435870E5
-
-	char						hostname[_DNS_CACHE_HOSTNAME_MAX];
-
-	RB_ENTRY(_dns_cache_entry)			tree_entry;
-	TAILQ_ENTRY(_dns_cache_entry)			list_entry;
-
-	struct _dns_cache_entry				*next;
-	size_t						length;
-	size_t						current;
-
-	struct chttp_addr				addr;
-};
-
-static struct {
-	unsigned int					magic;
-#define _DNS_CACHE_MAGIC				0xF37F6BA4
-
-	pthread_mutex_t					lock;
-
-	int						initialized;
-
-	RB_HEAD(_dns_cache_tree, _dns_cache_entry)	cache_tree;
-	TAILQ_HEAD(_dns_cache_free, _dns_cache_entry)	free_list;
-	TAILQ_HEAD(_dns_cache_lru, _dns_cache_entry)	lru_list;
-
-	struct _dns_cache_entry				entries[_DNS_CACHE_PREALLOC_SIZE];
-
-	struct chttp_dns_stats				stats;
-} _DNS_CACHE = {
-	_DNS_CACHE_MAGIC,
+struct chttp_dns_cache _DNS_CACHE = {
+	CHTTP_DNS_CACHE_MAGIC,
 	PTHREAD_MUTEX_INITIALIZER,
 	0,
 	RB_INITIALIZER(_DNS_CACHE.cache_tree),
@@ -59,14 +22,15 @@ static struct {
 	{0}
 };
 
-static int _dns_cache_cmp(const struct _dns_cache_entry *k1, const struct _dns_cache_entry *k2);
+static int _dns_cache_cmp(const struct chttp_dns_cache_entry *k1,
+	const struct chttp_dns_cache_entry *k2);
 
-RB_GENERATE_STATIC(_dns_cache_tree, _dns_cache_entry, tree_entry, _dns_cache_cmp)
+RB_GENERATE(chttp_dns_cache_tree, chttp_dns_cache_entry, tree_entry, _dns_cache_cmp)
 
 static inline void
 _dns_cache_ok(void)
 {
-	assert(_DNS_CACHE.magic == _DNS_CACHE_MAGIC);
+	assert(_DNS_CACHE.magic == CHTTP_DNS_CACHE_MAGIC);
 }
 
 static inline void
@@ -96,7 +60,7 @@ _dns_cache_init(void)
 	assert(TAILQ_EMPTY(&_DNS_CACHE.lru_list));
 
 	/* Create the free_list */
-	for (i = 0; i < _DNS_CACHE_PREALLOC_SIZE; i++) {
+	for (i = 0; i < CHTTP_DNS_CACHE_SIZE; i++) {
 		assert_zero(_DNS_CACHE.entries[i].magic);
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, &_DNS_CACHE.entries[i], list_entry);
 	}
@@ -105,7 +69,7 @@ _dns_cache_init(void)
 }
 
 static int
-_dns_cache_cmp(const struct _dns_cache_entry *k1, const struct _dns_cache_entry *k2)
+_dns_cache_cmp(const struct chttp_dns_cache_entry *k1, const struct chttp_dns_cache_entry *k2)
 {
 	assert(k1);
 	assert(k2);
@@ -116,14 +80,14 @@ _dns_cache_cmp(const struct _dns_cache_entry *k1, const struct _dns_cache_entry 
 void
 chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest)
 {
-	struct _dns_cache_entry *addr_head, find;
+	struct chttp_dns_cache_entry *addr_head, find;
 
 	_dns_cache_ok();
 	assert(host);
 	assert(host_len);
 	assert(addr_dest);
 
-	if (host_len >= _DNS_CACHE_HOSTNAME_MAX) {
+	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
 		chttp_safe_add(&_DNS_CACHE.stats.err_too_long, 1);
 		return;
 	}
@@ -139,10 +103,10 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 
 	strncpy(find.hostname, host, host_len + 1);
 
-	addr_head = RB_FIND(_dns_cache_tree, &_DNS_CACHE.cache_tree, &find);
+	addr_head = RB_FIND(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, &find);
 
 	if (addr_head) {
-		assert(addr_head->magic == _DNS_CACHE_ENTRY_MAGIC);
+		assert(addr_head->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
 		// TODO choose the next entry, LRU the head
 
 		_DNS_CACHE.stats.cache_hits++;
@@ -155,9 +119,9 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 }
 
 static void
-_dns_free_entry(struct _dns_cache_entry *dns_head)
+_dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 {
-	struct _dns_cache_entry *dns_entry, *dns_temp;
+	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
 
 	_dns_cache_ok();
 
@@ -177,10 +141,10 @@ _dns_free_entry(struct _dns_cache_entry *dns_head)
 	}
 }
 
-static struct _dns_cache_entry *
+static struct chttp_dns_cache_entry *
 _dns_get_entry(void)
 {
-	struct _dns_cache_entry *entry;
+	struct chttp_dns_cache_entry *entry;
 
 	_dns_cache_ok();
 
@@ -193,7 +157,7 @@ _dns_get_entry(void)
 		return entry;
 	} else if (!TAILQ_EMPTY(&_DNS_CACHE.lru_list)) {
 		// Pull from the LRU
-		entry = TAILQ_LAST(&_DNS_CACHE.lru_list, _dns_cache_lru);
+		entry = TAILQ_LAST(&_DNS_CACHE.lru_list, chttp_dns_cache_lru);
 		assert(entry);
 
 		TAILQ_REMOVE(&_DNS_CACHE.lru_list, entry, list_entry);
@@ -219,7 +183,7 @@ void
 chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_list, int port)
 {
 	struct addrinfo *ai_entry;
-	struct _dns_cache_entry *dns_entry, *dns_head, *dns_last;
+	struct chttp_dns_cache_entry *dns_entry, *dns_head, *dns_last;
 	size_t count;
 
 	_dns_cache_ok();
@@ -229,7 +193,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	assert(ai_list);
 	assert(port >= 0 && port <= UINT16_MAX);
 
-	if (host_len >= _DNS_CACHE_HOSTNAME_MAX) {
+	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
 		chttp_safe_add(&_DNS_CACHE.stats.err_too_long, 1);
 		return;
 	}
@@ -256,7 +220,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 			dns_last->next = dns_entry;
 		}
 
-		dns_entry->magic = _DNS_CACHE_ENTRY_MAGIC;
+		dns_entry->magic = CHTTP_DNS_CACHE_ENTRY_MAGIC;
 		dns_entry->next = NULL;
 		dns_entry->length = 0;
 		dns_entry->current = 0;
@@ -275,84 +239,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	strncpy(dns_head->hostname, host, host_len + 1);
 
 	TAILQ_INSERT_HEAD(&_DNS_CACHE.lru_list, dns_head, list_entry);
-	RB_INSERT(_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_head);
+	RB_INSERT(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_head);
 
 	_dns_cache_UNLOCK();
-}
-
-const struct chttp_dns_stats *
-chttp_dns_stats(void)
-{
-	_dns_cache_ok();
-
-	return &_DNS_CACHE.stats;
-}
-
-void
-chttp_dns_cache_debug(void)
-{
-	struct _dns_cache_entry *dns_entry, *dns_temp;
-	size_t tree_count = 0, tree_sub_count = 0;
-	size_t lru_count = 0, lru_sub_count = 0, free_count = 0;
-	char name[256];
-	int port;
-
-	_dns_cache_ok();
-
-	printf("_DNS_CACHE\n");
-
-	RB_FOREACH(dns_entry, _dns_cache_tree, &_DNS_CACHE.cache_tree) {
-		assert(dns_entry->magic == _DNS_CACHE_ENTRY_MAGIC);
-
-		printf("\tRB entry: '%s'\n", dns_entry->hostname);
-		tree_count++;
-
-		chttp_addr_ok(&dns_entry->addr);
-		chttp_sa_string(&dns_entry->addr.sa, name, sizeof(name), &port);
-		printf("\t\t%s:%d\n", name, port);
-
-		dns_temp = dns_entry->next;
-		while(dns_temp) {
-			assert(dns_temp->magic == _DNS_CACHE_ENTRY_MAGIC);
-			tree_sub_count++;
-
-			chttp_addr_ok(&dns_temp->addr);
-			chttp_sa_string(&dns_temp->addr.sa, name, sizeof(name), &port);
-			printf("\t\t%s:%d\n", name, port);
-
-			dns_temp = dns_temp->next;
-		}
-	}
-	printf("\tRB count: %zu (%zu)\n", tree_count, tree_count + tree_sub_count);
-
-	TAILQ_FOREACH(dns_entry, &_DNS_CACHE.lru_list, list_entry) {
-		assert(dns_entry->magic == _DNS_CACHE_ENTRY_MAGIC);
-
-		lru_count++;
-
-		dns_temp = dns_entry->next;
-		while(dns_temp) {
-			assert(dns_temp->magic == _DNS_CACHE_ENTRY_MAGIC);
-			lru_sub_count++;
-			dns_temp = dns_temp->next;
-		}
-	}
-	printf("\tLRU count: %zu (%zu)\n", lru_count, lru_count + lru_sub_count);
-
-	TAILQ_FOREACH(dns_entry, &_DNS_CACHE.free_list, list_entry) {
-		free_count++;
-	}
-	printf("\tFREE count: %zu\n", free_count);
-	printf("\tTOTAL count: %d (%zu %zu)\n", _DNS_CACHE_PREALLOC_SIZE,
-		free_count + tree_count + tree_sub_count,
-		free_count + lru_count + lru_sub_count);
-
-	printf("\tstats.lookups: %zu\n", _DNS_CACHE.stats.lookups);
-	printf("\tstats.cache_hits: %zu\n", _DNS_CACHE.stats.cache_hits);
-	printf("\tstats.insertions: %zu\n", _DNS_CACHE.stats.insertions);
-	printf("\tstats.dups: %zu\n", _DNS_CACHE.stats.dups);
-	printf("\tstats.expired: %zu\n", _DNS_CACHE.stats.expired);
-	printf("\tstats.nuked: %zu\n", _DNS_CACHE.stats.nuked);
-	printf("\tstats.err_too_long: %zu\n", _DNS_CACHE.stats.err_too_long);
-	printf("\tstats.err_alloc: %zu\n", _DNS_CACHE.stats.err_alloc);
 }
