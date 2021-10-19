@@ -129,3 +129,27 @@ chttp_error_msg(struct chttp_context *ctx)
 
 	return "unknown";
 }
+
+void
+chttp_sa_string(struct sockaddr *sa, char *buf, size_t buf_len, int *port)
+{
+	assert(sa);
+
+	buf[0] = '\0';
+	*port = -1;
+
+	switch (sa->sa_family) {
+		case AF_INET:
+			assert(inet_ntop(AF_INET, &(((struct sockaddr_in*)sa)->sin_addr),
+				buf, buf_len));
+			*port = ntohs(((struct sockaddr_in*)sa)->sin_port);
+			break;
+		case AF_INET6:
+			assert(inet_ntop(AF_INET6, &(((struct sockaddr_in6*)sa)->sin6_addr),
+				buf, buf_len));
+			*port = ntohs(((struct sockaddr_in6*)sa)->sin6_port);
+			break;
+		default:
+			chttp_ABORT("Invalid sockaddr family");
+	}
+}

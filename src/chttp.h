@@ -130,6 +130,17 @@ struct chttp_context {
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
 
+struct chttp_dns_stats {
+	size_t				lookups;
+	size_t				cache_hits;
+	size_t				insertions;
+	size_t				dups;
+	size_t				expired;
+	size_t				nuked;
+	size_t				err_too_long;
+	size_t				err_alloc;
+};
+
 #define CHTTP_CTX_SIZE			(sizeof(struct chttp_context) - CHTTP_DPAGE_SIZE)
 
 #define __chttp_attr_printf		__chttp_attr_printf_p(2)
@@ -191,6 +202,7 @@ int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port);
 void chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest);
 void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src, int port);
+const struct chttp_dns_stats *chttp_dns_stats(void);
 void chttp_dns_cache_debug(void);
 extern long CHTTP_DNS_CACHE_TTL;
 
@@ -209,6 +221,7 @@ void chttp_print_hex(void *buf, size_t buf_len);
 size_t chttp_safe_add(size_t *dest, size_t value);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
 const char *chttp_error_msg(struct chttp_context *ctx);
+void chttp_sa_string(struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 
 #define assert_zero(expr)						\
 	assert(!(expr))

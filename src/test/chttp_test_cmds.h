@@ -13,6 +13,7 @@
 
 struct chttp_test_server;
 struct chttp_test_random;
+struct chttp_test_dns;
 
 struct chttp_test_context {
 	struct chttp_context		chttp_static;
@@ -20,6 +21,7 @@ struct chttp_test_context {
 
 	struct chttp_test_server	*server;
 	struct chttp_test_random	*random;
+	struct chttp_test_dns		*dns;
 
 	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
 	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
@@ -120,7 +122,17 @@ CHTTP_TEST_VAR(random)
 CHTTP_TEST_VAR(md5_server)
 CHTTP_TEST_VAR(md5_client)
 
+CHTTP_TEST_CMD(dns_lookup)
+CHTTP_TEST_CMD(dns_lookup_or_skip)
 CHTTP_TEST_CMD(dns_debug)
+CHTTP_TEST_VAR(dns_lookups)
+CHTTP_TEST_VAR(dns_cache_hits)
+CHTTP_TEST_VAR(dns_insertions)
+CHTTP_TEST_VAR(dns_dups)
+CHTTP_TEST_VAR(dns_expired)
+CHTTP_TEST_VAR(dns_nuked)
+CHTTP_TEST_VAR(dns_err_too_long)
+CHTTP_TEST_VAR(dns_err_alloc)
 
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR

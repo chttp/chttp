@@ -366,20 +366,7 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 	server->http_sock = accept(server->sock, addr, &len);
 	assert(server->http_sock >= 0);
 
-	switch (addr->sa_family) {
-		case AF_INET:
-			inet_ntop(AF_INET, &(((struct sockaddr_in*)addr)->sin_addr),
-				remote, sizeof(remote));
-			remote_port = ntohs(((struct sockaddr_in*)addr)->sin_port);
-			break;
-		case AF_INET6:
-			inet_ntop(AF_INET6, &(((struct sockaddr_in6*)addr)->sin6_addr),
-				remote, sizeof(remote));
-			remote_port = ntohs(((struct sockaddr_in6*)addr)->sin6_port);
-			break;
-		default:
-			chttp_test_ERROR(1, "Invalid server remote family");
-	}
+	chttp_sa_string(addr, remote, sizeof(remote), &remote_port);
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
 		remote, remote_port);

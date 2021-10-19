@@ -47,16 +47,7 @@ static struct {
 
 	struct _dns_cache_entry				entries[_DNS_CACHE_PREALLOC_SIZE];
 
-	struct {
-		size_t					lookups;
-		size_t					cache_hits;
-		size_t					insertions;
-		size_t					dups;
-		size_t					expired;
-		size_t					nuked;
-		size_t					err_too_long;
-		size_t					err_alloc;
-	} stats;
+	struct chttp_dns_stats				stats;
 } _DNS_CACHE = {
 	_DNS_CACHE_MAGIC,
 	PTHREAD_MUTEX_INITIALIZER,
@@ -98,6 +89,7 @@ _dns_cache_init(void)
 	size_t i;
 
 	_dns_cache_ok();
+	assert_zero(_DNS_CACHE.initialized);
 
 	assert(RB_EMPTY(&_DNS_CACHE.cache_tree));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.free_list));
@@ -231,6 +223,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	size_t count;
 
 	_dns_cache_ok();
+	assert(_DNS_CACHE.initialized);
 	assert(host);
 	assert(host_len);
 	assert(ai_list);
@@ -287,12 +280,22 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	_dns_cache_UNLOCK();
 }
 
+const struct chttp_dns_stats *
+chttp_dns_stats(void)
+{
+	_dns_cache_ok();
+
+	return &_DNS_CACHE.stats;
+}
+
 void
 chttp_dns_cache_debug(void)
 {
 	struct _dns_cache_entry *dns_entry, *dns_temp;
 	size_t tree_count = 0, tree_sub_count = 0;
 	size_t lru_count = 0, lru_sub_count = 0, free_count = 0;
+	char name[256];
+	int port;
 
 	_dns_cache_ok();
 
@@ -304,10 +307,19 @@ chttp_dns_cache_debug(void)
 		printf("\tRB entry: '%s'\n", dns_entry->hostname);
 		tree_count++;
 
+		chttp_addr_ok(&dns_entry->addr);
+		chttp_sa_string(&dns_entry->addr.sa, name, sizeof(name), &port);
+		printf("\t\t%s:%d\n", name, port);
+
 		dns_temp = dns_entry->next;
 		while(dns_temp) {
 			assert(dns_temp->magic == _DNS_CACHE_ENTRY_MAGIC);
 			tree_sub_count++;
+
+			chttp_addr_ok(&dns_temp->addr);
+			chttp_sa_string(&dns_temp->addr.sa, name, sizeof(name), &port);
+			printf("\t\t%s:%d\n", name, port);
+
 			dns_temp = dns_temp->next;
 		}
 	}
@@ -334,4 +346,13 @@ chttp_dns_cache_debug(void)
 	printf("\tTOTAL count: %d (%zu %zu)\n", _DNS_CACHE_PREALLOC_SIZE,
 		free_count + tree_count + tree_sub_count,
 		free_count + lru_count + lru_sub_count);
+
+	printf("\tstats.lookups: %zu\n", _DNS_CACHE.stats.lookups);
+	printf("\tstats.cache_hits: %zu\n", _DNS_CACHE.stats.cache_hits);
+	printf("\tstats.insertions: %zu\n", _DNS_CACHE.stats.insertions);
+	printf("\tstats.dups: %zu\n", _DNS_CACHE.stats.dups);
+	printf("\tstats.expired: %zu\n", _DNS_CACHE.stats.expired);
+	printf("\tstats.nuked: %zu\n", _DNS_CACHE.stats.nuked);
+	printf("\tstats.err_too_long: %zu\n", _DNS_CACHE.stats.err_too_long);
+	printf("\tstats.err_alloc: %zu\n", _DNS_CACHE.stats.err_alloc);
 }
