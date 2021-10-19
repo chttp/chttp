@@ -10,6 +10,7 @@
 #include <string.h>
 
 long CHTTP_DNS_CACHE_TTL = 600;
+size_t _DNS_CACHE_SIZE = CHTTP_DNS_CACHE_SIZE;
 
 struct chttp_dns_cache _DNS_CACHE = {
 	CHTTP_DNS_CACHE_MAGIC,
@@ -54,13 +55,14 @@ _dns_cache_init(void)
 
 	_dns_cache_ok();
 	assert_zero(_DNS_CACHE.initialized);
+	assert(_DNS_CACHE_SIZE <= CHTTP_DNS_CACHE_SIZE);
 
 	assert(RB_EMPTY(&_DNS_CACHE.cache_tree));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.free_list));
 	assert(TAILQ_EMPTY(&_DNS_CACHE.lru_list));
 
 	/* Create the free_list */
-	for (i = 0; i < CHTTP_DNS_CACHE_SIZE; i++) {
+	for (i = 0; i < _DNS_CACHE_SIZE; i++) {
 		assert_zero(_DNS_CACHE.entries[i].magic);
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, &_DNS_CACHE.entries[i], list_entry);
 	}
@@ -107,6 +109,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 
 	if (addr_head) {
 		assert(addr_head->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+
 		// TODO choose the next entry, LRU the head
 
 		_DNS_CACHE.stats.cache_hits++;
@@ -160,6 +163,7 @@ _dns_get_entry(void)
 		entry = TAILQ_LAST(&_DNS_CACHE.lru_list, chttp_dns_cache_lru);
 		assert(entry);
 
+		RB_REMOVE(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, entry);
 		TAILQ_REMOVE(&_DNS_CACHE.lru_list, entry, list_entry);
 
 		_DNS_CACHE.stats.nuked++;

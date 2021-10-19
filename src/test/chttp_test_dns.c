@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern size_t _DNS_CACHE_SIZE;
+
 struct chttp_test_dns {
 	unsigned int				magic;
 #define _DNS_MAGIC				0x6CF2F95F
@@ -47,6 +49,22 @@ _dns_init(struct chttp_test_context *ctx)
 	}
 
 	assert(ctx->dns->magic == _DNS_MAGIC);
+}
+
+void
+chttp_test_cmd_dns_cache_size(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long size;
+
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	size = chttp_test_parse_long(cmd->params[0].value);
+	assert(size > 0);
+
+	_DNS_CACHE_SIZE = size;
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "DNS cache size %zu", _DNS_CACHE_SIZE);
 }
 
 void
@@ -94,7 +112,7 @@ chttp_dns_cache_debug(void)
 {
 	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
 	size_t tree_count = 0, tree_sub_count = 0;
-	size_t lru_count = 0, lru_sub_count = 0, free_count = 0;
+	size_t lru_count = 0, lru_sub_count = 0, free_count = 0, sub_count;
 	char name[256];
 	int port;
 
@@ -107,6 +125,7 @@ chttp_dns_cache_debug(void)
 
 		printf("\tRB entry: '%s'\n", dns_entry->hostname);
 		tree_count++;
+		sub_count = 1;
 
 		chttp_addr_ok(&dns_entry->addr);
 		chttp_sa_string(&dns_entry->addr.sa, name, sizeof(name), &port);
@@ -116,6 +135,7 @@ chttp_dns_cache_debug(void)
 		while(dns_temp) {
 			assert(dns_temp->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
 			tree_sub_count++;
+			sub_count++;
 
 			chttp_addr_ok(&dns_temp->addr);
 			chttp_sa_string(&dns_temp->addr.sa, name, sizeof(name), &port);
@@ -123,12 +143,16 @@ chttp_dns_cache_debug(void)
 
 			dns_temp = dns_temp->next;
 		}
+
+		assert(sub_count == dns_entry->length);
+		assert(dns_entry->current < dns_entry->length);
 	}
 	printf("\tRB count: %zu (%zu)\n", tree_count, tree_count + tree_sub_count);
 
 	TAILQ_FOREACH(dns_entry, &_DNS_CACHE.lru_list, list_entry) {
 		assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
 
+		printf("\tLRU entry: '%s'\n", dns_entry->hostname);
 		lru_count++;
 
 		dns_temp = dns_entry->next;
@@ -144,7 +168,7 @@ chttp_dns_cache_debug(void)
 		free_count++;
 	}
 	printf("\tFREE count: %zu\n", free_count);
-	printf("\tTOTAL count: %d (%zu %zu)\n", CHTTP_DNS_CACHE_SIZE,
+	printf("\tTOTAL count: %zu (%zu %zu)\n", _DNS_CACHE_SIZE,
 		free_count + tree_count + tree_sub_count,
 		free_count + lru_count + lru_sub_count);
 
