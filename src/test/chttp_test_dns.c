@@ -40,7 +40,7 @@ _dns_init(struct chttp_test_context *ctx)
 		ctx->dns = malloc(sizeof(*ctx->dns));
 		assert(ctx->dns);
 
-		memset(ctx->dns, 0, sizeof(*ctx->dns));
+		chttp_ZERO(ctx->dns);
 
 		ctx->dns->magic = _DNS_MAGIC;
 

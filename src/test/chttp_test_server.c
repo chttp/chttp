@@ -124,7 +124,7 @@ _server_cmdentry_alloc(void)
 	cmdentry = malloc(sizeof(*cmdentry));
 	assert(cmdentry);
 
-	memset(cmdentry, 0, sizeof(*cmdentry));
+	chttp_ZERO(cmdentry);
 
 	cmdentry->magic = _SERVER_CMDENTRY;
 
@@ -295,7 +295,7 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 	server = malloc(sizeof(*server));
 	assert(server);
 
-	memset(server, 0, sizeof(*server));
+	chttp_ZERO(server);
 
 	server->magic = _SERVER_MAGIC;
 	server->ctx = ctx;

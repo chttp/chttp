@@ -17,7 +17,7 @@ chttp_addr_init(struct chttp_addr *addr)
 void
 chttp_addr_reset(struct chttp_addr *addr)
 {
-	memset(addr, 0, sizeof(*addr));
+	chttp_ZERO(addr);
 }
 
 void
@@ -73,7 +73,7 @@ chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, in
 
 	chttp_dns_cache_lookup(host, host_len, addr);
 
-	memset(&hints, 0, sizeof(struct addrinfo));
+	chttp_ZERO(&hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 

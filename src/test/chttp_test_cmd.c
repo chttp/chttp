@@ -33,7 +33,7 @@ _test_cmd_register(struct chttp_test *test, const char *name, chttp_test_cmd_f *
 	entry = malloc(sizeof(*entry));
 	assert(entry);
 
-	memset(entry, 0, sizeof(*entry));
+	chttp_ZERO(entry);
 
 	entry->magic = CHTTP_TEST_ENTRY_MAGIC;
 	entry->name = name;
@@ -54,7 +54,7 @@ _test_var_register(struct chttp_test *test, const char *name, chttp_test_var_f *
 	entry = malloc(sizeof(*entry));
 	assert(entry);
 
-	memset(entry, 0, sizeof(*entry));
+	chttp_ZERO(entry);
 
 	entry->magic = CHTTP_TEST_ENTRY_MAGIC;
 	entry->name = name;

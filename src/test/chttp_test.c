@@ -32,7 +32,7 @@ _init_test(struct chttp_test *test)
 {
 	assert(test);
 
-	memset(test, 0, sizeof(struct chttp_test));
+	chttp_ZERO(test);
 
 	test->magic = CHTTP_TEST_MAGIC;
 	test->verbocity = CHTTP_LOG_VERBOSE;

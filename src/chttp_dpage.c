@@ -74,7 +74,7 @@ chttp_dpage_init(struct chttp_dpage *dpage, size_t dpage_size)
 	assert(dpage);
 	assert(dpage_size > sizeof(struct chttp_dpage));
 
-	memset(dpage, 0, sizeof(struct chttp_dpage));
+	chttp_ZERO(dpage);
 
 	dpage->magic = CHTTP_DPAGE_MAGIC;
 	dpage->length = dpage_size - sizeof(struct chttp_dpage);
@@ -277,7 +277,7 @@ chttp_dpage_ptr_reset(struct chttp_dpage_ptr *dptr)
 {
 	assert(dptr);
 
-	memset(dptr, 0, sizeof(*dptr));
+	chttp_ZERO(dptr);
 }
 
 size_t

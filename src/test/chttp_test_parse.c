@@ -190,7 +190,7 @@ chttp_test_parse_cmd(struct chttp_test *test)
 	assert(test->line_buf);
 	assert(test->line_buf_len);
 
-	memset(&test->cmd, 0, sizeof(test->cmd));
+	chttp_ZERO(&test->cmd);
 	test->cmd.name = test->line_buf;
 
 	buf = test->line_buf;

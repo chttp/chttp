@@ -41,7 +41,7 @@ _random_init(struct chttp_test_context *ctx)
 		random = malloc(sizeof(*random));
 		assert(random);
 
-		memset(random, 0, sizeof(*random));
+		chttp_ZERO(random);
 
 		random->magic = _RANDOM_MAGIC;
 		random->low = 0;
