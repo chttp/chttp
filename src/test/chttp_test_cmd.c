@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 static int chttp_test_entry_cmp(const struct chttp_test_cmdentry *k1,
     const struct chttp_test_cmdentry *k2);
@@ -80,7 +79,7 @@ _test_cmds_free(struct chttp_test_context *ctx)
 
 		RB_REMOVE(chttp_test_tree, &test->cmd_tree, entry);
 
-		entry->magic = 0;
+		chttp_ZERO(entry);
 		free(entry);
 	}
 

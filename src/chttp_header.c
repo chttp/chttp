@@ -5,8 +5,6 @@
 
 #include "chttp.h"
 
-#include <string.h>
-
 const char *_CHTTP_HEADER_FIRST	 = "_FIRST";
 const char *CHTTP_HEADER_REASON	 = "_REASON";
 

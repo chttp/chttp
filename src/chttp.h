@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
@@ -246,5 +247,7 @@ void chttp_sa_string(struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 	} while (0)
 #define chttp_ABORT(reason)						\
 	chttp_do_abort(__func__, __FILE__, __LINE__, reason);
+#define chttp_ZERO(p)							\
+	explicit_bzero(p, sizeof(*(p)))
 
 #endif /* _CHTTP_H_INCLUDED_ */

@@ -6,7 +6,6 @@
 #include "chttp.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE = 0;
 
@@ -307,6 +306,7 @@ void
 chttp_dpage_free(struct chttp_dpage *dpage)
 {
 	struct chttp_dpage *curr;
+	int do_free;
 
 	while (dpage) {
 		chttp_dpage_ok(dpage);
@@ -314,10 +314,11 @@ chttp_dpage_free(struct chttp_dpage *dpage)
 		curr = dpage;
 		dpage = curr->next;
 
-		curr->magic = 0;
-		curr->next = NULL;
+		do_free = curr->free;
 
-		if (curr->free) {
+		chttp_ZERO(curr);
+
+		if (do_free) {
 			free(curr);
 		}
 	}

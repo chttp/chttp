@@ -43,8 +43,7 @@ struct chttp_dns_stats {
 };
 
 RB_HEAD(chttp_dns_cache_tree, chttp_dns_cache_entry);
-TAILQ_HEAD(chttp_dns_cache_free, chttp_dns_cache_entry);
-TAILQ_HEAD(chttp_dns_cache_lru, chttp_dns_cache_entry);
+TAILQ_HEAD(chttp_dns_cache_list, chttp_dns_cache_entry);
 
 struct chttp_dns_cache {
 	unsigned int					magic;
@@ -55,8 +54,8 @@ struct chttp_dns_cache {
 	int						initialized;
 
 	struct chttp_dns_cache_tree			cache_tree;
-	struct chttp_dns_cache_free			free_list;
-	struct chttp_dns_cache_lru			lru_list;
+	struct chttp_dns_cache_list			free_list;
+	struct chttp_dns_cache_list			lru_list;
 
 	struct chttp_dns_cache_entry			entries[CHTTP_DNS_CACHE_SIZE];
 

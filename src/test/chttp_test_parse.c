@@ -6,7 +6,6 @@
 #include "test/chttp_test.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 #define _TRIM_STR_LEFT(s, len)				\
 	while ((len) > 0 && (s)[0] <= ' ') {		\

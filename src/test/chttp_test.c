@@ -6,7 +6,6 @@
 #include "test/chttp_test.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 static void
 _finish_test(struct chttp_test_context *ctx)
@@ -25,10 +24,7 @@ _finish_test(struct chttp_test_context *ctx)
 	}
 
 	free(test->line_raw);
-	test->line_raw = NULL;
-	test->line_raw_len = 0;
-
-	test->magic = 0;
+	chttp_ZERO(test);
 }
 
 static void
@@ -206,7 +202,7 @@ chttp_test_run_finish(struct chttp_test_context *ctx, const char *name)
 
 		finish->func(&test->context);
 
-		finish->magic = 0;
+		chttp_ZERO(finish);
 		free(finish);
 
 		return;
@@ -233,7 +229,7 @@ chttp_test_run_all_finish(struct chttp_test *test)
 
 		finish->func(&test->context);
 
-		finish->magic = 0;
+		chttp_ZERO(finish);
 		free(finish);
 	}
 

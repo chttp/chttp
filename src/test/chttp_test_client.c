@@ -6,7 +6,6 @@
 #include "test/chttp_test.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 static inline void
 _test_context_ok(struct chttp_test_context *ctx)

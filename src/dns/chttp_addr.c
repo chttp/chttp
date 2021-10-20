@@ -5,8 +5,6 @@
 
 #include "chttp.h"
 
-#include <string.h>
-
 void
 chttp_addr_init(struct chttp_addr *addr)
 {

@@ -6,7 +6,6 @@
 #include "chttp.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 static struct chttp_context *_context_alloc_size(size_t buffer_size);
 static void _context_init_size(struct chttp_context *ctx, size_t dpage_size);
@@ -73,6 +72,8 @@ chttp_context_init_buf(void *buffer, size_t buffer_len)
 void
 chttp_context_free(struct chttp_context *ctx)
 {
+	int do_free;
+
 	chttp_context_ok(ctx);
 
 	if (ctx->state != CHTTP_STATE_DONE) {
@@ -85,10 +86,11 @@ chttp_context_free(struct chttp_context *ctx)
 	chttp_addr_reset(&ctx->addr);
 	chttp_dpage_free(ctx->dpage);
 
-	ctx->magic = 0;
-	ctx->dpage = NULL;
+	do_free = ctx->free;
 
-	if (ctx->free) {
+	explicit_bzero(ctx, CHTTP_CTX_SIZE);
+
+	if (do_free) {
 		free(ctx);
 	}
 }

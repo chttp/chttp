@@ -5,8 +5,6 @@
 
 #include "chttp.h"
 
-#include <string.h>
-
 static void
 _finalize_request(struct chttp_context *ctx)
 {

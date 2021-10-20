@@ -7,7 +7,6 @@
 #include "dns/chttp_dns_cache.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 extern size_t _DNS_CACHE_SIZE;
 
@@ -26,7 +25,7 @@ _dns_finish(struct chttp_test_context *ctx)
 	assert(ctx->dns);
 	assert(ctx->dns->magic == _DNS_MAGIC);
 
-	ctx->dns->magic = 0;
+	chttp_ZERO(ctx->dns);
 	free(ctx->dns);
 
 	ctx->dns = NULL;

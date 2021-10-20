@@ -9,7 +9,6 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 struct chttp_test *

@@ -7,7 +7,6 @@
 #include "dns/chttp_dns_cache.h"
 
 #include <stdio.h>
-#include <string.h>
 
 long CHTTP_DNS_CACHE_TTL = 600;
 size_t _DNS_CACHE_SIZE = CHTTP_DNS_CACHE_SIZE;
@@ -135,10 +134,7 @@ _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 		dns_entry = dns_entry->next;
 
 		chttp_addr_reset(&dns_temp->addr);
-
-		dns_temp->next = NULL;
-		dns_temp->hostname[0] = '\0';
-		dns_temp->magic = 0;
+		chttp_ZERO(dns_temp);
 
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, dns_temp, list_entry);
 	}
@@ -160,7 +156,7 @@ _dns_get_entry(void)
 		return entry;
 	} else if (!TAILQ_EMPTY(&_DNS_CACHE.lru_list)) {
 		// Pull from the LRU
-		entry = TAILQ_LAST(&_DNS_CACHE.lru_list, chttp_dns_cache_lru);
+		entry = TAILQ_LAST(&_DNS_CACHE.lru_list, chttp_dns_cache_list);
 		assert(entry);
 
 		RB_REMOVE(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, entry);

@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <string.h>
 
 static void
 _body_chunk_end(struct chttp_context *ctx)

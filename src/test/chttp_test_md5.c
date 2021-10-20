@@ -8,7 +8,6 @@
 #include "test/chttp_test.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 static unsigned char _MD5_PADDING[64] = {
 	0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

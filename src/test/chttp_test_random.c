@@ -6,7 +6,6 @@
 #include "test/chttp_test.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 struct chttp_test_random {
 	unsigned int				magic;
@@ -25,7 +24,7 @@ _random_finish(struct chttp_test_context *ctx)
 	assert(ctx->random);
 	assert(ctx->random->magic == _RANDOM_MAGIC);
 
-	ctx->random->magic = 0;
+	chttp_ZERO(ctx->random);
 	free(ctx->random);
 
 	ctx->random = NULL;

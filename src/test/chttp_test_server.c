@@ -7,7 +7,6 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 #define _SERVER_IP_DEFAULT			"127.0.0.1"
@@ -113,8 +112,7 @@ _server_cmdentry_free(struct _server_cmdentry *cmdentry)
 		free((char*)cmdentry->cmd.params[i].value);
 	}
 
-	cmdentry->magic = 0;
-
+	chttp_ZERO(cmdentry);
 	free(cmdentry);
 }
 
@@ -228,9 +226,9 @@ _server_finish(struct chttp_test_context *ctx)
 		assert_zero(close(server->http_sock));
 	}
 
-	server->magic = 0;
-
+	chttp_ZERO(server);
 	free(server);
+
 	ctx->server = NULL;
 }
 

@@ -16,7 +16,7 @@ HTMLDIR=report
 RM=rm -f
 RMDIR=rm -rf
 
-INCLUDES=$(wildcard *.h data/*.h)
+INCLUDES=$(wildcard *.h data/*.h dns/*.h)
 SOURCE=$(wildcard *.c dns/*.c tcp/*.c)
 OBJS=$(SOURCE:.c=.o)
 CLIENT=$(wildcard client/*.c)
