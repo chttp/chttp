@@ -21,16 +21,15 @@ chttp_addr_reset(struct chttp_addr *addr)
 }
 
 void
-chttp_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
+chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)
 {
 	assert(addr_dest);
-	assert(ai_src);
-	assert(ai_src->ai_addr);
+	assert(sa);
 	assert(port >= 0 && port <= UINT16_MAX);
 
 	chttp_addr_init(addr_dest);
 
-	switch (ai_src->ai_addr->sa_family) {
+	switch (sa->sa_family) {
 		case AF_INET:
 			addr_dest->len = sizeof(struct sockaddr_in);
 			break;
@@ -41,7 +40,7 @@ chttp_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port)
 			return;
 	}
 
-	memcpy(&addr_dest->sa, ai_src->ai_addr, addr_dest->len);
+	memcpy(&addr_dest->sa, sa, addr_dest->len);
 
 	switch (addr_dest->sa.sa_family) {
 		case AF_INET:
@@ -71,7 +70,12 @@ chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, in
 
 	chttp_addr_reset(addr);
 
-	chttp_dns_cache_lookup(host, host_len, addr);
+	ret = chttp_dns_cache_lookup(host, host_len, addr, port);
+
+	if (ret) {
+		chttp_addr_resolved(addr);
+		return 0;
+	}
 
 	chttp_ZERO(&hints);
 	hints.ai_family = AF_UNSPEC;
@@ -84,15 +88,15 @@ chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, in
 	}
 
 	// Always use the first address entry on a fresh lookup
-	chttp_addr_copy(addr, ai_res_list, port);
-	assert(addr->magic == CHTTP_ADDR_MAGIC);
+	chttp_addr_copy(addr, ai_res_list->ai_addr, port);
+	chttp_addr_resolved(addr);
 
 	if (addr->state == CHTTP_ADDR_NONE) {
 		freeaddrinfo(ai_res_list);
 		return 1;
 	}
 
-	chttp_dns_cache_store(host, host_len, ai_res_list, port);
+	chttp_dns_cache_store(host, host_len, ai_res_list);
 
 	freeaddrinfo(ai_res_list);
 

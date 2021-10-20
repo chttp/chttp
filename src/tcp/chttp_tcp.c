@@ -52,8 +52,7 @@ chttp_addr_connect(struct chttp_addr *addr)
 {
 	int val;
 
-	chttp_addr_ok(addr);
-	assert(addr->state == CHTTP_ADDR_RESOLVED);
+	chttp_addr_resolved(addr);
 
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
 

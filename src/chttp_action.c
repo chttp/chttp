@@ -59,8 +59,7 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 		return;
 	}
 
-	chttp_caddr_ok(ctx);
-	assert(ctx->addr.state == CHTTP_ADDR_RESOLVED);
+	chttp_addr_resolved(&ctx->addr);
 }
 
 void

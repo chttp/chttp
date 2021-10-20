@@ -187,11 +187,12 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
-void chttp_addr_copy(struct chttp_addr *addr_dest, struct addrinfo *ai_src, int port);
+void chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port);
 int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port);
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port);
-void chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest);
-void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src, int port);
+int chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest,
+	int port);
+void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src);
 extern long CHTTP_DNS_CACHE_TTL;
 
 void chttp_tcp_import(struct chttp_context *ctx, int sock);
@@ -235,10 +236,15 @@ void chttp_sa_string(struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 	} while (0)
 #define chttp_addr_connected(addr)					\
 	do {								\
-		assert(addr);						\
-		assert((addr)->magic == CHTTP_ADDR_MAGIC);		\
+		chttp_addr_ok(addr);					\
 		assert((addr)->state == CHTTP_ADDR_CONNECTED);		\
 		assert((addr)->sock >= 0);				\
+	} while (0)
+#define chttp_addr_resolved(addr)					\
+	do {								\
+		chttp_addr_ok(addr);					\
+		assert((addr)->state == CHTTP_ADDR_RESOLVED);		\
+		assert((addr)->sock == -1);				\
 	} while (0)
 #define chttp_caddr_connected(ctx)					\
 	do {								\

@@ -38,6 +38,7 @@ struct chttp_dns_stats {
 	size_t						dups;
 	size_t						expired;
 	size_t						nuked;
+	size_t						lru;
 	size_t						err_too_long;
 	size_t						err_alloc;
 };

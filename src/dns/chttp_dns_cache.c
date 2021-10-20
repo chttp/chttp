@@ -78,10 +78,11 @@ _dns_cache_cmp(const struct chttp_dns_cache_entry *k1, const struct chttp_dns_ca
 	return strcmp(k1->hostname, k2->hostname);
 }
 
-void
-chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest)
+int
+chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest, int port)
 {
-	struct chttp_dns_cache_entry *addr_head, find;
+	struct chttp_dns_cache_entry *addr_head, *addr, find;
+	size_t pos;
 
 	_dns_cache_ok();
 	assert(host);
@@ -90,7 +91,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
 		chttp_safe_add(&_DNS_CACHE.stats.err_too_long, 1);
-		return;
+		return 0;
 	}
 
 	_dns_cache_LOCK();
@@ -109,15 +110,44 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	if (addr_head) {
 		assert(addr_head->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
 
-		// TODO choose the next entry, LRU the head
+		// Calculate next for RR
+		addr_head->current = (addr_head->current + 1) % addr_head->length;
+
+		addr = addr_head;
+		pos = addr_head->current;
+
+		while (pos > 0) {
+			assert(addr);
+			assert(addr->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+
+			addr = addr->next;
+			pos--;
+		}
+
+		chttp_addr_ok(&addr->addr);
+		assert(addr->addr.state == CHTTP_ADDR_CACHED);
+
+		chttp_addr_copy(addr_dest, &addr->addr.sa, port);
+		chttp_addr_resolved(addr_dest);
 
 		_DNS_CACHE.stats.cache_hits++;
 
+		// Move to the front of the LRU
+		if (TAILQ_FIRST(&_DNS_CACHE.lru_list) != addr_head) {
+			TAILQ_REMOVE(&_DNS_CACHE.lru_list, addr_head, list_entry);
+			TAILQ_INSERT_HEAD(&_DNS_CACHE.lru_list, addr_head, list_entry);
+
+			_DNS_CACHE.stats.lru++;
+		}
+
 		_dns_cache_UNLOCK();
-		return;
+
+		return 1;
 	}
 
 	_dns_cache_UNLOCK();
+
+	return 0;
 }
 
 static void
@@ -180,7 +210,7 @@ _dns_get_entry(void)
 }
 
 void
-chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_list, int port)
+chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_list)
 {
 	struct addrinfo *ai_entry;
 	struct chttp_dns_cache_entry *dns_entry, *dns_head, *dns_last;
@@ -191,7 +221,6 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	assert(host);
 	assert(host_len);
 	assert(ai_list);
-	assert(port >= 0 && port <= UINT16_MAX);
 
 	if (host_len >= CHTTP_DNS_CACHE_HOST_MAX) {
 		chttp_safe_add(&_DNS_CACHE.stats.err_too_long, 1);
@@ -225,7 +254,10 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 		dns_entry->length = 0;
 		dns_entry->current = 0;
 
-		chttp_addr_copy(&dns_entry->addr, ai_entry, 0);
+		chttp_addr_copy(&dns_entry->addr, ai_entry->ai_addr, 0);
+		chttp_addr_resolved(&dns_entry->addr);
+
+		dns_entry->addr.state = CHTTP_ADDR_CACHED;
 
 		count++;
 		_DNS_CACHE.stats.insertions++;

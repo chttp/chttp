@@ -14,7 +14,7 @@ struct chttp_test_dns {
 	unsigned int				magic;
 #define _DNS_MAGIC				0x6CF2F95F
 
-	char					name[256];
+	char					value[256];
 	char					stat_str[64];
 };
 
@@ -86,12 +86,12 @@ chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_t
 		return;
 	}
 
-	chttp_addr_ok(paddr);
+	chttp_addr_resolved(paddr);
 
-	chttp_sa_string(&addr.sa, ctx->dns->name, sizeof(ctx->dns->name), &ret);
+	chttp_sa_string(&addr.sa, ctx->dns->value, sizeof(ctx->dns->value), &ret);
 	assert(ret == 1);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "DNS result %s", ctx->dns->name);
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "DNS result %s", ctx->dns->value);
 }
 
 void
@@ -121,6 +121,8 @@ chttp_dns_cache_debug(void)
 
 	RB_FOREACH(dns_entry, chttp_dns_cache_tree, &_DNS_CACHE.cache_tree) {
 		assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+		chttp_addr_ok(&dns_entry->addr);
+		assert(dns_entry->addr.state == CHTTP_ADDR_CACHED);
 
 		printf("\tRB entry: '%s'\n", dns_entry->hostname);
 		tree_count++;
@@ -133,6 +135,9 @@ chttp_dns_cache_debug(void)
 		dns_temp = dns_entry->next;
 		while(dns_temp) {
 			assert(dns_temp->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+			chttp_addr_ok(&dns_temp->addr);
+			assert(dns_temp->addr.state == CHTTP_ADDR_CACHED);
+
 			tree_sub_count++;
 			sub_count++;
 
@@ -177,6 +182,7 @@ chttp_dns_cache_debug(void)
 	printf("\tstats.dups: %zu\n", _DNS_CACHE.stats.dups);
 	printf("\tstats.expired: %zu\n", _DNS_CACHE.stats.expired);
 	printf("\tstats.nuked: %zu\n", _DNS_CACHE.stats.nuked);
+	printf("\tstats.lru: %zu\n", _DNS_CACHE.stats.lru);
 	printf("\tstats.err_too_long: %zu\n", _DNS_CACHE.stats.err_too_long);
 	printf("\tstats.err_alloc: %zu\n", _DNS_CACHE.stats.err_alloc);
 }
@@ -195,8 +201,17 @@ chttp_test_cmd_dns_debug(struct chttp_test_context *ctx, struct chttp_test_cmd *
 	}
 }
 
+char *
+chttp_test_var_dns_value(struct chttp_test_context *ctx)
+{
+	_dns_init(ctx);
+
+	return ctx->dns->value;
+}
+
 #define _DNS_STATS_NAME(name)							\
-char * chttp_test_var_dns_##name(struct chttp_test_context *ctx)		\
+char *										\
+chttp_test_var_dns_##name(struct chttp_test_context *ctx)			\
 {										\
 	_dns_init(ctx);								\
 	assert(_DNS_CACHE.magic == CHTTP_DNS_CACHE_MAGIC);			\
@@ -213,5 +228,6 @@ _DNS_STATS_NAME(insertions)
 _DNS_STATS_NAME(dups)
 _DNS_STATS_NAME(expired)
 _DNS_STATS_NAME(nuked)
+_DNS_STATS_NAME(lru)
 _DNS_STATS_NAME(err_too_long)
 _DNS_STATS_NAME(err_alloc)
