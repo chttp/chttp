@@ -3,55 +3,43 @@ chttp_test "RR DNS test"
 dns_lookup_or_skip dns01.nulltech.systems
 
 dns_lookup dns03.nulltech.systems
+
 equal $dns_value 127.0.0.1
+equal $dns_insertions 4
 
 dns_lookup dns03.nulltech.systems
-#equal $dns_value 127.0.0.2
-
 dns_lookup dns03.nulltech.systems
-#equal $dns_value 127.0.0.3
-
 dns_lookup dns03.nulltech.systems
+
 equal $dns_value 127.0.0.1
-
 equal $dns_lookups 5
 equal $dns_insertions 4
 equal $dns_cache_hits 3
 
 dns_lookup dns04.nulltech.systems
+
+equal $dns_value 127.0.0.1
+equal $dns_insertions 8
+
+dns_lookup dns04.nulltech.systems
+dns_lookup dns04.nulltech.systems
+dns_lookup dns04.nulltech.systems
+dns_lookup dns04.nulltech.systems
+
 equal $dns_value 127.0.0.1
 
 dns_lookup dns04.nulltech.systems
-#equal $dns_value 127.0.0.2
-
 dns_lookup dns04.nulltech.systems
-#equal $dns_value 127.0.0.3
-
 dns_lookup dns04.nulltech.systems
-#equal $dns_value 127.0.0.4
-
 dns_lookup dns04.nulltech.systems
+
 equal $dns_value 127.0.0.1
-
-dns_lookup dns04.nulltech.systems
-#equal $dns_value 127.0.0.2
-
-dns_lookup dns04.nulltech.systems
-#equal $dns_value 127.0.0.3
-
-dns_lookup dns04.nulltech.systems
-#equal $dns_value 127.0.0.4
-
-dns_lookup dns04.nulltech.systems
-equal $dns_value 127.0.0.1
-
 equal $dns_lookups 14
 equal $dns_insertions 8
 equal $dns_cache_hits 11
 equal $dns_lru 0
 
 dns_lookup dns03.nulltech.systems
-#equal $dns_value 127.0.0.2
 
 equal $dns_lru 1
 

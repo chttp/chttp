@@ -231,13 +231,7 @@ _dns_get_entry(void)
 
 		assert(!TAILQ_EMPTY(&_DNS_CACHE.free_list));
 
-		// Grab from the free_list
-		entry = TAILQ_FIRST(&_DNS_CACHE.free_list);
-		assert(entry);
-
-		TAILQ_REMOVE(&_DNS_CACHE.free_list, entry, list_entry);
-
-		return entry;
+		return _dns_get_entry();
 	}
 
 	return NULL;

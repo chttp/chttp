@@ -68,6 +68,6 @@ gcov.data:	CFLAGS+=$(GCOVFLAGS)
 gcov.data:	LIBFLAGS+=$(GCOVLIBFLAGS)
 gcov.data:
 		$(MAKE) cleanall CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
-		$(MAKE) -C .. check
+		$(MAKE) -C .. check V=vv
 		touch gcov.data
 
