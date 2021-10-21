@@ -122,6 +122,7 @@ CHTTP_TEST_VAR(random)
 CHTTP_TEST_VAR(md5_server)
 CHTTP_TEST_VAR(md5_client)
 
+CHTTP_TEST_CMD(dns_ttl)
 CHTTP_TEST_CMD(dns_cache_size)
 CHTTP_TEST_CMD(dns_lookup)
 CHTTP_TEST_CMD(dns_lookup_or_skip)

@@ -13,6 +13,7 @@
 #include <pthread.h>
 
 #define CHTTP_DNS_CACHE_SIZE				100
+#define CHTTP_DNS_CACHE_TTL				600
 #define CHTTP_DNS_CACHE_HOST_MAX			256
 
 struct chttp_dns_cache_entry {

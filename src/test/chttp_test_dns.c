@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 
+extern long _DNS_CACHE_TTL;
 extern size_t _DNS_CACHE_SIZE;
 
 struct chttp_test_dns {
@@ -48,6 +49,21 @@ _dns_init(struct chttp_test_context *ctx)
 	}
 
 	assert(ctx->dns->magic == _DNS_MAGIC);
+}
+
+void
+chttp_test_cmd_dns_ttl(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long ttl;
+
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	ttl = chttp_test_parse_long(cmd->params[0].value);
+
+	_DNS_CACHE_TTL = ttl;
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "DNS ttl %ld", _DNS_CACHE_SIZE);
 }
 
 void
@@ -127,7 +143,8 @@ chttp_dns_cache_debug(void)
 	RB_FOREACH(dns_entry, chttp_dns_cache_tree, &_DNS_CACHE.cache_tree) {
 		assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
 		chttp_addr_ok(&dns_entry->addr);
-		assert(dns_entry->addr.state == CHTTP_ADDR_CACHED);
+		assert(dns_entry->addr.state == CHTTP_ADDR_CACHED ||
+			dns_entry->addr.state == CHTTP_ADDR_STALE);
 
 		printf("\tRB entry: '%s'\n", dns_entry->hostname);
 		tree_count++;

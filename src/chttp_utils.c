@@ -162,5 +162,5 @@ chttp_get_time(void)
 
         assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
 
-        return ts.tv_sec + (ts.tv_nsec / (1000 * 1000 * 1000));
+        return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
 }
