@@ -55,7 +55,7 @@ chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test
 	port = chttp_test_parse_long(cmd->params[1].value);
 	chttp_test_ERROR(port <= 0 || port > UINT16_MAX, "invalid port");
 
-	ret = chttp_addr_lookup(&addr, host, strlen(host), port);
+	ret = chttp_addr_lookup(&addr, host, strlen(host), port, 0);
 
 	if (ret) {
 		chttp_test_skip(ctx);

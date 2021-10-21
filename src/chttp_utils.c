@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 void
 chttp_context_debug(struct chttp_context *ctx)
@@ -152,4 +153,14 @@ chttp_sa_string(struct sockaddr *sa, char *buf, size_t buf_len, int *port)
 		default:
 			chttp_ABORT("Invalid sockaddr family");
 	}
+}
+
+double
+chttp_get_time(void)
+{
+	struct timespec ts;
+
+        assert_zero(clock_gettime(CLOCK_REALTIME, &ts));
+
+        return ts.tv_sec + (ts.tv_nsec / (1000 * 1000 * 1000));
 }

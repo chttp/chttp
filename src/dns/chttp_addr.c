@@ -57,7 +57,7 @@ chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)
 }
 
 int
-chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port)
+chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port, int fresh)
 {
 	struct addrinfo *ai_res_list;
 	struct addrinfo hints;
@@ -70,11 +70,13 @@ chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, in
 
 	chttp_addr_reset(addr);
 
-	ret = chttp_dns_cache_lookup(host, host_len, addr, port);
+	if (!fresh) {
+		ret = chttp_dns_cache_lookup(host, host_len, addr, port);
 
-	if (ret) {
-		chttp_addr_resolved(addr);
-		return 0;
+		if (ret) {
+			chttp_addr_resolved(addr);
+			return 0;
+		}
 	}
 
 	chttp_ZERO(&hints);

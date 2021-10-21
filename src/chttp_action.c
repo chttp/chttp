@@ -52,7 +52,7 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 		chttp_ABORT("invalid state, connection must be setup before sending");
 	}
 
-	chttp_dns_lookup(ctx, host, host_len, port);
+	chttp_dns_lookup(ctx, host, host_len, port, 0);
 
 	if (ctx->error) {
 		chttp_finish(ctx);

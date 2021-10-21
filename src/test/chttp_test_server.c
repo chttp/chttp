@@ -244,7 +244,7 @@ _server_init_socket(struct chttp_test_server *server)
 	_server_ok(server);
 	assert(server->sock == -1);
 
-	val = chttp_addr_lookup(&caddr, server->ip_str, strlen(server->ip_str), 0);
+	val = chttp_addr_lookup(&caddr, server->ip_str, strlen(server->ip_str), 0, 0);
 	chttp_test_ERROR(val, "server cannot resolve address %s", server->ip_str);
 	assert(caddr.magic == CHTTP_ADDR_MAGIC);
 

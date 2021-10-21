@@ -188,8 +188,10 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port);
-int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port);
-void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port);
+int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port,
+	int fresh);
+void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port,
+	int fresh);
 int chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest,
 	int port);
 void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src);
@@ -211,6 +213,7 @@ size_t chttp_safe_add(size_t *dest, size_t value);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
 const char *chttp_error_msg(struct chttp_context *ctx);
 void chttp_sa_string(struct sockaddr *sa, char *buf, size_t buf_len, int *port);
+double chttp_get_time(void);
 
 #define assert_zero(expr)						\
 	assert(!(expr))

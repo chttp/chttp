@@ -70,14 +70,19 @@ void
 chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_addr addr, *paddr;
-	int ret;
+	int fresh = 0, ret;
 
 	_dns_init(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	chttp_test_ERROR(cmd->param_count < 1 || cmd->param_count > 2,
+		"invalid parameter count");
+
+	if (cmd->param_count == 2) {
+		fresh = 1;
+	}
 
 	paddr = &addr;
 
-	ret = chttp_addr_lookup(&addr, cmd->params[0].value, cmd->params[0].len, 1);
+	ret = chttp_addr_lookup(&addr, cmd->params[0].value, cmd->params[0].len, 1, fresh);
 
 	if (ret) {
 		chttp_test_skip(ctx);

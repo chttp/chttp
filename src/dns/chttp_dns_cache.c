@@ -156,6 +156,7 @@ _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
 
 	_dns_cache_ok();
+	assert(dns_head->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
 
 	dns_entry = dns_head;
 
@@ -168,6 +169,18 @@ _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 
 		TAILQ_INSERT_TAIL(&_DNS_CACHE.free_list, dns_temp, list_entry);
 	}
+}
+
+static void
+_dns_remove_entry(struct chttp_dns_cache_entry *dns_entry)
+{
+	_dns_cache_ok();
+	assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+
+	assert(RB_REMOVE(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_entry));
+	TAILQ_REMOVE(&_DNS_CACHE.lru_list, dns_entry, list_entry);
+
+	_dns_free_entry(dns_entry);
 }
 
 static struct chttp_dns_cache_entry *
@@ -188,13 +201,12 @@ _dns_get_entry(void)
 		// Pull from the LRU
 		entry = TAILQ_LAST(&_DNS_CACHE.lru_list, chttp_dns_cache_list);
 		assert(entry);
+		assert(entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
 
-		RB_REMOVE(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, entry);
-		TAILQ_REMOVE(&_DNS_CACHE.lru_list, entry, list_entry);
+		_dns_remove_entry(entry);
 
 		_DNS_CACHE.stats.nuked++;
 
-		_dns_free_entry(entry);
 		assert(!TAILQ_EMPTY(&_DNS_CACHE.free_list));
 
 		// Grab from the free_list
@@ -271,7 +283,20 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	strncpy(dns_head->hostname, host, host_len + 1);
 
 	TAILQ_INSERT_HEAD(&_DNS_CACHE.lru_list, dns_head, list_entry);
-	RB_INSERT(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_head);
+	dns_entry = RB_INSERT(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_head);
+
+	if (dns_entry) {
+		assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+		chttp_addr_ok(&dns_entry->addr);
+
+		if (dns_entry->addr.state == CHTTP_ADDR_CACHED) {
+			_DNS_CACHE.stats.dups++;
+		}
+
+		_dns_remove_entry(dns_entry);
+
+		assert_zero(RB_INSERT(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_head));
+	}
 
 	_dns_cache_UNLOCK();
 }

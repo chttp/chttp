@@ -20,13 +20,14 @@ struct chttp_dns_cache_entry {
 #define CHTTP_DNS_CACHE_ENTRY_MAGIC			0x435870E5
 
 	char						hostname[CHTTP_DNS_CACHE_HOST_MAX];
+	size_t						length;
+	size_t						current;
+	double						expiration;
 
 	RB_ENTRY(chttp_dns_cache_entry)			tree_entry;
 	TAILQ_ENTRY(chttp_dns_cache_entry)		list_entry;
 
 	struct chttp_dns_cache_entry			*next;
-	size_t						length;
-	size_t						current;
 
 	struct chttp_addr				addr;
 };
