@@ -34,7 +34,7 @@ _context_alloc_size(size_t dpage_size)
 static void
 _context_init_size(struct chttp_context *ctx, size_t dpage_size)
 {
-	memset(ctx, 0, CHTTP_CTX_SIZE);
+	explicit_bzero(ctx, CHTTP_CTX_SIZE);
 
 	ctx->magic = CHTTP_CTX_MAGIC;
 

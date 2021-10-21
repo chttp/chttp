@@ -175,6 +175,8 @@ chttp_test_register_finish(struct chttp_test_context *ctx, const char *name,
 	finish = malloc(sizeof(*finish));
 	assert(finish);
 
+	chttp_ZERO(finish);
+
 	finish->magic = CHTTP_TEST_FINISH_MAGIC;
 	finish->name = name;
 	finish->func = func;
