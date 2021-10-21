@@ -136,12 +136,12 @@ chttp_dns_cache_debug(void)
 	char name[256];
 	int port;
 
-	assert(_DNS_CACHE.magic == CHTTP_DNS_CACHE_MAGIC);
+	chttp_dns_cache_ok();
 
 	printf("_DNS_CACHE\n");
 
 	RB_FOREACH(dns_entry, chttp_dns_cache_tree, &_DNS_CACHE.cache_tree) {
-		assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+		chttp_dns_entry_ok(dns_entry);
 		chttp_addr_ok(&dns_entry->addr);
 		assert(dns_entry->addr.state == CHTTP_ADDR_CACHED ||
 			dns_entry->addr.state == CHTTP_ADDR_STALE);
@@ -156,7 +156,7 @@ chttp_dns_cache_debug(void)
 
 		dns_temp = dns_entry->next;
 		while(dns_temp) {
-			assert(dns_temp->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+			chttp_dns_entry_ok(dns_temp);
 			chttp_addr_ok(&dns_temp->addr);
 			assert(dns_temp->addr.state == CHTTP_ADDR_CACHED);
 
@@ -176,14 +176,14 @@ chttp_dns_cache_debug(void)
 	printf("\tRB count: %zu (%zu)\n", tree_count, tree_count + tree_sub_count);
 
 	TAILQ_FOREACH(dns_entry, &_DNS_CACHE.lru_list, list_entry) {
-		assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+		chttp_dns_entry_ok(dns_entry);
 
 		printf("\tLRU entry: '%s'\n", dns_entry->hostname);
 		lru_count++;
 
 		dns_temp = dns_entry->next;
 		while(dns_temp) {
-			assert(dns_temp->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+			chttp_dns_entry_ok(dns_temp);
 			lru_sub_count++;
 			dns_temp = dns_temp->next;
 		}
@@ -236,7 +236,7 @@ char *										\
 chttp_test_var_dns_##name(struct chttp_test_context *ctx)			\
 {										\
 	_dns_init(ctx);								\
-	assert(_DNS_CACHE.magic == CHTTP_DNS_CACHE_MAGIC);			\
+	chttp_dns_cache_ok();							\
 										\
 	snprintf(ctx->dns->stat_str, sizeof(ctx->dns->stat_str), "%zu",		\
 		_DNS_CACHE.stats.name);						\

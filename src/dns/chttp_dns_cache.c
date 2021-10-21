@@ -28,22 +28,16 @@ static int _dns_cache_cmp(const struct chttp_dns_cache_entry *k1,
 RB_GENERATE(chttp_dns_cache_tree, chttp_dns_cache_entry, tree_entry, _dns_cache_cmp)
 
 static inline void
-_dns_cache_ok(void)
-{
-	assert(_DNS_CACHE.magic == CHTTP_DNS_CACHE_MAGIC);
-}
-
-static inline void
 _dns_cache_LOCK(void)
 {
-	_dns_cache_ok();
+	chttp_dns_cache_ok();
 	assert_zero(pthread_mutex_lock(&_DNS_CACHE.lock));
 }
 
 static inline void
 _dns_cache_UNLOCK(void)
 {
-	_dns_cache_ok();
+	chttp_dns_cache_ok();
 	assert_zero(pthread_mutex_unlock(&_DNS_CACHE.lock));
 }
 
@@ -52,7 +46,7 @@ _dns_cache_init(void)
 {
 	size_t i;
 
-	_dns_cache_ok();
+	chttp_dns_cache_ok();
 	assert_zero(_DNS_CACHE.initialized);
 	assert(_DNS_CACHE_SIZE <= CHTTP_DNS_CACHE_SIZE);
 
@@ -85,7 +79,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	size_t pos;
 	double now;
 
-	_dns_cache_ok();
+	chttp_dns_cache_ok();
 	assert(host);
 	assert(host_len);
 	assert(addr_dest);
@@ -113,7 +107,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	addr_head = RB_FIND(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, &find);
 
 	if (addr_head) {
-		assert(addr_head->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+		chttp_dns_entry_ok(addr_head);
 
 		// Calculate next for RR
 		addr_head->current = (addr_head->current + 1) % addr_head->length;
@@ -122,8 +116,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 		pos = addr_head->current;
 
 		while (pos > 0) {
-			assert(addr);
-			assert(addr->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+			chttp_dns_entry_ok(addr);
 
 			addr = addr->next;
 			pos--;
@@ -177,8 +170,8 @@ _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 {
 	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
 
-	_dns_cache_ok();
-	assert(dns_head->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+	chttp_dns_cache_ok();
+	chttp_dns_entry_ok(dns_head);
 
 	dns_entry = dns_head;
 
@@ -196,8 +189,8 @@ _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 static void
 _dns_remove_entry(struct chttp_dns_cache_entry *dns_entry)
 {
-	_dns_cache_ok();
-	assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+	chttp_dns_cache_ok();
+	chttp_dns_entry_ok(dns_entry);
 
 	assert(RB_REMOVE(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_entry));
 	TAILQ_REMOVE(&_DNS_CACHE.lru_list, dns_entry, list_entry);
@@ -210,7 +203,7 @@ _dns_get_entry(void)
 {
 	struct chttp_dns_cache_entry *entry;
 
-	_dns_cache_ok();
+	chttp_dns_cache_ok();
 
 	if (!TAILQ_EMPTY(&_DNS_CACHE.free_list)) {
 		entry = TAILQ_FIRST(&_DNS_CACHE.free_list);
@@ -222,8 +215,7 @@ _dns_get_entry(void)
 	} else if (!TAILQ_EMPTY(&_DNS_CACHE.lru_list)) {
 		// Pull from the LRU
 		entry = TAILQ_LAST(&_DNS_CACHE.lru_list, chttp_dns_cache_list);
-		assert(entry);
-		assert(entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+		chttp_dns_entry_ok(entry);
 
 		_dns_remove_entry(entry);
 
@@ -244,7 +236,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	struct chttp_dns_cache_entry *dns_entry, *dns_head, *dns_last;
 	size_t count;
 
-	_dns_cache_ok();
+	chttp_dns_cache_ok();
 	assert(_DNS_CACHE.initialized);
 	assert(host);
 	assert(host_len);
@@ -305,7 +297,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	dns_entry = RB_INSERT(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, dns_head);
 
 	if (dns_entry) {
-		assert(dns_entry->magic == CHTTP_DNS_CACHE_ENTRY_MAGIC);
+		chttp_dns_entry_ok(dns_entry);
 		chttp_addr_ok(&dns_entry->addr);
 
 		if (dns_entry->addr.state == CHTTP_ADDR_CACHED) {
