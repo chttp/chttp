@@ -67,6 +67,7 @@ CHTTP_TEST_CMD(chttp_test)
 CHTTP_TEST_CMD(sleep_ms)
 CHTTP_TEST_CMD(connect_or_skip)
 CHTTP_TEST_CMD(equal)
+CHTTP_TEST_CMD(not_equal)
 
 CHTTP_TEST_CMD(chttp_init)
 CHTTP_TEST_CMD(chttp_init_dynamic)

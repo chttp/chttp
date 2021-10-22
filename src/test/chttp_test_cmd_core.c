@@ -92,3 +92,19 @@ chttp_test_cmd_equal(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "equal '%s'", cmd->params[0].value);
 }
+
+void
+chttp_test_cmd_not_equal(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	int ret;
+
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 2);
+
+	ret = strcmp(cmd->params[0].value, cmd->params[1].value);
+
+	chttp_test_ERROR(!ret, "equal '%s' == '%s'", cmd->params[0].value, cmd->params[1].value);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "not equal '%s' != '%s'", cmd->params[0].value,
+		cmd->params[1].value);
+}

@@ -185,15 +185,18 @@ void chttp_finish(struct chttp_context *ctx);
 void chttp_body_length(struct chttp_context *ctx, int do_error);
 size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
+#define DNS_FRESH_LOOKUP			(1 << 0)
+#define DNS_DISABLE_RR				(1 << 1)
+
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port);
 int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port,
-	int fresh);
+	unsigned int flags);
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port,
-	int fresh);
+	unsigned int flags);
 int chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest,
-	int port);
+	int port, unsigned int flags);
 void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src);
 extern long CHTTP_DNS_CACHE_TTL;
 

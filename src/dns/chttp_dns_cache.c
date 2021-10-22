@@ -73,7 +73,8 @@ _dns_cache_cmp(const struct chttp_dns_cache_entry *k1, const struct chttp_dns_ca
 }
 
 int
-chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest, int port)
+chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest, int port,
+    unsigned int flags)
 {
 	struct chttp_dns_cache_entry *addr_head, *addr, find;
 	size_t pos;
@@ -109,11 +110,14 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	if (addr_head) {
 		chttp_dns_entry_ok(addr_head);
 
-		// Calculate next for RR
-		addr_head->current = (addr_head->current + 1) % addr_head->length;
-
 		addr = addr_head;
-		pos = addr_head->current;
+		pos = 0;
+
+		// Calculate next for RR
+		if (!(flags & DNS_DISABLE_RR)) {
+			pos = (addr_head->current + 1) % addr_head->length;
+			addr_head->current = pos;
+		}
 
 		while (pos > 0) {
 			chttp_dns_entry_ok(addr);

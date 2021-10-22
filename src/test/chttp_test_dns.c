@@ -86,19 +86,21 @@ void
 chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_addr addr, *paddr;
-	int fresh = 0, ret;
+	long flags = 0;
+	int  ret;
 
 	_dns_init(ctx);
 	chttp_test_ERROR(cmd->param_count < 1 || cmd->param_count > 2,
 		"invalid parameter count");
 
 	if (cmd->param_count == 2) {
-		fresh = 1;
+		flags = chttp_test_parse_long(cmd->params[1].value);
+		chttp_test_ERROR(flags < 0, "flags needs to be a positive number");
 	}
 
 	paddr = &addr;
 
-	ret = chttp_addr_lookup(&addr, cmd->params[0].value, cmd->params[0].len, 1, fresh);
+	ret = chttp_addr_lookup(&addr, cmd->params[0].value, cmd->params[0].len, 1, flags);
 
 	if (ret) {
 		chttp_test_skip(ctx);
