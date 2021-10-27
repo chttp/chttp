@@ -1,6 +1,6 @@
 # CHTTP Makefile
 
-.PHONY:	all test check
+.PHONY:	all test check tests valgrind
 
 all:
 		$(MAKE) -C src $@
@@ -8,6 +8,9 @@ all:
 test:		check
 
 check:
+		$(MAKE) -C tests $@
+
+valgrind:
 		$(MAKE) -C tests $@
 
 %:

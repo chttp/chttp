@@ -120,13 +120,12 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 		}
 
 		while (pos > 0) {
+			addr = addr->next;
 			chttp_dns_entry_ok(addr);
 
-			addr = addr->next;
 			pos--;
 		}
 
-		chttp_addr_ok(&addr->addr);
 		assert(addr->addr.state == CHTTP_ADDR_CACHED ||
 			addr->addr.state == CHTTP_ADDR_STALE);
 
