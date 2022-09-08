@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.tabSize": 8,
+		"editor.insertSpaces": false,
+		"editor.detectIndentation": false,
+		"C_Cpp.default.cStandard": "gnu17",
+    		"C_Cpp.default.intelliSenseMode": "gcc-x64",
+		"C_Cpp.default.includePath": [
+			"src"
+		],
+		"files.exclude": {
+			"**/*.o": true
+		},
+		"files.associations": {
+			"*.h": "c"
+		}
+	}
+}
