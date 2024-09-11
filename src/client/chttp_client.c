@@ -10,7 +10,7 @@
 int
 main(int argc, char **argv)
 {
-	struct chttp_context *context, scontext;
+	struct chttp_context *context, scontext, *tlsc;
 	char ctx_buf[2000], ctx_buf2[CHTTP_CTX_SIZE + 1];
 	char body_buf[100];
 	size_t body_len;
@@ -83,6 +83,25 @@ main(int argc, char **argv)
 	chttp_set_url(context, "/123-nodpage");
 	chttp_context_debug(context);
 	chttp_context_free(context);
+
+	// tls
+	tlsc = chttp_context_alloc();
+	chttp_set_method(tlsc, "GET");
+	chttp_set_url(tlsc, "/");
+	chttp_context_debug(tlsc);
+	chttp_connect(tlsc, "nulltech.systems", strlen("nulltech.systems"), 443, 1);
+	chttp_send(tlsc);
+	chttp_context_debug(tlsc);
+	chttp_receive(tlsc);
+	chttp_context_debug(tlsc);
+	do {
+		body_len = chttp_get_body(tlsc, body_buf, sizeof(body_buf));
+		printf("***BODY*** (%zu, %d)\n", body_len, tlsc->state);
+		chttp_print_hex(body_buf, body_len);
+	} while (body_len && tlsc->state == CHTTP_STATE_RESP_BODY);
+	chttp_context_free(tlsc);
+
+	chttp_openssl_free();
 
 	return (0);
 }

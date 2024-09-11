@@ -3,7 +3,7 @@
 CC=gcc
 CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I.
 LDFLAGS=-shared
-LIBFLAGS=
+LIBFLAGS=-lssl
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
 GCOV=gcov
@@ -16,8 +16,8 @@ HTMLDIR=report
 RM=rm -f
 RMDIR=rm -rf
 
-INCLUDES=$(wildcard *.h data/*.h dns/*.h)
-SOURCE=$(wildcard *.c dns/*.c tcp/*.c)
+INCLUDES=$(wildcard *.h data/*.h dns/*.h tls/*.h)
+SOURCE=$(wildcard *.c dns/*.c tcp/*.c tls/*.c)
 OBJS=$(SOURCE:.c=.o)
 CLIENT=$(wildcard client/*.c)
 CLIENT_OBJS=$(CLIENT:.c=.o)
@@ -70,4 +70,3 @@ gcov.data:
 		$(MAKE) cleanall CFLAGS="$(CFLAGS)" LIBFLAGS="$(LIBFLAGS)"
 		$(MAKE) -C .. check V=vv
 		touch gcov.data
-

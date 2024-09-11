@@ -127,6 +127,7 @@ struct chttp_context {
 	unsigned int			close:1;
 	unsigned int			chunked:1;
 	unsigned int			seen_first:1;
+	unsigned int			tls:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -208,6 +209,9 @@ void chttp_tcp_read(struct chttp_context *ctx);
 size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_close(struct chttp_addr *addr);
 void chttp_tcp_close(struct chttp_context *ctx);
+
+void chttp_openssl_init(void);
+void chttp_openssl_free(void);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *dpage);

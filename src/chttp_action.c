@@ -32,7 +32,10 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 	assert(host);
 	assert(host_len);
 	assert(port > 0);
-	(void)tls;
+
+	if (tls) {
+		ctx->tls = 1;
+	}
 
 	if (ctx->addr.state) {
 		chttp_caddr_ok(ctx);
@@ -89,6 +92,10 @@ chttp_send(struct chttp_context *ctx)
 	}
 
 	chttp_caddr_connected(ctx);
+
+	if (ctx->tls) {
+		chttp_openssl_init();
+	}
 
 	offset = ctx->data_start.offset;
 
