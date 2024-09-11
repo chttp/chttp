@@ -186,7 +186,6 @@ chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t bu
 	chttp_context_ok(ctx);
 	assert(dptr);
 
-
 	dpage = chttp_dpage_get(ctx, buffer_len);
 	chttp_dpage_ok(dpage);
 

@@ -61,7 +61,7 @@ main(int argc, char **argv)
 	chttp_delete_header(&scontext, "a");
 	chttp_add_header(&scontext, "x", "2");
 	chttp_connect(&scontext, "textglass.org", strlen("textglass.org"), 80, 0);
-	chttp_send(context);
+	chttp_send(&scontext);
 	chttp_context_debug(&scontext);
 	chttp_receive(&scontext);
 	chttp_context_debug(&scontext);
