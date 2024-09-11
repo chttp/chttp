@@ -92,7 +92,6 @@ chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, in
 
 	// Always use the first address entry on a fresh lookup
 	chttp_addr_copy(addr, ai_res_list->ai_addr, port);
-	chttp_addr_resolved(addr);
 
 	if (addr->state == CHTTP_ADDR_NONE) {
 		freeaddrinfo(ai_res_list);
@@ -102,6 +101,8 @@ chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, in
 	chttp_dns_cache_store(host, host_len, ai_res_list);
 
 	freeaddrinfo(ai_res_list);
+
+	chttp_addr_resolved(addr);
 
 	return 0;
 }

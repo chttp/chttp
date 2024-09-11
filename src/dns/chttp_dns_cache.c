@@ -96,12 +96,12 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 
 	_dns_cache_LOCK();
 
-	_DNS_CACHE.stats.lookups++;
-
 	if (!_DNS_CACHE.initialized) {
 		_dns_cache_init();
-		assert(_DNS_CACHE.initialized);
 	}
+	assert(_DNS_CACHE.initialized);
+
+	_DNS_CACHE.stats.lookups++;
 
 	strncpy(find.hostname, host, host_len + 1);
 
@@ -174,11 +174,12 @@ _dns_free_entry(struct chttp_dns_cache_entry *dns_head)
 	struct chttp_dns_cache_entry *dns_entry, *dns_temp;
 
 	chttp_dns_cache_ok();
-	chttp_dns_entry_ok(dns_head);
 
 	dns_entry = dns_head;
 
 	while (dns_entry) {
+		chttp_dns_entry_ok(dns_entry);
+
 		dns_temp = dns_entry;
 		dns_entry = dns_entry->next;
 
@@ -255,6 +256,11 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 	}
 
 	_dns_cache_LOCK();
+
+	if (!_DNS_CACHE.initialized) {
+		_dns_cache_init();
+	}
+	assert(_DNS_CACHE.initialized);
 
 	dns_head = NULL;
 	dns_last = NULL;
