@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define CHTTP_VERSION			"0.1.0"
+#define CHTTP_VERSION			"0.2.0"
 
 #define	CHTTP_DEFAULT_METHOD		"GET"
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
