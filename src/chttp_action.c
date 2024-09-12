@@ -94,7 +94,12 @@ chttp_send(struct chttp_context *ctx)
 	chttp_caddr_connected(ctx);
 
 	if (ctx->tls) {
-		chttp_openssl_init();
+		chttp_tls_connect(ctx);
+
+		if (ctx->error) {
+			chttp_finish(ctx);
+			return;
+		}
 	}
 
 	offset = ctx->data_start.offset;
@@ -132,7 +137,7 @@ chttp_receive(struct chttp_context *ctx)
 		chttp_tcp_read(ctx);
 
 		if (ctx->state >= CHTTP_STATE_CLOSED) {
-			chttp_error(ctx, CHTTP_ERR_NETOWRK);
+			chttp_error(ctx, CHTTP_ERR_NETWORK);
 			return;
 		}
 
@@ -189,6 +194,10 @@ chttp_finish(struct chttp_context *ctx)
 
 	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
 		chttp_tcp_close(ctx);
+	}
+
+	if (ctx->tls) {
+		chttp_tls_close(ctx);
 	}
 
 	chttp_dpage_reset_all(ctx);

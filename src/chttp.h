@@ -20,6 +20,10 @@
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
 #define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
 
+/* openssl */
+struct ssl_st;
+typedef struct ssl_st SSL;
+
 enum chttp_version {
 	CHTTP_H_VERSION_DEFAULT = 0,
 	CHTTP_H_VERSION_1_0,
@@ -47,11 +51,13 @@ enum chttp_error {
 	CHTTP_ERR_INIT,
 	CHTTP_ERR_DNS,
 	CHTTP_ERR_CONNECT,
-	CHTTP_ERR_NETOWRK,
+	CHTTP_ERR_NETWORK,
 	CHTTP_ERR_RESP_PARSE,
 	CHTTP_ERR_RESP_LENGTH,
 	CHTTP_ERR_RESP_CHUNK,
-	CHTTP_ERR_RESP_BODY
+	CHTTP_ERR_RESP_BODY,
+	CHTTP_ERR_TLS_INIT,
+	CHTTP_ERR_TLS_HANDSHAKE
 };
 
 enum chttp_addr_state {
@@ -128,6 +134,8 @@ struct chttp_context {
 	unsigned int			chunked:1;
 	unsigned int			seen_first:1;
 	unsigned int			tls:1;
+
+	SSL				*ssl;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -210,8 +218,12 @@ size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_close(struct chttp_addr *addr);
 void chttp_tcp_close(struct chttp_context *ctx);
 
-void chttp_openssl_init(void);
-void chttp_openssl_free(void);
+void chttp_tls_init(void);
+void chttp_tls_free(void);
+void chttp_tls_connect(struct chttp_context *ctx);
+void chttp_tls_close(struct chttp_context *ctx);
+void chttp_tls_write(struct chttp_context *ctx, void *buf, size_t buf_len);
+size_t chttp_tls_read(struct chttp_context *ctx, void *buf, size_t buf_len, int *error);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *dpage);

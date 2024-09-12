@@ -14,15 +14,17 @@ chttp_context_debug(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);
 
-	printf("chttp_ctx state=%d error=%d version=%d data_last=%p\n"
+	printf("chttp_ctx state=%d error=%d (%s) version=%d data_last=%p\n"
 		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\thostname=%p:%zu:%zu\n"
-		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u\n",
-		ctx->state, ctx->error, ctx->version, (void*)ctx->dpage_last,
+		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u"
+		" tls=%d\n",
+		ctx->state, ctx->error, chttp_error_msg(ctx), ctx->version, (void*)ctx->dpage_last,
 		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
 		(void*)ctx->data_end.dpage, ctx->data_end.offset, ctx->data_end.length,
 		(void*)ctx->hostname.dpage, ctx->hostname.offset, ctx->hostname.length,
-		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked);
+		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked,
+		ctx->tls);
 
 	chttp_dpage_debug(ctx->dpage);
 }
@@ -116,7 +118,7 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "DNS error";
 		case CHTTP_ERR_CONNECT:
 			return "cannot make connection";
-		case CHTTP_ERR_NETOWRK:
+		case CHTTP_ERR_NETWORK:
 			return "network error";
 		case CHTTP_ERR_RESP_PARSE:
 			return "cannot parse response";
@@ -126,6 +128,10 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "cannot parse response body chunk";
 		case CHTTP_ERR_RESP_BODY:
 			return "cannot parse response body";
+		case CHTTP_ERR_TLS_INIT:
+			return "TLS initialization error";
+		case CHTTP_ERR_TLS_HANDSHAKE:
+			return "TLS handshake error";
 	}
 
 	return "unknown";

@@ -106,6 +106,11 @@ chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
 	assert(buf);
 	assert(buf_len);
 
+	if (ctx->tls) {
+		chttp_tls_write(ctx, buf, buf_len);
+		return;
+	}
+
 	ret = send(ctx->addr.sock, buf, buf_len, MSG_NOSIGNAL);
 	assert(ret > 0 && (size_t)ret == buf_len); // TODO implement partial send
 }
@@ -130,13 +135,26 @@ size_t
 chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	ssize_t ret;
+	size_t bytes;
+	int error;
 
 	chttp_context_ok(ctx);
 	chttp_caddr_connected(ctx);
 	assert(buf);
 	assert(buf_len);
 
-	ret = recv(ctx->addr.sock, buf, buf_len, 0);
+	if (ctx->tls) {
+		bytes = chttp_tls_read(ctx, buf, buf_len, &error);
+		ret = (ssize_t)bytes;
+
+		if (error) {
+			ret = -1;
+		} else {
+			assert(ret >= 0);
+		}
+	} else {
+		ret = recv(ctx->addr.sock, buf, buf_len, 0);
+	}
 
 	if (ret == 0) {
 		chttp_tcp_close(ctx);
@@ -144,7 +162,7 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 		return 0;
 
 	} else if (ret < 0) {
-		chttp_error(ctx, CHTTP_ERR_NETOWRK);
+		chttp_error(ctx, CHTTP_ERR_NETWORK);
 		return 0;
 	}
 
