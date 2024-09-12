@@ -34,12 +34,13 @@ struct chttp_openssl_ctx _OPENSSL_CTX = {
 	do {									\
 		assert(_OPENSSL_CTX.magic == CHTTP_OPENSSL_CTX_MAGIC);		\
 	} while (0)
-#define chttp_openssl_connected(ctx)						\
+#define chttp_openssl_connected(ctx, ssl_ctx)					\
 	do {									\
-		assert(ctx->ssl);						\
+		assert((ctx)->tls_priv);					\
+		ssl_ctx = (SSL*)((ctx)->tls_priv);				\
 	} while (0)
 
-void
+static void
 _openssl_init(void)
 {
 	chttp_openssl_ctx_ok();
@@ -58,14 +59,14 @@ _openssl_init(void)
 	// TODO set various TLS settings
 }
 
-void
-chttp_openssl_init(void)
+static void
+_openssl_init_lock(void)
 {
 	chttp_openssl_ctx_ok();
 
-	if (!_OPENSSL_CTX.initialized && !_OPENSSL_CTX.failed) {
+	if (!_OPENSSL_CTX.initialized) {
 		assert_zero(pthread_mutex_lock(&_OPENSSL_CTX.lock));
-		if (!_OPENSSL_CTX.initialized && !_OPENSSL_CTX.failed) {
+		if (!_OPENSSL_CTX.initialized) {
 			_openssl_init();
 		}
 		assert_zero(pthread_mutex_unlock(&_OPENSSL_CTX.lock));
@@ -90,15 +91,16 @@ chttp_openssl_free(void)
 void
 chttp_openssl_connect(struct chttp_context *ctx)
 {
+	SSL *ssl;
 	int ret;
 
 	chttp_openssl_ctx_ok();
 	chttp_context_ok(ctx);
 	chttp_caddr_connected(ctx);
 	assert(ctx->tls);
-	assert_zero(ctx->ssl);
+	assert_zero(ctx->tls_priv);
 
-	chttp_openssl_init();
+	_openssl_init_lock();
 
 	if (_OPENSSL_CTX.failed) {
 		ctx->error = CHTTP_ERR_TLS_INIT;
@@ -106,25 +108,27 @@ chttp_openssl_connect(struct chttp_context *ctx)
 	}
 	assert(_OPENSSL_CTX.ctx);
 
-	ctx->ssl = SSL_new(_OPENSSL_CTX.ctx);
+	ctx->tls_priv = SSL_new(_OPENSSL_CTX.ctx);
 
-	if (!ctx->ssl) {
+	if (!ctx->tls_priv) {
 		ctx->error = CHTTP_ERR_TLS_INIT;
 		return;
 	}
 
-	SSL_set_verify(ctx->ssl, SSL_VERIFY_NONE, NULL); // TODO
+	chttp_openssl_connected(ctx, ssl);
 
-	ret = SSL_set_fd(ctx->ssl, ctx->addr.sock);
+	SSL_set_verify(ssl, SSL_VERIFY_NONE, NULL); // TODO
+
+	ret = SSL_set_fd(ssl, ctx->addr.sock);
 
 	if (ret != 1) {
 		ctx->error = CHTTP_ERR_TLS_INIT;
 		return;
 	}
 
-	SSL_set_connect_state(ctx->ssl);
+	SSL_set_connect_state(ssl);
 
-	ret = SSL_do_handshake(ctx->ssl);
+	ret = SSL_do_handshake(ssl);
 
 	if (ret != 1) {
 		ctx->error = CHTTP_ERR_TLS_HANDSHAKE;
@@ -137,30 +141,34 @@ chttp_openssl_connect(struct chttp_context *ctx)
 void
 chttp_openssl_close(struct chttp_context *ctx)
 {
-	chttp_context_ok(ctx);
-	chttp_openssl_connected(ctx);
+	SSL *ssl;
 
-	if (!ctx->ssl) {
+	chttp_context_ok(ctx);
+
+	if (!ctx->tls_priv) {
 		return;
 	}
 
-	SSL_free(ctx->ssl);
+	chttp_openssl_connected(ctx, ssl);
 
-	ctx->ssl = NULL;
+	SSL_free(ssl);
+
+	ctx->tls_priv = NULL;
 }
 
 void
 chttp_openssl_write(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
+	SSL *ssl;
 	size_t bytes;
 	int ret;
 
 	chttp_context_ok(ctx);
-	chttp_openssl_connected(ctx);
+	chttp_openssl_connected(ctx, ssl);
 	assert(buf);
 	assert(buf_len);
 
-	ret = SSL_write_ex(ctx->ssl, buf, buf_len, &bytes);
+	ret = SSL_write_ex(ssl, buf, buf_len, &bytes);
 	assert(ret > 0);
 	assert(bytes == buf_len);
 }
@@ -168,19 +176,20 @@ chttp_openssl_write(struct chttp_context *ctx, void *buf, size_t buf_len)
 size_t
 chttp_openssl_read(struct chttp_context *ctx, void *buf, size_t buf_len, int *error)
 {
+	SSL *ssl;
 	size_t bytes;
 	int ret, ssl_ret;
 
 	chttp_context_ok(ctx);
-	chttp_openssl_connected(ctx);
+	chttp_openssl_connected(ctx, ssl);
 	assert(buf);
 	assert(buf_len);
 	assert(error);
 
 	*error = 0;
 
-	ret = SSL_read_ex(ctx->ssl, buf, buf_len, &bytes);
-	ssl_ret = SSL_get_error(ctx->ssl, ret);
+	ret = SSL_read_ex(ssl, buf, buf_len, &bytes);
+	ssl_ret = SSL_get_error(ssl, ret);
 
 	if (ssl_ret == SSL_ERROR_ZERO_RETURN) {
 		assert_zero(bytes);

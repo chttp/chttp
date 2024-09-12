@@ -7,12 +7,6 @@
 #include "tls_openssl.h"
 
 void
-chttp_tls_init(void)
-{
-	chttp_openssl_init();
-}
-
-void
 chttp_tls_free(void)
 {
 	chttp_openssl_free();

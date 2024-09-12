@@ -20,10 +20,6 @@
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
 #define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
 
-/* openssl */
-struct ssl_st;
-typedef struct ssl_st SSL;
-
 enum chttp_version {
 	CHTTP_H_VERSION_DEFAULT = 0,
 	CHTTP_H_VERSION_1_0,
@@ -135,7 +131,7 @@ struct chttp_context {
 	unsigned int			seen_first:1;
 	unsigned int			tls:1;
 
-	SSL				*ssl;
+	void				*tls_priv;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -218,7 +214,6 @@ size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_close(struct chttp_addr *addr);
 void chttp_tcp_close(struct chttp_context *ctx);
 
-void chttp_tls_init(void);
 void chttp_tls_free(void);
 void chttp_tls_connect(struct chttp_context *ctx);
 void chttp_tls_close(struct chttp_context *ctx);
