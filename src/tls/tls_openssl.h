@@ -6,6 +6,8 @@
 #ifndef _CHTTP_TLS_H_INCLUDED_
 #define _CHTTP_TLS_H_INCLUDED_
 
+#include "chttp.h"
+
 void chttp_openssl_init(void);
 void chttp_openssl_free(void);
 void chttp_openssl_connect(struct chttp_context *ctx);

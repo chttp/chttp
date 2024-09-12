@@ -4,7 +4,7 @@
  */
 
 #include "chttp.h"
-#include "tls.h"
+#include "tls_openssl.h"
 
 #include <openssl/ssl.h>
 #include <pthread.h>
