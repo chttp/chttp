@@ -3,15 +3,8 @@
 CC=gcc
 CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I.
 LDFLAGS=-shared
-LIBFLAGS=-lssl
+LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
-
-GCOV=gcov
-GCOVFLAGS=-fprofile-arcs -ftest-coverage --coverage
-GCOVLIBFLAGS=-lgcov
-LCOV=lcov --capture --no-external --directory ./
-LCOVHTML=genhtml
-HTMLDIR=report
 
 RM=rm -f
 RMDIR=rm -rf
@@ -24,6 +17,25 @@ CLIENT_OBJS=$(CLIENT:.c=.o)
 TEST=$(wildcard test/*.c)
 TEST_INCLUDES=$(wildcard test/*.h)
 TEST_OBJS=$(TEST:.c=.o)
+
+# Detect openssl
+OPENSSL_C='\#include <openssl/ssl.h>\nint main() {}'
+OPENSSL_CFLAGS=-DCHTTP_OPENSSL
+OPENSSL_LIBFLAGS=-lssl
+N=/dev/null
+OPENSSL=$(shell printf $(OPENSSL_C) | $(CC) -x c - $(OPENSSL_LIB) -o $(N) > $(N) 2>&1 && echo true)
+ifeq ($(OPENSSL),true)
+	CFLAGS+=$(OPENSSL_CFLAGS)
+	LIBFLAGS+=$(OPENSSL_LIBFLAGS)
+endif
+
+# gcov
+GCOV=gcov
+GCOVFLAGS=-fprofile-arcs -ftest-coverage --coverage
+GCOVLIBFLAGS=-lgcov
+LCOV=lcov --capture --no-external --directory ./
+LCOVHTML=genhtml
+HTMLDIR=report
 
 .PHONY:		all lib gcov clean cleanall
 

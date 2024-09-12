@@ -6,6 +6,8 @@
 #include "chttp.h"
 #include "tls_openssl.h"
 
+#ifdef CHTTP_OPENSSL
+
 #include <openssl/ssl.h>
 #include <pthread.h>
 
@@ -199,3 +201,5 @@ chttp_openssl_read(struct chttp_context *ctx, void *buf, size_t buf_len, int *er
 
 	return bytes;
 }
+
+#endif /* CHTTP_OPENSSL */
