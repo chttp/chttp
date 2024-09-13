@@ -1,0 +1,12 @@
+chttp_test "Test nulltech H1 TLS"
+
+tls_or_skip
+
+connect_or_skip nulltech.systems 443
+
+chttp_init
+chttp_url /
+chttp_connect nulltech.systems 443 tls
+chttp_send
+chttp_status_match 200
+chttp_body_submatch contact@nulltech.systems

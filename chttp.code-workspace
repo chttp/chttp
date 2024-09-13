@@ -9,9 +9,12 @@
 		"editor.insertSpaces": false,
 		"editor.detectIndentation": false,
 		"C_Cpp.default.cStandard": "gnu17",
-    		"C_Cpp.default.intelliSenseMode": "gcc-x64",
+		"C_Cpp.default.intelliSenseMode": "gcc-x64",
 		"C_Cpp.default.includePath": [
 			"src"
+		],
+		"C_Cpp.default.compilerArgs": [
+			"-DCHTTP_OPENSSL"
 		],
 		"files.exclude": {
 			"**/*.o": true
