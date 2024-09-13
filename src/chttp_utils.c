@@ -17,14 +17,14 @@ chttp_context_debug(struct chttp_context *ctx)
 	printf("chttp_ctx state=%d error=%d (%s) version=%d data_last=%p\n"
 		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\thostname=%p:%zu:%zu\n"
-		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u"
-		" tls=%d\n",
+		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u tls=%d\n"
+		"\ttime=%lf\n",
 		ctx->state, ctx->error, chttp_error_msg(ctx), ctx->version, (void*)ctx->dpage_last,
 		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
 		(void*)ctx->data_end.dpage, ctx->data_end.offset, ctx->data_end.length,
 		(void*)ctx->hostname.dpage, ctx->hostname.offset, ctx->hostname.length,
-		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked,
-		ctx->tls);
+		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked, ctx->tls,
+		chttp_get_time() - ctx->addr.time_start);
 
 	chttp_dpage_debug(ctx->dpage);
 }

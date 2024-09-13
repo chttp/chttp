@@ -94,6 +94,14 @@ struct chttp_addr {
 	enum chttp_addr_state		state;
 	socklen_t			len;
 	int				sock;
+	int				poll_result;
+	short				poll_revents;
+
+	unsigned int			nonblocking:1;
+
+	double				time_start;
+	double				time_last;
+	int				timeout_connect_ms;
 
 	union {
 		struct sockaddr		sa;
@@ -245,11 +253,6 @@ double chttp_get_time(void);
 	do {								\
 		assert(addr);						\
 		assert((addr)->magic == CHTTP_ADDR_MAGIC);		\
-	} while (0)
-#define chttp_caddr_ok(ctx)						\
-	do {								\
-		assert(ctx);						\
-		chttp_addr_ok(&(ctx)->addr);				\
 	} while (0)
 #define chttp_addr_connected(addr)					\
 	do {								\

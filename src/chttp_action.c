@@ -38,7 +38,7 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 	}
 
 	if (ctx->addr.state) {
-		chttp_caddr_ok(ctx);
+		chttp_addr_ok(&ctx->addr);
 		chttp_ABORT("invalid state, you can only connect once");
 	}
 

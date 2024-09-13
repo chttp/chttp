@@ -5,32 +5,84 @@
 
 #include "chttp.h"
 
+#include <errno.h>
+#include <poll.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
 
-/*
 static void
-_tcp_set_nonblocking(int sock)
+_tcp_set_nonblocking(struct chttp_addr *addr)
 {
 	int val, ret;
+
+	chttp_addr_connected(addr);
 
 	val = 1;
-	ret = ioctl(sock, FIONBIO, &val);
-	(void)ret;
+	ret = ioctl(addr->sock, FIONBIO, &val);
+	assert_zero(ret);
+
+	addr->nonblocking = 1;
 }
 
 static void
-_tcp_set_blocking(int sock)
+_tcp_set_blocking(struct chttp_addr *addr)
 {
 	int val, ret;
 
+	chttp_addr_connected(addr);
+
 	val = 0;
-	ret = ioctl(sock, FIONBIO, &val);
-	(void)ret;
+	ret = ioctl(addr->sock, FIONBIO, &val);
+	assert_zero(ret);
+
+	addr->nonblocking = 0;
 }
-*/
+
+static void
+_tcp_poll(struct chttp_addr *addr, short events, int timeout_msec)
+{
+	struct pollfd fds[1];
+
+	chttp_addr_connected(addr);
+	assert(addr->nonblocking);
+	assert(timeout_msec > 0);
+
+	fds[0].fd = addr->sock;
+	fds[0].events = events;
+	fds[0].revents = 0;
+
+	addr->poll_result = poll(fds, 1, timeout_msec);
+	addr->poll_revents = fds[0].revents;
+}
+
+static int
+_tcp_poll_connected(struct chttp_addr *addr)
+{
+	int error, ret;
+	socklen_t error_len;
+
+	_tcp_poll(addr, POLLWRNORM, addr->timeout_connect_ms);
+
+	if (addr->poll_result <= 0) {
+		return 0;
+	}
+
+	chttp_addr_connected(addr);
+	assert(addr->poll_revents == POLLWRNORM);
+
+	error_len = sizeof(error);
+
+	ret = getsockopt(addr->sock, SOL_SOCKET, SO_ERROR, &error, &error_len);
+	assert_zero(ret);
+
+	if (error) {
+		return 0;
+	}
+
+	return 1;
+}
 
 void
 chttp_tcp_import(struct chttp_context *ctx, int sock)
@@ -50,7 +102,7 @@ chttp_tcp_import(struct chttp_context *ctx, int sock)
 int
 chttp_addr_connect(struct chttp_addr *addr)
 {
-	int val;
+	int val, ret;
 
 	chttp_addr_resolved(addr);
 
@@ -65,15 +117,30 @@ chttp_addr_connect(struct chttp_addr *addr)
 	val = 1;
 	setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
 
+	addr->state = CHTTP_ADDR_CONNECTED;
+	addr->time_start = chttp_get_time();
+
+	if (addr->timeout_connect_ms > 0) {
+		_tcp_set_nonblocking(addr);
+	}
+
 	val = connect(addr->sock, &addr->sa, addr->len);
 
-	addr->state = CHTTP_ADDR_CONNECTED;
+	if (val && errno == EINPROGRESS && addr->nonblocking) {
+		ret = _tcp_poll_connected(addr);
 
-	// TODO non blocking timeout (EINPROGRESS)
-
-	if (val) {
+		if (ret <= 0) {
+			return 1;
+		}
+	} else if (val) {
 		return 1;
 	}
+
+	if (addr->nonblocking) {
+		_tcp_set_blocking(addr);
+	}
+
+	assert_zero(addr->nonblocking);
 
 	return 0;
 }
@@ -84,7 +151,7 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	int ret;
 
 	chttp_context_ok(ctx);
-	chttp_caddr_ok(ctx);
+	chttp_addr_ok(&ctx->addr);
 
 	ret = chttp_addr_connect(&ctx->addr);
 
