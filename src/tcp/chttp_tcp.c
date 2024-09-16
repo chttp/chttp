@@ -69,8 +69,11 @@ _tcp_poll_connected(struct chttp_addr *addr)
 		return 0;
 	}
 
+	if (!(addr->poll_revents & POLLWRNORM)) {
+		return 0;
+	}
+
 	chttp_addr_connected(addr);
-	//assert(addr->poll_revents == POLLWRNORM);
 
 	error_len = sizeof(error);
 
@@ -103,6 +106,7 @@ int
 chttp_addr_connect(struct chttp_addr *addr)
 {
 	int val, ret;
+	struct timeval timeout;
 
 	chttp_addr_resolved(addr);
 
@@ -142,6 +146,16 @@ chttp_addr_connect(struct chttp_addr *addr)
 
 	assert_zero(addr->nonblocking);
 
+	if (addr->timeout_transfer_ms > 0) {
+		timeout.tv_sec = addr->timeout_transfer_ms / 1000;
+		timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
+
+		ret = setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+			sizeof(timeout));
+		(void)ret; // Ignored
+		// TODO send timeout
+	}
+
 	return 0;
 }
 
@@ -170,6 +184,7 @@ chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	chttp_context_ok(ctx);
 	chttp_caddr_connected(ctx);
+	assert_zero(ctx->addr.nonblocking);
 	assert(buf);
 	assert(buf_len);
 
@@ -207,6 +222,7 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	chttp_context_ok(ctx);
 	chttp_caddr_connected(ctx);
+	assert_zero(ctx->addr.nonblocking);
 	assert(buf);
 	assert(buf_len);
 
