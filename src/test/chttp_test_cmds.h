@@ -72,6 +72,8 @@ CHTTP_TEST_CMD(tls_or_skip)
 
 CHTTP_TEST_CMD(chttp_init)
 CHTTP_TEST_CMD(chttp_init_dynamic)
+CHTTP_TEST_CMD(chttp_timeout_connect_ms)
+CHTTP_TEST_CMD(chttp_timeout_transfer_ms)
 CHTTP_TEST_CMD(chttp_version)
 CHTTP_TEST_CMD(chttp_method)
 CHTTP_TEST_CMD(chttp_url)

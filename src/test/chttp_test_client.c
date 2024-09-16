@@ -90,6 +90,36 @@ chttp_test_cmd_chttp_init_dynamic(struct chttp_test_context *ctx, struct chttp_t
 }
 
 void
+chttp_test_cmd_chttp_timeout_connect_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	int timeout;
+
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	timeout = (int)chttp_test_parse_long(cmd->params[0].value);
+
+	chttp_test_ERROR(ctx->chttp->addr.state != CHTTP_ADDR_RESOLVED, "Address must be resolved first");
+
+	ctx->chttp->addr.timeout_connect_ms = timeout;
+}
+
+void
+chttp_test_cmd_chttp_timeout_transfer_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	int timeout;
+
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	timeout = (int)chttp_test_parse_long(cmd->params[0].value);
+
+	chttp_test_ERROR(ctx->chttp->addr.state != CHTTP_ADDR_RESOLVED, "Address must be resolved first");
+
+	ctx->chttp->addr.timeout_transfer_ms = timeout;
+}
+
+void
 chttp_test_cmd_chttp_version(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long version;

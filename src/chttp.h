@@ -19,6 +19,9 @@
 #define	CHTTP_DEFAULT_METHOD		"GET"
 #define CHTTP_DEFAULT_H_VERSION		CHTTP_H_VERSION_1_1
 #define CHTTP_USER_AGENT		"chttp " CHTTP_VERSION
+#define CHTTP_TIMEOUT_CONNECT		3000
+#define CHTTP_TIMEOUT_TRANSFER		120000
+
 
 enum chttp_version {
 	CHTTP_H_VERSION_DEFAULT = 0,
@@ -100,8 +103,8 @@ struct chttp_addr {
 	unsigned int			nonblocking:1;
 
 	double				time_start;
-	double				time_last;
 	int				timeout_connect_ms;
+	int				timeout_transfer_ms;
 
 	union {
 		struct sockaddr		sa;

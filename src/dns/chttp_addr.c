@@ -12,6 +12,9 @@ chttp_addr_init(struct chttp_addr *addr)
 
 	addr->magic = CHTTP_ADDR_MAGIC;
 	addr->sock = -1;
+
+	addr->timeout_connect_ms = CHTTP_TIMEOUT_CONNECT;
+	addr->timeout_transfer_ms = CHTTP_TIMEOUT_TRANSFER;
 }
 
 void

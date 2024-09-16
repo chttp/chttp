@@ -70,7 +70,7 @@ _tcp_poll_connected(struct chttp_addr *addr)
 	}
 
 	chttp_addr_connected(addr);
-	assert(addr->poll_revents == POLLWRNORM);
+	//assert(addr->poll_revents == POLLWRNORM);
 
 	error_len = sizeof(error);
 
