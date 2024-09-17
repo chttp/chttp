@@ -171,7 +171,12 @@ chttp_openssl_write(struct chttp_context *ctx, void *buf, size_t buf_len)
 	assert(buf_len);
 
 	ret = SSL_write_ex(ssl, buf, buf_len, &bytes);
-	assert(ret > 0);
+
+	if (ret <= 0) {
+		chttp_error(ctx, CHTTP_ERR_NETWORK);
+		return;
+	}
+
 	assert(bytes == buf_len);
 }
 

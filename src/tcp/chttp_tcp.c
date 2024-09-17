@@ -117,9 +117,9 @@ chttp_addr_connect(struct chttp_addr *addr)
 	}
 
 	val = 1;
-	setsockopt(addr->sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
+	(void)setsockopt(addr->sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
 	val = 1;
-	setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
+	(void)setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
 
 	addr->state = CHTTP_ADDR_CONNECTED;
 	addr->time_start = chttp_get_time();
@@ -150,10 +150,11 @@ chttp_addr_connect(struct chttp_addr *addr)
 		timeout.tv_sec = addr->timeout_transfer_ms / 1000;
 		timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
 
-		ret = setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+		(void)setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
 			sizeof(timeout));
-		(void)ret; // Ignored
-		// TODO send timeout
+		(void)setsockopt(addr->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+			sizeof(timeout));
+
 	}
 
 	return 0;
@@ -170,10 +171,7 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	ret = chttp_addr_connect(&ctx->addr);
 
 	if (ret) {
-		if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
-			chttp_tcp_close(ctx);
-		}
-		ctx->error = CHTTP_ERR_CONNECT;
+		chttp_error(ctx, CHTTP_ERR_CONNECT);
 	}
 }
 
@@ -181,6 +179,7 @@ void
 chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	ssize_t ret;
+	size_t written = 0;
 
 	chttp_context_ok(ctx);
 	chttp_caddr_connected(ctx);
@@ -193,8 +192,19 @@ chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
 		return;
 	}
 
-	ret = send(ctx->addr.sock, buf, buf_len, MSG_NOSIGNAL);
-	assert(ret > 0 && (size_t)ret == buf_len); // TODO implement partial send
+	while (written < buf_len) {
+		ret = send(ctx->addr.sock, (char*)buf + written, buf_len - written,
+			MSG_NOSIGNAL);
+
+		if (ret <= 0) {
+			chttp_error(ctx, CHTTP_ERR_NETWORK);
+			return;
+		}
+
+		written += ret;
+	}
+
+	assert(written == buf_len);
 }
 
 void

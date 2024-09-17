@@ -114,6 +114,10 @@ chttp_send(struct chttp_context *ctx)
 
 		chttp_tcp_send(ctx, dpage->data + offset, dpage->offset - offset);
 
+		if (ctx->error) {
+			return;
+		}
+
 		offset = 0;
 	}
 
@@ -183,8 +187,6 @@ chttp_error(struct chttp_context *ctx, enum chttp_error error)
 	ctx->status = 0;
 
 	chttp_finish(ctx);
-
-	ctx->state = CHTTP_STATE_DONE_ERROR;
 }
 
 void
@@ -202,5 +204,9 @@ chttp_finish(struct chttp_context *ctx)
 
 	chttp_dpage_reset_all(ctx);
 
-	ctx->state = CHTTP_STATE_DONE;
+	if (ctx->error) {
+		ctx->state = CHTTP_STATE_DONE_ERROR;
+	} else {
+		ctx->state = CHTTP_STATE_DONE;
+	}
 }
