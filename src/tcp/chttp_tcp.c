@@ -69,11 +69,10 @@ _tcp_poll_connected(struct chttp_addr *addr)
 		return 0;
 	}
 
-	if (!(addr->poll_revents & POLLWRNORM)) {
-		return 0;
+	// Assume we connected
+	if (addr->poll_revents & POLLWRNORM) {
+		return 1;
 	}
-
-	chttp_addr_connected(addr);
 
 	error_len = sizeof(error);
 
@@ -109,6 +108,9 @@ chttp_addr_connect(struct chttp_addr *addr)
 	struct timeval timeout;
 
 	chttp_addr_resolved(addr);
+
+	// TODO
+	chttp_tcp_pool_lookup(addr);
 
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
 

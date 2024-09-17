@@ -207,6 +207,7 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port);
+int chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2);
 int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port,
 	unsigned int flags);
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port,
@@ -224,6 +225,8 @@ void chttp_tcp_read(struct chttp_context *ctx);
 size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_close(struct chttp_addr *addr);
 void chttp_tcp_close(struct chttp_context *ctx);
+
+int chttp_tcp_pool_lookup(struct chttp_addr *addr);
 
 void chttp_tls_free(void);
 void chttp_tls_connect(struct chttp_context *ctx);

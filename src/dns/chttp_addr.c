@@ -60,6 +60,19 @@ chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)
 }
 
 int
+chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2)
+{
+	chttp_addr_ok(a1);
+	chttp_addr_ok(a2);
+
+	if (a1->len != a2->len) {
+		return a2->len - a1->len;
+	}
+
+	return memcmp(&a1->sa, &a2->sa, a1->len);
+}
+
+int
 chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port,
     unsigned int flags)
 {
