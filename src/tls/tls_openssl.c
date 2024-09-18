@@ -141,22 +141,21 @@ chttp_openssl_connect(struct chttp_context *ctx)
 }
 
 void
-chttp_openssl_close(struct chttp_context *ctx)
+chttp_openssl_close(struct chttp_addr *addr)
 {
 	SSL *ssl;
 
-	chttp_context_ok(ctx);
-	chttp_addr_ok(&ctx->addr);
+	chttp_addr_ok(addr);
 
-	if (!ctx->addr.tls_priv) {
+	if (!addr->tls_priv) {
 		return;
 	}
 
-	chttp_openssl_connected(ctx, ssl);
+	ssl = (SSL*)addr->tls_priv;
 
 	SSL_free(ssl);
 
-	ctx->addr.tls_priv = NULL;
+	addr->tls_priv = NULL;
 }
 
 void

@@ -80,7 +80,7 @@ chttp_context_free(struct chttp_context *ctx)
 		chttp_finish(ctx);
 	}
 
-	assert(ctx->state == CHTTP_STATE_DONE);
+	assert(ctx->state >= CHTTP_STATE_DONE);
 	assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
 	assert_zero(ctx->addr.tls_priv);
 

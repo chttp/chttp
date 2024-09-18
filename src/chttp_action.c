@@ -186,7 +186,7 @@ chttp_finish(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 
 	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
-		chttp_tcp_close(ctx);
+		chttp_tcp_pool_store(&ctx->addr);
 	}
 
 	chttp_dpage_reset_all(ctx);

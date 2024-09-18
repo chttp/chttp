@@ -170,6 +170,10 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	// TODO
 	chttp_tcp_pool_lookup(&ctx->addr);
 
+	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
+		return;
+	}
+
 	ret = chttp_addr_connect(&ctx->addr);
 
 	if (ret) {
@@ -282,6 +286,10 @@ chttp_addr_close(struct chttp_addr *addr)
 	}
 
 	addr->sock = -1;
+
+	if (addr->tls) {
+		chttp_tls_close(addr);
+	}
 }
 
 void
@@ -292,8 +300,4 @@ chttp_tcp_close(struct chttp_context *ctx)
 	assert(ctx->state < CHTTP_STATE_CLOSED);
 
 	chttp_addr_close(&ctx->addr);
-
-	if (ctx->addr.tls) {
-		chttp_tls_close(ctx);
-	}
 }

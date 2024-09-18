@@ -138,7 +138,7 @@ chttp_error_msg(struct chttp_context *ctx)
 }
 
 void
-chttp_sa_string(struct sockaddr *sa, char *buf, size_t buf_len, int *port)
+chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port)
 {
 	assert(sa);
 

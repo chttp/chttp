@@ -28,12 +28,12 @@ chttp_tls_connect(struct chttp_context *ctx)
 }
 
 void
-chttp_tls_close(struct chttp_context *ctx)
+chttp_tls_close(struct chttp_addr *addr)
 {
 #ifdef CHTTP_OPENSSL
-	chttp_openssl_close(ctx);
+	chttp_openssl_close(addr);
 #else
-	(void)ctx;
+	(void)addr;
 	chttp_ABORT("TLS not configured");
 #endif
 }

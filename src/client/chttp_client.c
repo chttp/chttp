@@ -101,6 +101,7 @@ main(int argc, char **argv)
 	} while (body_len && tlsc->state == CHTTP_STATE_RESP_BODY);
 	chttp_context_free(tlsc);
 
+	chttp_tcp_pool_close();
 	chttp_tls_free();
 
 	return (0);
