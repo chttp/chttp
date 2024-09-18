@@ -23,7 +23,7 @@ chttp_context_debug(struct chttp_context *ctx)
 		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
 		(void*)ctx->data_end.dpage, ctx->data_end.offset, ctx->data_end.length,
 		(void*)ctx->hostname.dpage, ctx->hostname.offset, ctx->hostname.length,
-		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked, ctx->tls,
+		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked, ctx->addr.tls,
 		chttp_get_time() - ctx->addr.time_start);
 
 	chttp_dpage_debug(ctx->dpage);

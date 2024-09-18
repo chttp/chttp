@@ -109,9 +109,6 @@ chttp_addr_connect(struct chttp_addr *addr)
 
 	chttp_addr_resolved(addr);
 
-	// TODO
-	chttp_tcp_pool_lookup(addr);
-
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
 
 	if (addr->sock < 0) {
@@ -170,10 +167,17 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 	chttp_addr_ok(&ctx->addr);
 
+	// TODO
+	chttp_tcp_pool_lookup(&ctx->addr);
+
 	ret = chttp_addr_connect(&ctx->addr);
 
 	if (ret) {
 		chttp_error(ctx, CHTTP_ERR_CONNECT);
+	}
+
+	if (ctx->addr.tls) {
+		chttp_tls_connect(ctx);
 	}
 }
 
@@ -189,7 +193,7 @@ chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
 	assert(buf);
 	assert(buf_len);
 
-	if (ctx->tls) {
+	if (ctx->addr.tls) {
 		chttp_tls_write(ctx, buf, buf_len);
 		return;
 	}
@@ -238,7 +242,7 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 	assert(buf);
 	assert(buf_len);
 
-	if (ctx->tls) {
+	if (ctx->addr.tls) {
 		bytes = chttp_tls_read(ctx, buf, buf_len, &error);
 		ret = (ssize_t)bytes;
 
@@ -288,4 +292,8 @@ chttp_tcp_close(struct chttp_context *ctx)
 	assert(ctx->state < CHTTP_STATE_CLOSED);
 
 	chttp_addr_close(&ctx->addr);
+
+	if (ctx->addr.tls) {
+		chttp_tls_close(ctx);
+	}
 }

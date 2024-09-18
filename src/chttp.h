@@ -101,6 +101,10 @@ struct chttp_addr {
 	short				poll_revents;
 
 	unsigned int			nonblocking:1;
+	unsigned int			reused:1;
+	unsigned int			tls:1;
+
+	void				*tls_priv;
 
 	double				time_start;
 	int				timeout_connect_ms;
@@ -136,13 +140,9 @@ struct chttp_context {
 	unsigned int			free:1;
 	unsigned int			is_head:1;
 	unsigned int			has_host:1;
-	unsigned int			event_based:1;
 	unsigned int			close:1;
 	unsigned int			chunked:1;
 	unsigned int			seen_first:1;
-	unsigned int			tls:1;
-
-	void				*tls_priv;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -227,6 +227,7 @@ void chttp_addr_close(struct chttp_addr *addr);
 void chttp_tcp_close(struct chttp_context *ctx);
 
 int chttp_tcp_pool_lookup(struct chttp_addr *addr);
+void chttp_tcp_pool_store(struct chttp_addr *addr);
 
 void chttp_tls_free(void);
 void chttp_tls_connect(struct chttp_context *ctx);

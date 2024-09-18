@@ -33,10 +33,6 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 	assert(host_len);
 	assert(port > 0);
 
-	if (tls) {
-		ctx->tls = 1;
-	}
-
 	if (ctx->addr.state) {
 		chttp_addr_ok(&ctx->addr);
 		chttp_ABORT("invalid state, you can only connect once");
@@ -63,6 +59,10 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 	}
 
 	chttp_addr_resolved(&ctx->addr);
+
+	if (tls) {
+		ctx->addr.tls = 1;
+	}
 }
 
 void
@@ -92,15 +92,6 @@ chttp_send(struct chttp_context *ctx)
 	}
 
 	chttp_caddr_connected(ctx);
-
-	if (ctx->tls) {
-		chttp_tls_connect(ctx);
-
-		if (ctx->error) {
-			chttp_finish(ctx);
-			return;
-		}
-	}
 
 	offset = ctx->data_start.offset;
 
@@ -196,10 +187,6 @@ chttp_finish(struct chttp_context *ctx)
 
 	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
 		chttp_tcp_close(ctx);
-	}
-
-	if (ctx->tls) {
-		chttp_tls_close(ctx);
 	}
 
 	chttp_dpage_reset_all(ctx);

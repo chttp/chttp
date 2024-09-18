@@ -38,8 +38,8 @@ struct chttp_openssl_ctx _OPENSSL_CTX = {
 	} while (0)
 #define chttp_openssl_connected(ctx, ssl_ctx)					\
 	do {									\
-		assert((ctx)->tls_priv);					\
-		ssl_ctx = (SSL*)((ctx)->tls_priv);				\
+		assert((ctx)->addr.tls_priv);					\
+		ssl_ctx = (SSL*)((ctx)->addr.tls_priv);				\
 	} while (0)
 
 static void
@@ -99,8 +99,8 @@ chttp_openssl_connect(struct chttp_context *ctx)
 	chttp_openssl_ctx_ok();
 	chttp_context_ok(ctx);
 	chttp_caddr_connected(ctx);
-	assert(ctx->tls);
-	assert_zero(ctx->tls_priv);
+	assert(ctx->addr.tls);
+	assert_zero(ctx->addr.tls_priv);
 
 	_openssl_init_lock();
 
@@ -110,9 +110,9 @@ chttp_openssl_connect(struct chttp_context *ctx)
 	}
 	assert(_OPENSSL_CTX.ctx);
 
-	ctx->tls_priv = SSL_new(_OPENSSL_CTX.ctx);
+	ctx->addr.tls_priv = SSL_new(_OPENSSL_CTX.ctx);
 
-	if (!ctx->tls_priv) {
+	if (!ctx->addr.tls_priv) {
 		ctx->error = CHTTP_ERR_TLS_INIT;
 		return;
 	}
@@ -146,8 +146,9 @@ chttp_openssl_close(struct chttp_context *ctx)
 	SSL *ssl;
 
 	chttp_context_ok(ctx);
+	chttp_addr_ok(&ctx->addr);
 
-	if (!ctx->tls_priv) {
+	if (!ctx->addr.tls_priv) {
 		return;
 	}
 
@@ -155,7 +156,7 @@ chttp_openssl_close(struct chttp_context *ctx)
 
 	SSL_free(ssl);
 
-	ctx->tls_priv = NULL;
+	ctx->addr.tls_priv = NULL;
 }
 
 void

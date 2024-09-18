@@ -6,6 +6,9 @@
 #include "chttp.h"
 #include "chttp_tcp_pool.h"
 
+long _TCP_POOL_AGE_SEC = CHTTP_TCP_POOL_AGE_SEC;
+size_t _TCP_POOL_SIZE = CHTTP_TCP_POOL_SIZE;
+
 struct chttp_tcp_pool _TCP_POOL = {
 	CHTTP_TCP_POOL_MAGIC,
 	PTHREAD_MUTEX_INITIALIZER,
@@ -43,13 +46,14 @@ _tcp_pool_init(void)
 
 	chttp_tcp_pool_ok();
 	assert_zero(_TCP_POOL.initialized);
+	assert(_TCP_POOL_SIZE <= CHTTP_TCP_POOL_SIZE);
 
 	assert(RB_EMPTY(&_TCP_POOL.pool_tree));
 	assert(TAILQ_EMPTY(&_TCP_POOL.free_list));
 	assert(TAILQ_EMPTY(&_TCP_POOL.lru_list));
 
 	/* Create the free_list */
-	for (i = 0; i < CHTTP_TCP_POOL_SIZE; i++) {
+	for (i = 0; i < _TCP_POOL_SIZE; i++) {
 		assert_zero(_TCP_POOL.entries[i].magic);
 		TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, &_TCP_POOL.entries[i], list_entry);
 	}
@@ -72,6 +76,8 @@ chttp_tcp_pool_lookup(struct chttp_addr *addr)
 	chttp_tcp_pool_ok();
 	chttp_addr_resolved(addr);
 
+	addr->reused = 0;
+
 	_tcp_pool_LOCK();
 
 	if (!_TCP_POOL.initialized) {
@@ -84,4 +90,10 @@ chttp_tcp_pool_lookup(struct chttp_addr *addr)
 	_tcp_pool_UNLOCK();
 
 	return 0;
+}
+
+void
+chttp_tcp_pool_store(struct chttp_addr *addr)
+{
+	(void)addr;
 }

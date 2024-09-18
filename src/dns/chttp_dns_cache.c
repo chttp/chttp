@@ -66,8 +66,8 @@ _dns_cache_init(void)
 static int
 _dns_cache_cmp(const struct chttp_dns_cache_entry *k1, const struct chttp_dns_cache_entry *k2)
 {
-	assert(k1);
-	assert(k2);
+	chttp_dns_entry_ok(k1);
+	chttp_dns_entry_ok(k2);
 
 	return strcmp(k1->hostname, k2->hostname);
 }
@@ -103,69 +103,69 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 
 	_DNS_CACHE.stats.lookups++;
 
+	find.magic = CHTTP_DNS_CACHE_ENTRY_MAGIC;
 	strncpy(find.hostname, host, host_len + 1);
 
 	addr_head = RB_FIND(chttp_dns_cache_tree, &_DNS_CACHE.cache_tree, &find);
 
-	if (addr_head) {
-		chttp_dns_entry_ok(addr_head);
+	if (!addr_head) {
+		_dns_cache_UNLOCK();
+		return 0;
+	}
 
-		addr = addr_head;
-		pos = 0;
+	chttp_dns_entry_ok(addr_head);
 
-		// Calculate next for RR
-		if (!(flags & DNS_DISABLE_RR)) {
-			pos = (addr_head->current + 1) % addr_head->length;
-			addr_head->current = pos;
-		}
+	addr = addr_head;
+	pos = 0;
 
-		while (pos > 0) {
-			addr = addr->next;
-			chttp_dns_entry_ok(addr);
+	// Calculate next for RR
+	if (!(flags & DNS_DISABLE_RR)) {
+		pos = (addr_head->current + 1) % addr_head->length;
+		addr_head->current = pos;
+	}
 
-			pos--;
-		}
+	while (pos > 0) {
+		addr = addr->next;
+		chttp_dns_entry_ok(addr);
 
-		assert(addr->addr.state == CHTTP_ADDR_CACHED ||
-			addr->addr.state == CHTTP_ADDR_STALE);
+		pos--;
+	}
 
-		// Move to the front of the LRU
-		if (TAILQ_FIRST(&_DNS_CACHE.lru_list) != addr_head) {
-			TAILQ_REMOVE(&_DNS_CACHE.lru_list, addr_head, list_entry);
-			TAILQ_INSERT_HEAD(&_DNS_CACHE.lru_list, addr_head, list_entry);
+	assert(addr->addr.state == CHTTP_ADDR_CACHED ||
+		addr->addr.state == CHTTP_ADDR_STALE);
 
-			_DNS_CACHE.stats.lru++;
-		}
+	// Move to the front of the LRU
+	if (TAILQ_FIRST(&_DNS_CACHE.lru_list) != addr_head) {
+		TAILQ_REMOVE(&_DNS_CACHE.lru_list, addr_head, list_entry);
+		TAILQ_INSERT_HEAD(&_DNS_CACHE.lru_list, addr_head, list_entry);
 
-		now = chttp_get_time();
-		assert(addr_head->expiration);
+		_DNS_CACHE.stats.lru++;
+	}
 
-		if (addr_head->expiration < now) {
-			// Expired, mark as stale and add more time
-			// Force this client to do a fresh lookup
-			addr_head->addr.state = CHTTP_ADDR_STALE;
-			addr_head->expiration = now + 10;
+	now = chttp_get_time();
+	assert(addr_head->expiration);
 
-			_DNS_CACHE.stats.expired++;
+	if (addr_head->expiration < now) {
+		// Expired, mark as stale and add more time
+		// Force this client to do a fresh lookup
+		addr_head->addr.state = CHTTP_ADDR_STALE;
+		addr_head->expiration = now + 10;
 
-			_dns_cache_UNLOCK();
-
-			return 0;
-		}
-
-		chttp_addr_copy(addr_dest, &addr->addr.sa, port);
-		chttp_addr_resolved(addr_dest);
-
-		_DNS_CACHE.stats.cache_hits++;
+		_DNS_CACHE.stats.expired++;
 
 		_dns_cache_UNLOCK();
 
-		return 1;
+		return 0;
 	}
+
+	chttp_addr_copy(addr_dest, &addr->addr.sa, port);
+	chttp_addr_resolved(addr_dest);
+
+	_DNS_CACHE.stats.cache_hits++;
 
 	_dns_cache_UNLOCK();
 
-	return 0;
+	return 1;
 }
 
 static void

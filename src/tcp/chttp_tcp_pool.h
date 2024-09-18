@@ -20,7 +20,6 @@ struct chttp_tcp_pool_entry {
 #define CHTTP_TCP_POOL_ENTRY_MAGIC			0xFC286388
 
 	struct chttp_addr				addr;
-	int						sock;
 
 	double						expiration;
 
