@@ -95,7 +95,7 @@ chttp_tcp_pool_lookup(struct chttp_addr *addr)
 static struct chttp_tcp_pool_entry *
 _tcp_pool_get_entry(void)
 {
-	struct chttp_tcp_pool_entry *entry, *prev = NULL;
+	struct chttp_tcp_pool_entry *entry, *next;
 
 	chttp_tcp_pool_ok();
 
@@ -108,23 +108,24 @@ _tcp_pool_get_entry(void)
 		return entry;
 	} else if (!TAILQ_EMPTY(&_TCP_POOL.lru_list)) {
 		// Pull from the LRU
+		// The head is oldest, use it and move the next up
 		entry = TAILQ_LAST(&_TCP_POOL.lru_list, chttp_tcp_pool_list);
 		chttp_pool_entry_ok(entry);
 
-		if (!entry->next) {
-			assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
-			TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
-		} else {
-			// Pull the last entry
-			while (entry->next) {
-				prev = entry;
-				entry = entry->next;
-				chttp_pool_entry_ok(entry);
-			}
+		next = entry->next;
+		entry->next = NULL;
 
-			assert(prev->next == entry);
-			prev->next = NULL;
+		assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
+
+		if (next) {
+			chttp_pool_entry_ok(next);
+
+			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, next));
+			TAILQ_INSERT_AFTER(&_TCP_POOL.lru_list, entry, next, list_entry);
 		}
+
+		TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
+
 
 		chttp_addr_connected(&entry->addr);
 		chttp_addr_close(&entry->addr);
@@ -170,24 +171,29 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 
 	chttp_addr_clone(&entry->addr, addr);
 
+	chttp_pool_entry_ok(entry);
+	chttp_addr_connected(&entry->addr);
+
 	// TODO expiration
 
 	head = RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry);
 
 	if (head) {
-		chttp_pool_entry_ok(entry);
-		chttp_addr_connected(&entry->addr);
+		chttp_pool_entry_ok(head);
+		chttp_addr_connected(&head->addr);
 
-		// Remove the head and add it behind the entry
-		assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, head));
-		TAILQ_REMOVE(&_TCP_POOL.lru_list, head, list_entry);
+		// Add entry to the back
+		while (head->next) {
+			head = head->next;
 
-		entry->next = head;
+			chttp_pool_entry_ok(head);
+			chttp_addr_connected(&head->addr);
+		}
 
-		assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
+		head->next = entry;
+	} else {
+		TAILQ_INSERT_HEAD(&_TCP_POOL.lru_list, entry, list_entry);
 	}
-
-	TAILQ_INSERT_HEAD(&_TCP_POOL.lru_list, entry, list_entry);
 
 	_tcp_pool_UNLOCK();
 

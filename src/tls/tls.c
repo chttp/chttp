@@ -11,8 +11,6 @@ chttp_tls_free(void)
 {
 #ifdef CHTTP_OPENSSL
 	chttp_openssl_free();
-#else
-	chttp_ABORT("TLS not configured");
 #endif
 }
 

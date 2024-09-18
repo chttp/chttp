@@ -8,6 +8,7 @@
 		"editor.tabSize": 8,
 		"editor.insertSpaces": false,
 		"editor.detectIndentation": false,
+		"editor.stickyScroll.enabled": false,
 		"C_Cpp.default.cStandard": "gnu17",
 		"C_Cpp.default.intelliSenseMode": "gcc-x64",
 		"C_Cpp.default.includePath": [
