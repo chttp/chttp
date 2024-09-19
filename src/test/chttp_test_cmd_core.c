@@ -63,7 +63,7 @@ chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test
 		return;
 	}
 
-	ret = chttp_addr_connect(&addr);
+	ret = chttp_tcp_connect(&addr);
 
 	if (ret) {
 		chttp_test_skip(ctx);
@@ -73,7 +73,7 @@ chttp_test_cmd_connect_or_skip(struct chttp_test_context *ctx, struct chttp_test
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "valid address found %s:%ld", host, port);
 
-	chttp_addr_close(&addr);
+	chttp_tcp_close(&addr);
 
 	return;
 }

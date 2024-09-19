@@ -113,7 +113,7 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
 	}
 
 	if (entry->addr.state == CHTTP_ADDR_CONNECTED) {
-		chttp_addr_close(&entry->addr);
+		chttp_tcp_close(&entry->addr);
 	}
 
 	next = entry->next;
@@ -233,7 +233,7 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	chttp_addr_connected(addr);
 
 	if (_TCP_POOL_AGE_SEC <= 0) {
-		chttp_addr_close(addr);
+		chttp_tcp_close(addr);
 		return;
 	}
 
@@ -247,7 +247,7 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	entry = _tcp_pool_get_entry();
 
 	if (!entry) {
-		chttp_addr_close(addr);
+		chttp_tcp_close(addr);
 		_TCP_POOL.stats.err_alloc++;
 		_tcp_pool_UNLOCK();
 		return;

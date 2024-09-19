@@ -102,7 +102,7 @@ chttp_tcp_import(struct chttp_context *ctx, int sock)
 }
 
 int
-chttp_addr_connect(struct chttp_addr *addr)
+chttp_tcp_connect(struct chttp_addr *addr)
 {
 	int val, ret;
 	struct timeval timeout;
@@ -157,37 +157,6 @@ chttp_addr_connect(struct chttp_addr *addr)
 	}
 
 	return 0;
-}
-
-void
-chttp_tcp_connect(struct chttp_context *ctx)
-{
-	int ret;
-
-	chttp_context_ok(ctx);
-	chttp_addr_resolved(&ctx->addr);
-
-	if (!ctx->fresh_conn) {
-		ret = chttp_tcp_pool_lookup(&ctx->addr);
-
-		if (ret) {
-			chttp_addr_connected(&ctx->addr);
-			return;
-		}
-	}
-
-	ret = chttp_addr_connect(&ctx->addr);
-
-	if (ret) {
-		chttp_error(ctx, CHTTP_ERR_CONNECT);
-		return;
-	}
-
-	if (ctx->addr.tls) {
-		chttp_tls_connect(ctx);
-	}
-
-	chttp_addr_connected(&ctx->addr);
 }
 
 void
@@ -265,7 +234,7 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	if (ret == 0) {
-		chttp_tcp_close(ctx);
+		chttp_tcp_close(&ctx->addr);
 		ctx->state = CHTTP_STATE_CLOSED;
 		return 0;
 
@@ -278,7 +247,7 @@ chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
 }
 
 void
-chttp_addr_close(struct chttp_addr *addr)
+chttp_tcp_close(struct chttp_addr *addr)
 {
 	chttp_addr_connected(addr);
 
@@ -295,14 +264,4 @@ chttp_addr_close(struct chttp_addr *addr)
 	if (addr->tls) {
 		chttp_tls_close(addr);
 	}
-}
-
-void
-chttp_tcp_close(struct chttp_context *ctx)
-{
-	chttp_context_ok(ctx);
-	chttp_caddr_connected(ctx);
-	assert(ctx->state < CHTTP_STATE_CLOSED);
-
-	chttp_addr_close(&ctx->addr);
 }

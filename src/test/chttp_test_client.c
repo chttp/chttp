@@ -352,7 +352,7 @@ void
 chttp_test_cmd_chttp_version_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long version;
-	enum chttp_version expected = -1;
+	enum chttp_version expected = 0;
 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);

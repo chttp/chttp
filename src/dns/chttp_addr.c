@@ -161,3 +161,47 @@ chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, in
 
 	return 0;
 }
+
+void
+chttp_addr_connect(struct chttp_context *ctx)
+{
+	int ret;
+
+	chttp_context_ok(ctx);
+	chttp_addr_resolved(&ctx->addr);
+
+	if (!ctx->fresh_conn) {
+		ret = chttp_tcp_pool_lookup(&ctx->addr);
+
+		if (ret) {
+			chttp_addr_connected(&ctx->addr);
+			return;
+		}
+	}
+
+	ret = chttp_tcp_connect(&ctx->addr);
+
+	if (ret) {
+		chttp_error(ctx, CHTTP_ERR_CONNECT);
+		return;
+	}
+
+	if (ctx->addr.tls) {
+		chttp_tls_connect(ctx);
+	}
+
+	chttp_addr_connected(&ctx->addr);
+}
+
+void
+chttp_addr_try_close(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
+	assert(ctx->state < CHTTP_STATE_CLOSED);
+
+	if (ctx->state == CHTTP_STATE_IDLE && ctx->close) {
+		chttp_tcp_close(&ctx->addr);
+		ctx->state = CHTTP_STATE_CLOSED;
+	}
+}

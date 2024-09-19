@@ -11,6 +11,10 @@
 		"editor.stickyScroll.enabled": false,
 		"C_Cpp.default.cStandard": "gnu17",
 		"C_Cpp.default.intelliSenseMode": "gcc-x64",
+		"C_Cpp.codeAnalysis.clangTidy.enabled": true,
+		"C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+			"*.DeprecatedOrUnsafeBufferHandling"
+		],
 		"C_Cpp.default.includePath": [
 			"src"
 		],

@@ -84,7 +84,7 @@ chttp_send(struct chttp_context *ctx)
 
 	_finalize_request(ctx);
 
-	chttp_tcp_connect(ctx);
+	chttp_addr_connect(ctx);
 
 	if (ctx->error) {
 		chttp_finish(ctx);
@@ -152,20 +152,7 @@ chttp_receive(struct chttp_context *ctx)
 		return;
 	}
 
-	chttp_try_close(ctx);
-}
-
-void
-chttp_try_close(struct chttp_context *ctx)
-{
-	chttp_context_ok(ctx);
-	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
-	assert(ctx->state < CHTTP_STATE_CLOSED);
-
-	if (ctx->state == CHTTP_STATE_IDLE && ctx->close) {
-		chttp_tcp_close(ctx);
-		ctx->state = CHTTP_STATE_CLOSED;
-	}
+	chttp_addr_try_close(ctx);
 }
 
 void
@@ -186,8 +173,8 @@ chttp_finish(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 
 	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
-		if (ctx->close || ctx->error) {
-			chttp_tcp_close(ctx);
+		if (ctx->close || ctx->error || ctx->state < CHTTP_STATE_IDLE) {
+			chttp_tcp_close(&ctx->addr);
 		} else {
 			chttp_tcp_pool_store(&ctx->addr);
 		}
