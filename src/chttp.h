@@ -130,6 +130,12 @@ struct chttp_context {
 
 	struct chttp_addr		addr;
 
+	unsigned int			free:1;
+
+	/* NOTE: see chttp_context_reset()
+	   Anything below here is reset between requests
+	 */
+
 	enum chttp_state		state;
 	enum chttp_version		version;
 	enum chttp_error		error;
@@ -137,12 +143,12 @@ struct chttp_context {
 	int				status;
 	long				length;
 
-	unsigned int			free:1;
 	unsigned int			is_head:1;
 	unsigned int			has_host:1;
 	unsigned int			close:1;
 	unsigned int			chunked:1;
 	unsigned int			seen_first:1;
+	unsigned int			fresh_conn:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -156,6 +162,7 @@ struct chttp_context {
 struct chttp_context *chttp_context_alloc(void);
 void chttp_context_init(struct chttp_context *ctx);
 struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
+void chttp_context_reset(struct chttp_context *ctx);
 void chttp_context_free(struct chttp_context *ctx);
 
 size_t chttp_dpage_size(int min);

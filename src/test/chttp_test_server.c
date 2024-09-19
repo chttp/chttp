@@ -437,7 +437,6 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	struct chttp_test *test;
 
 	server = _server_context_ok(ctx);
-	assert_zero(server->chttp);
 	chttp_test_ERROR_param_count(cmd, 0);
 	test = chttp_test_convert(server->ctx);
 
@@ -447,6 +446,15 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	}
 
 	assert(server->http_sock >= 0);
+
+	if (server->chttp) {
+		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
+			chttp_error_msg(server->chttp));
+
+		server->chttp->state = CHTTP_STATE_DONE;
+		chttp_context_free(server->chttp);
+		server->chttp = NULL;
+	}
 
 	server->chttp = malloc(sizeof(struct chttp_context));
 	assert(server->chttp);

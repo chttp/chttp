@@ -95,6 +95,7 @@ chttp_test_cmd_chttp_timeout_connect_ms(struct chttp_test_context *ctx, struct c
 	int timeout;
 
 	_test_context_ok(ctx);
+	chttp_addr_ok(&ctx->chttp->addr);
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	timeout = (int)chttp_test_parse_long(cmd->params[0].value);
@@ -110,6 +111,7 @@ chttp_test_cmd_chttp_timeout_transfer_ms(struct chttp_test_context *ctx, struct 
 	int timeout;
 
 	_test_context_ok(ctx);
+	chttp_addr_ok(&ctx->chttp->addr);
 	chttp_test_ERROR_param_count(cmd, 1);
 
 	timeout = (int)chttp_test_parse_long(cmd->params[0].value);
@@ -203,6 +205,19 @@ chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_c
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "lookup made to %s:%ld",
 		cmd->params[0].value, port);
+}
+
+char *
+chttp_test_var_chttp_reused(struct chttp_test_context *ctx)
+{
+	_test_context_ok(ctx);
+	chttp_addr_ok(&ctx->chttp->addr);
+
+	if (ctx->chttp->addr.reused) {
+		return "1";
+	} else {
+		return "0";
+	}
 }
 
 void
@@ -505,4 +520,15 @@ chttp_test_cmd_chttp_take_error(struct chttp_test_context *ctx, struct chttp_tes
 	chttp_finish(ctx->chttp);
 
 	ctx->chttp->error = 0;
+}
+
+void
+chttp_test_cmd_chttp_reset(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	chttp_context_reset(ctx->chttp);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "context reset");
 }

@@ -179,8 +179,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	if (header && !strcmp(header, "close")) {
 		ctx->close = 1;
 	} else if (header && !strcmp(header, "keep-alive")) {
-		// TODO request override (ctx->req_close) ?
-		ctx->close = 0;
+		// Default, do nothing
 	}
 
 	if (ctx->is_head) {

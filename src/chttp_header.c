@@ -115,7 +115,9 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 		ctx->has_host = 1;
 	}
 
-	// TODO close (dont forget delete)
+	if (!strcasecmp(name, "connection") && !strcasecmp(value, "close")) {
+		ctx->close = 1;
+	}
 
 	name_len = strlen(name);
 	value_len = strlen(value);
@@ -197,6 +199,10 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 
 	if (!strcasecmp(name, "host")) {
 		ctx->has_host = 0;
+	}
+
+	if (!strcasecmp(name, "connection")) {
+		ctx->close = 0;
 	}
 
 	name_len = strlen(name);

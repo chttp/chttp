@@ -94,6 +94,8 @@ CHTTP_TEST_CMD(chttp_body_submatch)
 CHTTP_TEST_CMD(chttp_body_read)
 CHTTP_TEST_CMD(chttp_body_md5)
 CHTTP_TEST_CMD(chttp_take_error)
+CHTTP_TEST_CMD(chttp_reset)
+CHTTP_TEST_VAR(chttp_reused)
 
 CHTTP_TEST_CMD(server_init)
 CHTTP_TEST_CMD(server_accept)
@@ -141,6 +143,8 @@ CHTTP_TEST_VAR(dns_nuked)
 CHTTP_TEST_VAR(dns_lru)
 CHTTP_TEST_VAR(dns_err_too_long)
 CHTTP_TEST_VAR(dns_err_alloc)
+
+CHTTP_TEST_CMD(tcp_pool_debug)
 
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR

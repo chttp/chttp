@@ -119,6 +119,8 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
 	next = entry->next;
 
 	chttp_addr_reset(&entry->addr);
+	chttp_ZERO(entry);
+	TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, entry, list_entry);
 
 	_TCP_POOL.stats.deleted++;
 
@@ -304,7 +306,7 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 void
 chttp_tcp_pool_close(void)
 {
-	struct chttp_tcp_pool_entry *entry, *temp, *next;
+	struct chttp_tcp_pool_entry *entry, *temp;
 	size_t size;
 
 	_tcp_pool_LOCK();
@@ -317,13 +319,7 @@ chttp_tcp_pool_close(void)
 	TAILQ_FOREACH_SAFE(entry, &_TCP_POOL.lru_list, list_entry, temp) {
 		while (entry) {
 			chttp_pool_entry_ok(entry);
-
-			next = _tcp_pool_remove_entry(entry);
-
-			chttp_ZERO(entry);
-			TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, entry, list_entry);
-
-			entry = next;
+			entry = _tcp_pool_remove_entry(entry);
 		}
 	}
 

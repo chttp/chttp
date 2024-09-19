@@ -167,17 +167,20 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 	chttp_addr_resolved(&ctx->addr);
 
-	ret = chttp_tcp_pool_lookup(&ctx->addr);
+	if (!ctx->fresh_conn) {
+		ret = chttp_tcp_pool_lookup(&ctx->addr);
 
-	if (ret) {
-		chttp_addr_connected(&ctx->addr);
-		return;
+		if (ret) {
+			chttp_addr_connected(&ctx->addr);
+			return;
+		}
 	}
 
 	ret = chttp_addr_connect(&ctx->addr);
 
 	if (ret) {
 		chttp_error(ctx, CHTTP_ERR_CONNECT);
+		return;
 	}
 
 	if (ctx->addr.tls) {
