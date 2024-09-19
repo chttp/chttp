@@ -165,12 +165,12 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	int ret;
 
 	chttp_context_ok(ctx);
-	chttp_addr_ok(&ctx->addr);
+	chttp_addr_resolved(&ctx->addr);
 
-	// TODO
-	chttp_tcp_pool_lookup(&ctx->addr);
+	ret = chttp_tcp_pool_lookup(&ctx->addr);
 
-	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
+	if (ret) {
+		chttp_addr_connected(&ctx->addr);
 		return;
 	}
 
@@ -183,6 +183,8 @@ chttp_tcp_connect(struct chttp_context *ctx)
 	if (ctx->addr.tls) {
 		chttp_tls_connect(ctx);
 	}
+
+	chttp_addr_connected(&ctx->addr);
 }
 
 void

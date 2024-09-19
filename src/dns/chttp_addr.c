@@ -60,6 +60,23 @@ chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)
 }
 
 void
+chttp_addr_move(struct chttp_addr *addr_dest, struct chttp_addr *addr)
+{
+	chttp_addr_ok(addr);
+
+	chttp_addr_clone(addr_dest, addr);
+
+	addr->state = CHTTP_ADDR_RESOLVED;
+	addr->sock = -1;
+	addr->nonblocking = 0;
+	addr->reused = 0;
+	addr->tls = 0;
+	addr->tls_priv = NULL;
+
+	chttp_addr_resolved(addr);
+}
+
+void
 chttp_addr_clone(struct chttp_addr *addr_dest, struct chttp_addr *addr)
 {
 	chttp_addr_ok(addr);
@@ -70,16 +87,11 @@ chttp_addr_clone(struct chttp_addr *addr_dest, struct chttp_addr *addr)
 	addr_dest->len = addr->len;
 	addr_dest->sock = addr->sock;
 	addr_dest->nonblocking = addr->nonblocking;
+	addr_dest->reused = addr->reused;
 	addr_dest->tls = addr->tls;
 	addr_dest->tls_priv = addr->tls_priv;
 
 	memcpy(&addr_dest->sa, &addr->sa, addr->len);
-
-	addr->state = CHTTP_ADDR_RESOLVED;
-	addr->sock = -1;
-	addr->nonblocking = 0;
-	addr->tls = 0;
-	addr->tls_priv = NULL;
 }
 
 int

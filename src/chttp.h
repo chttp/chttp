@@ -207,6 +207,7 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port);
+void chttp_addr_move(struct chttp_addr *addr_dest, struct chttp_addr *addr);
 void chttp_addr_clone(struct chttp_addr *addr_dest, struct chttp_addr *addr);
 int chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2);
 int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port,
@@ -242,6 +243,8 @@ void chttp_dpage_debug(struct chttp_dpage *dpage);
 void chttp_print_hex(void *buf, size_t buf_len);
 size_t chttp_safe_add(size_t *dest, size_t value);
 void chttp_do_abort(const char *function, const char *file, int line, const char *reason);
+void __chttp_attr_printf_p(5) chttp_do_assert(int cond, const char *function,
+	const char *file, int line, const char *fmt, ...);
 const char *chttp_error_msg(struct chttp_context *ctx);
 void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 double chttp_get_time(void);
@@ -282,6 +285,8 @@ double chttp_get_time(void);
 	} while (0)
 #define chttp_ABORT(reason)						\
 	chttp_do_abort(__func__, __FILE__, __LINE__, reason);
+#define chttp_ASSERT(cond, fmt, ...)					\
+	chttp_do_assert(cond, __func__, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
 #define chttp_ZERO(p)							\
 	explicit_bzero(p, sizeof(*(p)))
 

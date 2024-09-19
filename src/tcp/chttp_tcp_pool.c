@@ -70,32 +70,10 @@ _tcp_pool_cmp(const struct chttp_tcp_pool_entry *k1, const struct chttp_tcp_pool
 	return chttp_addr_cmp(&k1->addr, &k2->addr);
 }
 
-int
-chttp_tcp_pool_lookup(struct chttp_addr *addr)
-{
-	chttp_tcp_pool_ok();
-	chttp_addr_resolved(addr);
-
-	addr->reused = 0;
-
-	_tcp_pool_LOCK();
-
-	if (!_TCP_POOL.initialized) {
-		_tcp_pool_init();
-	}
-	assert(_TCP_POOL.initialized);
-
-	_TCP_POOL.stats.lookups++;
-
-	_tcp_pool_UNLOCK();
-
-	return 0;
-}
-
-static void
+static struct chttp_tcp_pool_entry *
 _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
 {
-	struct chttp_tcp_pool_entry *head;
+	struct chttp_tcp_pool_entry *head, *next;
 	int found;
 
 	chttp_tcp_pool_ok();
@@ -111,14 +89,14 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
 			TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
 		} else {
 			// Move up the next entry
-			chttp_pool_entry_ok(entry->next);
+			next = entry->next;
+			chttp_pool_entry_ok(next);
 
-			TAILQ_INSERT_AFTER(&_TCP_POOL.lru_list, entry, entry->next, list_entry);
+			TAILQ_INSERT_AFTER(&_TCP_POOL.lru_list, entry, next, list_entry);
 			TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
 
 			assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
-			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree,
-				entry->next));
+			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, next));
 		}
 	} else {
 		// Find the entry and cut it out
@@ -134,11 +112,77 @@ _tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
 		assert (found == 1);
 	}
 
-	chttp_addr_connected(&entry->addr);
-	chttp_addr_close(&entry->addr);
+	if (entry->addr.state == CHTTP_ADDR_CONNECTED) {
+		chttp_addr_close(&entry->addr);
+	}
+
+	next = entry->next;
+
 	chttp_addr_reset(&entry->addr);
 
-	_TCP_POOL.stats.nuked++;
+	_TCP_POOL.stats.deleted++;
+
+	return next;
+}
+
+int
+chttp_tcp_pool_lookup(struct chttp_addr *addr)
+{
+	struct chttp_tcp_pool_entry *head, find;
+
+	chttp_tcp_pool_ok();
+	chttp_addr_resolved(addr);
+
+	addr->reused = 0;
+
+	_tcp_pool_LOCK();
+
+	if (!_TCP_POOL.initialized) {
+		_tcp_pool_init();
+	}
+	assert(_TCP_POOL.initialized);
+
+	_TCP_POOL.stats.lookups++;
+
+	find.magic = CHTTP_TCP_POOL_ENTRY_MAGIC;
+	chttp_addr_clone(&find.addr, addr);
+
+	head = RB_FIND(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, &find);
+
+	if (head) {
+		// Find a good connection
+		while (head) {
+			chttp_pool_entry_ok(head);
+
+			if (head->expiration < chttp_get_time()) {
+				head = _tcp_pool_remove_entry(head);
+				_TCP_POOL.stats.expired++;
+
+				continue;
+			}
+
+			chttp_addr_move(addr, &head->addr);
+			_tcp_pool_remove_entry(head);
+
+			addr->reused = 1;
+
+			break;
+		}
+	}
+
+	_tcp_pool_UNLOCK();
+
+	if (addr->reused) {
+		chttp_addr_connected(addr);
+
+		_TCP_POOL.stats.cache_hits++;
+	} else {
+		chttp_addr_resolved(addr);
+
+		_TCP_POOL.stats.cache_misses++;
+	}
+
+	return addr->reused;
 }
 
 static struct chttp_tcp_pool_entry *
@@ -168,6 +212,8 @@ _tcp_pool_get_entry(void)
 
 		chttp_ZERO(entry);
 		entry->magic = CHTTP_TCP_POOL_ENTRY_MAGIC;
+
+		_TCP_POOL.stats.nuked++;
 
 		return entry;
 	}
@@ -206,7 +252,7 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	}
 
 	chttp_pool_entry_ok(entry);
-	chttp_addr_clone(&entry->addr, addr);
+	chttp_addr_move(&entry->addr, addr);
 	chttp_addr_connected(&entry->addr);
 
 	now = chttp_get_time();
@@ -220,10 +266,8 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 		chttp_addr_connected(&head->addr);
 
 		if (head->expiration < now) {
-			_tcp_pool_remove_entry(head);
+			head = _tcp_pool_remove_entry(head);
 			_TCP_POOL.stats.expired++;
-
-			head = RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry);
 		}
 
 		if (!head) {
@@ -274,9 +318,7 @@ chttp_tcp_pool_close(void)
 		while (entry) {
 			chttp_pool_entry_ok(entry);
 
-			next = entry->next;
-
-			_tcp_pool_remove_entry(entry);
+			next = _tcp_pool_remove_entry(entry);
 
 			chttp_ZERO(entry);
 			TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, entry, list_entry);
@@ -293,7 +335,9 @@ chttp_tcp_pool_close(void)
 		assert_zero(entry->magic);
 		size++;
 	}
-	assert(size == _TCP_POOL_SIZE);
+
+	chttp_ASSERT(size == _TCP_POOL_SIZE, "_TCP_POOL size fail, got %zu, expected %zu",
+		size, _TCP_POOL_SIZE);
 
 	_tcp_pool_UNLOCK();
 }

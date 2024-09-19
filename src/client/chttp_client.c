@@ -26,6 +26,8 @@ main(int argc, char **argv)
 	//_DEBUG_CHTTP_DPAGE_MIN_SIZE = 12;
 
 	// dynamic
+	printf("\n*** dynamic test\n\n");
+
 	context = chttp_context_alloc();
 
 	chttp_set_version(context, CHTTP_H_VERSION_1_1);
@@ -52,6 +54,7 @@ main(int argc, char **argv)
 	chttp_context_free(context);
 
 	// static
+	printf("\n*** static test\n\n");
 	chttp_context_init(&scontext);
 	chttp_set_url(&scontext, "/");
 	chttp_add_header(&scontext, "a", "1");
@@ -73,18 +76,21 @@ main(int argc, char **argv)
 	chttp_context_free(&scontext);
 
 	// custom
+	printf("\n*** custom test\n\n");
 	context = chttp_context_init_buf(ctx_buf, sizeof(ctx_buf));
 	chttp_set_url(context, "/123-custom");
 	chttp_context_debug(context);
 	chttp_context_free(context);
 
 	// custom2
+	printf("\n*** custom2 test\n\n");
 	context = chttp_context_init_buf(ctx_buf2, sizeof(ctx_buf2));
 	chttp_set_url(context, "/123-nodpage");
 	chttp_context_debug(context);
 	chttp_context_free(context);
 
 	// tls
+	printf("\n*** tls test\n\n");
 	tlsc = chttp_context_alloc();
 	chttp_set_method(tlsc, "GET");
 	chttp_set_url(tlsc, "/");

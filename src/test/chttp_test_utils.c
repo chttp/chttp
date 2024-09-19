@@ -206,6 +206,7 @@ chttp_test_random_seed(void)
 	assert_zero(clock_gettime(CLOCK_MONOTONIC, &now));
 	srandom(now.tv_sec + now.tv_nsec);
 }
+
 // Inclusive
 long
 chttp_test_random(long low, long high)

@@ -5,6 +5,7 @@
 
 #include "chttp.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -17,14 +18,14 @@ chttp_context_debug(struct chttp_context *ctx)
 	printf("chttp_ctx state=%d error=%d (%s) version=%d data_last=%p\n"
 		"\tdata_start=%p:%zu:%zu data_end=%p:%zu:%zu\n"
 		"\thostname=%p:%zu:%zu\n"
-		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u tls=%d\n"
-		"\ttime=%lf\n",
+		"\tstatus=%d length=%ld free=%u has_host=%u close=%u chunked=%u\n"
+		"\ttls=%d reused=%d time=%lf\n",
 		ctx->state, ctx->error, chttp_error_msg(ctx), ctx->version, (void*)ctx->dpage_last,
 		(void*)ctx->data_start.dpage, ctx->data_start.offset, ctx->data_start.length,
 		(void*)ctx->data_end.dpage, ctx->data_end.offset, ctx->data_end.length,
 		(void*)ctx->hostname.dpage, ctx->hostname.offset, ctx->hostname.length,
-		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked, ctx->addr.tls,
-		chttp_get_time() - ctx->addr.time_start);
+		ctx->status, ctx->length, ctx->free, ctx->has_host, ctx->close, ctx->chunked,
+		ctx->addr.tls, ctx->addr.reused, chttp_get_time() - ctx->addr.time_start);
 
 	chttp_dpage_debug(ctx->dpage);
 }
@@ -101,6 +102,28 @@ chttp_do_abort(const char *function, const char *file, int line, const char *rea
 	(void)line;
 
 	fprintf(stderr, "%s(): %s\n", function, reason);
+
+	abort();
+}
+
+void __chttp_attr_printf_p(5)
+chttp_do_assert(int cond, const char *function, const char *file, int line,
+    const char *fmt, ...)
+{
+	va_list ap;
+
+	if (cond) {
+		return;
+	}
+
+	fprintf(stderr, "%s:%d: %s: Assertion failed\n", file, line, function);
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	printf("\n");
+
 	abort();
 }
 
