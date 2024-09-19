@@ -92,10 +92,59 @@ chttp_tcp_pool_lookup(struct chttp_addr *addr)
 	return 0;
 }
 
+static void
+_tcp_pool_remove_entry(struct chttp_tcp_pool_entry *entry)
+{
+	struct chttp_tcp_pool_entry *head;
+	int found;
+
+	chttp_tcp_pool_ok();
+	chttp_pool_entry_ok(entry);
+
+	head = RB_FIND(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry);
+	chttp_pool_entry_ok(head);
+
+	if (head == entry) {
+		if (!entry->next) {
+			// Single head
+			assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
+			TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
+		} else {
+			// Move up the next entry
+			chttp_pool_entry_ok(entry->next);
+
+			TAILQ_INSERT_AFTER(&_TCP_POOL.lru_list, entry, entry->next, list_entry);
+			TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
+
+			assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
+			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree,
+				entry->next));
+		}
+	} else {
+		// Find the entry and cut it out
+		found = 0;
+		while (head->next) {
+			chttp_pool_entry_ok(head->next);
+
+			if (head->next == entry) {
+				head->next = head->next->next;
+				found++;
+			}
+		}
+		assert (found == 1);
+	}
+
+	chttp_addr_connected(&entry->addr);
+	chttp_addr_close(&entry->addr);
+	chttp_addr_reset(&entry->addr);
+
+	_TCP_POOL.stats.nuked++;
+}
+
 static struct chttp_tcp_pool_entry *
 _tcp_pool_get_entry(void)
 {
-	struct chttp_tcp_pool_entry *entry, *next;
+	struct chttp_tcp_pool_entry *entry;
 
 	chttp_tcp_pool_ok();
 
@@ -105,6 +154,9 @@ _tcp_pool_get_entry(void)
 
 		TAILQ_REMOVE(&_TCP_POOL.free_list, entry, list_entry);
 
+		assert_zero(entry->magic);
+		entry->magic = CHTTP_TCP_POOL_ENTRY_MAGIC;
+
 		return entry;
 	} else if (!TAILQ_EMPTY(&_TCP_POOL.lru_list)) {
 		// Pull from the LRU
@@ -112,25 +164,10 @@ _tcp_pool_get_entry(void)
 		entry = TAILQ_LAST(&_TCP_POOL.lru_list, chttp_tcp_pool_list);
 		chttp_pool_entry_ok(entry);
 
-		next = entry->next;
-		entry->next = NULL;
+		_tcp_pool_remove_entry(entry);
 
-		assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
-
-		if (next) {
-			chttp_pool_entry_ok(next);
-
-			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, next));
-			TAILQ_INSERT_AFTER(&_TCP_POOL.lru_list, entry, next, list_entry);
-		}
-
-		TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
-
-
-		chttp_addr_connected(&entry->addr);
-		chttp_addr_close(&entry->addr);
-
-		_TCP_POOL.stats.nuked++;
+		chttp_ZERO(entry);
+		entry->magic = CHTTP_TCP_POOL_ENTRY_MAGIC;
 
 		return entry;
 	}
@@ -142,6 +179,7 @@ void
 chttp_tcp_pool_store(struct chttp_addr *addr)
 {
 	struct chttp_tcp_pool_entry *entry, *head;
+	double now;
 
 	chttp_tcp_pool_ok();
 	chttp_addr_connected(addr);
@@ -162,38 +200,57 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 
 	if (!entry) {
 		chttp_addr_close(addr);
+		_TCP_POOL.stats.err_alloc++;
 		_tcp_pool_UNLOCK();
 		return;
 	}
 
-	chttp_ZERO(entry);
-	entry->magic = CHTTP_TCP_POOL_ENTRY_MAGIC;
-
-	chttp_addr_clone(&entry->addr, addr);
-
 	chttp_pool_entry_ok(entry);
+	chttp_addr_clone(&entry->addr, addr);
 	chttp_addr_connected(&entry->addr);
 
-	// TODO expiration
+	now = chttp_get_time();
+	entry->expiration = now + _TCP_POOL_AGE_SEC;
 
 	head = RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry);
 
+	// Prune expired connections
 	if (head) {
 		chttp_pool_entry_ok(head);
 		chttp_addr_connected(&head->addr);
 
-		// Add entry to the back
-		while (head->next) {
-			head = head->next;
+		if (head->expiration < now) {
+			_tcp_pool_remove_entry(head);
+			_TCP_POOL.stats.expired++;
 
-			chttp_pool_entry_ok(head);
-			chttp_addr_connected(&head->addr);
+			head = RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry);
 		}
 
-		head->next = entry;
+		if (!head) {
+			assert_zero(RB_INSERT(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
+			TAILQ_INSERT_HEAD(&_TCP_POOL.lru_list, entry, list_entry);
+		} else {
+			// Add entry to the back
+			while (head->next) {
+				chttp_pool_entry_ok(head->next);
+
+				if (head->next->expiration < now) {
+					_tcp_pool_remove_entry(head->next);
+					_TCP_POOL.stats.expired++;
+
+					continue;
+				}
+
+				head = head->next;
+			}
+
+			head->next = entry;
+		}
 	} else {
 		TAILQ_INSERT_HEAD(&_TCP_POOL.lru_list, entry, list_entry);
 	}
+
+	_TCP_POOL.stats.insertions++;
 
 	_tcp_pool_UNLOCK();
 
@@ -214,22 +271,14 @@ chttp_tcp_pool_close(void)
 	}
 
 	TAILQ_FOREACH_SAFE(entry, &_TCP_POOL.lru_list, list_entry, temp) {
-		chttp_pool_entry_ok(entry);
-
-		assert(RB_REMOVE(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, entry));
-		TAILQ_REMOVE(&_TCP_POOL.lru_list, entry, list_entry);
-
 		while (entry) {
 			chttp_pool_entry_ok(entry);
 
 			next = entry->next;
 
-			chttp_addr_connected(&entry->addr);
-			chttp_addr_close(&entry->addr);
-			chttp_addr_reset(&entry->addr);
+			_tcp_pool_remove_entry(entry);
 
 			chttp_ZERO(entry);
-
 			TAILQ_INSERT_TAIL(&_TCP_POOL.free_list, entry, list_entry);
 
 			entry = next;
@@ -241,6 +290,7 @@ chttp_tcp_pool_close(void)
 
 	size = 0;
 	TAILQ_FOREACH(entry, &_TCP_POOL.free_list, list_entry) {
+		assert_zero(entry->magic);
 		size++;
 	}
 	assert(size == _TCP_POOL_SIZE);

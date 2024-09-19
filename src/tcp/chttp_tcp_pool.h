@@ -32,8 +32,8 @@ struct chttp_tcp_pool_entry {
 struct chttp_pool_stats {
 	size_t						lookups;
 	size_t						cache_hits;
+	size_t						cache_misses;
 	size_t						insertions;
-	size_t						dups;
 	size_t						expired;
 	size_t						nuked;
 	size_t						lru;
