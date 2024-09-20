@@ -100,7 +100,7 @@ chttp_test_cmd_dns_lookup_or_skip(struct chttp_test_context *ctx, struct chttp_t
 
 	paddr = &addr;
 
-	ret = chttp_addr_lookup(&addr, cmd->params[0].value, cmd->params[0].len, 1, flags);
+	ret = chttp_dns_resolve(&addr, cmd->params[0].value, cmd->params[0].len, 1, flags);
 
 	if (ret) {
 		chttp_test_skip(ctx);

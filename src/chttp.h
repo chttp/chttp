@@ -212,17 +212,17 @@ size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_addr_init(struct chttp_addr *addr);
 void chttp_addr_reset(struct chttp_addr *addr);
-void chttp_addr_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port);
 void chttp_addr_move(struct chttp_addr *addr_dest, struct chttp_addr *addr);
 void chttp_addr_clone(struct chttp_addr *addr_dest, struct chttp_addr *addr);
 int chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2);
-int chttp_addr_lookup(struct chttp_addr *addr, const char *host, size_t host_len, int port,
-	unsigned int flags);
 void chttp_addr_connect(struct chttp_context *ctx);
 void chttp_addr_try_close(struct chttp_context *ctx);
 
 void chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, int port,
 	unsigned int flags);
+int chttp_dns_resolve(struct chttp_addr *addr, const char *host, size_t host_len, int port,
+	unsigned int flags);
+void chttp_dns_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port);
 int chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *addr_dest,
 	int port, unsigned int flags);
 void chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_src);

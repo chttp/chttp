@@ -158,7 +158,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 		return 0;
 	}
 
-	chttp_addr_copy(addr_dest, &addr->addr.sa, port);
+	chttp_dns_copy(addr_dest, &addr->addr.sa, port);
 	chttp_addr_resolved(addr_dest);
 
 	_DNS_CACHE.stats.cache_hits++;
@@ -285,7 +285,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 		chttp_ZERO(dns_entry);
 		dns_entry->magic = CHTTP_DNS_CACHE_ENTRY_MAGIC;
 
-		chttp_addr_copy(&dns_entry->addr, ai_entry->ai_addr, 0);
+		chttp_dns_copy(&dns_entry->addr, ai_entry->ai_addr, 0);
 		chttp_addr_resolved(&dns_entry->addr);
 
 		dns_entry->addr.state = CHTTP_ADDR_CACHED;
