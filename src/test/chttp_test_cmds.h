@@ -102,6 +102,7 @@ CHTTP_TEST_VAR(chttp_reused)
 
 CHTTP_TEST_CMD(server_init)
 CHTTP_TEST_CMD(server_accept)
+CHTTP_TEST_CMD(server_close)
 CHTTP_TEST_CMD(server_read_request)
 CHTTP_TEST_CMD(server_method_match)
 CHTTP_TEST_CMD(server_url_match)

@@ -1,8 +1,8 @@
 chttp_test "Multiple requests with a single context"
 
 server_init
-server_accept
 
+server_accept
 server_read_request
 server_method_match GET
 server_url_match /

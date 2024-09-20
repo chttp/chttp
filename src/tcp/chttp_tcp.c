@@ -177,7 +177,7 @@ chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	while (written < buf_len) {
-		ret = send(ctx->addr.sock, (char*)buf + written, buf_len - written,
+		ret = send(ctx->addr.sock, (uint8_t*)buf + written, buf_len - written,
 			MSG_NOSIGNAL);
 
 		if (ret <= 0) {

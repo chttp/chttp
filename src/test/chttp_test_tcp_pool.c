@@ -96,8 +96,9 @@ _tcp_pool_debug(void)
 
 			chttp_sa_string(&entry->addr.sa, host, sizeof(host), &port);
 
-			printf("\t_TCP_POOL.pool_tree: %zu %s:%d age=%lf *ptr=%p\n", count,
-				host, port, entry->expiration - chttp_get_time(), (void*)entry);
+			printf("\t_TCP_POOL.pool_tree: %zu %s:%d age=%lf *ptr=%p fd=%d\n",
+				count, host, port, entry->expiration - chttp_get_time(),
+				(void*)entry, entry->addr.sock);
 
 			entry = entry->next;
 			count++;

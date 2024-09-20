@@ -370,6 +370,26 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 		remote, remote_port);
 }
 
+void
+chttp_test_cmd_server_close(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	assert(server->http_sock >= 0);
+
+	assert_zero(close(server->http_sock));
+
+	server->http_sock = -1;
+}
+
 char *
 chttp_test_var_server_host(struct chttp_test_context *ctx)
 {
@@ -468,7 +488,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	do {
 		chttp_tcp_read(server->chttp);
 		chttp_test_ERROR(server->chttp->state >= CHTTP_STATE_CLOSED,
-			"network error");
+			"server read network error");
 
 		chttp_parse_headers(server->chttp, &_server_parse_request_url);
 		chttp_test_ERROR(server->chttp->error, "*SERVER* %s",
