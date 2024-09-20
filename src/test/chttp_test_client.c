@@ -44,6 +44,14 @@ _test_client_finish(struct chttp_test_context *ctx)
 	ctx->chttp = NULL;
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "context contained %zu allocations", allocs);
+
+	chttp_tcp_pool_close();
+
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "tcp pool cleanup");
+
+	chttp_tls_free();
+
+	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "TLS shutdown");
 }
 
 void
@@ -218,6 +226,17 @@ chttp_test_var_chttp_reused(struct chttp_test_context *ctx)
 	} else {
 		return "0";
 	}
+}
+
+void
+chttp_test_cmd_chttp_new_connection(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	ctx->chttp->new_conn = 1;
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "new connection set");
 }
 
 void

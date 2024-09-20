@@ -14,6 +14,7 @@
 struct chttp_test_server;
 struct chttp_test_random;
 struct chttp_test_dns;
+struct chttp_test_tcp_pool;
 
 struct chttp_test_context {
 	struct chttp_context		chttp_static;
@@ -22,6 +23,7 @@ struct chttp_test_context {
 	struct chttp_test_server	*server;
 	struct chttp_test_random	*random;
 	struct chttp_test_dns		*dns;
+	struct chttp_test_tcp_pool	*tcp_pool;
 
 	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
 	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
@@ -80,6 +82,7 @@ CHTTP_TEST_CMD(chttp_url)
 CHTTP_TEST_CMD(chttp_add_header)
 CHTTP_TEST_CMD(chttp_delete_header)
 CHTTP_TEST_CMD(chttp_connect)
+CHTTP_TEST_CMD(chttp_new_connection)
 CHTTP_TEST_CMD(chttp_send)
 CHTTP_TEST_CMD(chttp_send_only)
 CHTTP_TEST_CMD(chttp_receive)
@@ -145,6 +148,15 @@ CHTTP_TEST_VAR(dns_err_too_long)
 CHTTP_TEST_VAR(dns_err_alloc)
 
 CHTTP_TEST_CMD(tcp_pool_debug)
+CHTTP_TEST_VAR(tcp_pool_lookups)
+CHTTP_TEST_VAR(tcp_pool_cache_hits)
+CHTTP_TEST_VAR(tcp_pool_cache_misses)
+CHTTP_TEST_VAR(tcp_pool_insertions)
+CHTTP_TEST_VAR(tcp_pool_expired)
+CHTTP_TEST_VAR(tcp_pool_deleted)
+CHTTP_TEST_VAR(tcp_pool_nuked)
+CHTTP_TEST_VAR(tcp_pool_lru)
+CHTTP_TEST_VAR(tcp_pool_err_alloc)
 
 #undef CHTTP_TEST_CMD
 #undef CHTTP_TEST_VAR

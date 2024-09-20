@@ -149,9 +149,6 @@ main(int argc, char **argv)
 
 	chttp_test_run_all_finish(&test);
 
-	chttp_tcp_pool_close();
-	chttp_tls_free();
-
 	chttp_test_log(NULL, CHTTP_LOG_FORCE, "PASSED");
 
 	return 0;

@@ -83,7 +83,7 @@ chttp_addr_connect(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 	chttp_addr_resolved(&ctx->addr);
 
-	if (!ctx->fresh_conn) {
+	if (!ctx->new_conn) {
 		ret = chttp_tcp_pool_lookup(&ctx->addr);
 
 		if (ret) {
