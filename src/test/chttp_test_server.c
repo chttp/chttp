@@ -256,7 +256,7 @@ _server_init_socket(struct chttp_test_server *server)
 		&val, sizeof(val)));
 
 	assert_zero(bind(server->sock, &caddr.sa, caddr.len));
-	assert_zero(listen(server->sock, 1));
+	assert_zero(listen(server->sock, 0));
 
 	paddr = (struct sockaddr*)&saddr;
 	len = sizeof(saddr);

@@ -152,6 +152,14 @@ chttp_tcp_pool_lookup(struct chttp_addr *addr)
 	head = RB_FIND(chttp_tcp_pool_tree, &_TCP_POOL.pool_tree, &find);
 
 	if (head) {
+		// Move to the front of the LRU
+		if (TAILQ_FIRST(&_TCP_POOL.lru_list) != head) {
+			TAILQ_REMOVE(&_TCP_POOL.lru_list, head, list_entry);
+			TAILQ_INSERT_HEAD(&_TCP_POOL.lru_list, head, list_entry);
+
+			_TCP_POOL.stats.lru++;
+		}
+
 		// Find a good connection
 		while (head) {
 			chttp_pool_entry_ok(head);
@@ -211,6 +219,9 @@ _tcp_pool_get_entry(void)
 		chttp_pool_entry_ok(entry);
 
 		_tcp_pool_remove_entry(entry);
+
+		assert_zero(TAILQ_EMPTY(&_TCP_POOL.free_list));
+		TAILQ_REMOVE(&_TCP_POOL.free_list, entry, list_entry);
 
 		chttp_ZERO(entry);
 		entry->magic = CHTTP_TCP_POOL_ENTRY_MAGIC;

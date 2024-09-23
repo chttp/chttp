@@ -9,3 +9,13 @@ chttp_url /
 chttp_connect $server_host $server_port
 chttp_send
 chttp_take_error
+chttp_reset
+
+server_accept
+server_read_request
+server_close
+
+chttp_url /
+chttp_connect $server_host $server_port
+chttp_send
+chttp_take_error

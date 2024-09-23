@@ -7,6 +7,10 @@
 #include "tcp/chttp_tcp_pool.h"
 
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 extern long _TCP_POOL_AGE_SEC;
 extern size_t _TCP_POOL_SIZE;
@@ -50,6 +54,56 @@ _tcp_pool_init(struct chttp_test_context *ctx)
 	}
 
 	assert(ctx->tcp_pool->magic == _TCP_POOL_MAGIC);
+}
+
+void
+chttp_test_cmd_tcp_pool_age(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long ttl;
+
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	ttl = chttp_test_parse_long(cmd->params[0].value);
+
+	_TCP_POOL_AGE_SEC = ttl;
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool age %ld", _TCP_POOL_AGE_SEC);
+}
+
+void
+chttp_test_cmd_tcp_pool_size(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	long size;
+
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	size = chttp_test_parse_long(cmd->params[0].value);
+	assert(size > 0);
+
+	_TCP_POOL_SIZE = size;
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool size %zu", _TCP_POOL_SIZE);
+}
+
+void
+chttp_test_cmd_tcp_pool_fake_connect(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	int fd;
+
+	assert(ctx);
+	chttp_context_ok(ctx->chttp);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	fd = open("/dev/null", O_RDWR);
+	assert(fd >= 0);
+
+	ctx->chttp->addr.sock = fd;
+	ctx->chttp->addr.state = CHTTP_ADDR_CONNECTED;
+	ctx->chttp->state = CHTTP_STATE_IDLE;
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool faked connection");
 }
 
 static void

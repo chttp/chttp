@@ -191,7 +191,8 @@ void
 chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long port;
-	int tls = 0;
+	int tls = 0, outport;
+	char name[256];
 
 	_test_context_ok(ctx);
 	chttp_test_ERROR(cmd->param_count > 3, "too many parameters");
@@ -211,8 +212,10 @@ chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_c
 
 	chttp_connect(ctx->chttp, cmd->params[0].value, cmd->params[0].len, port, tls);
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "lookup made to %s:%ld",
-		cmd->params[0].value, port);
+	chttp_sa_string(&ctx->chttp->addr.sa, name, sizeof(name), &outport);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "lookup made to %s:%ld => %s:%d",
+		cmd->params[0].value, port, name, outport);
 }
 
 char *

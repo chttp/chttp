@@ -1,0 +1,72 @@
+chttp_test "TCP pool tests"
+
+tcp_pool_size 3
+tcp_pool_age 1
+
+chttp_init
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns04.nulltech.systems 4
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns04.nulltech.systems 4
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns04.nulltech.systems 4
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns04.nulltech.systems 4
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+chttp_url /
+chttp_connect dns03.nulltech.systems 3
+chttp_send_only
+chttp_take_error
+chttp_reset
+
+tcp_pool_debug
+
+sleep_ms 1200
+
+chttp_url /
+chttp_connect dns03.nulltech.systems 3
+chttp_send_only
+chttp_take_error
+chttp_reset
+
+tcp_pool_debug
