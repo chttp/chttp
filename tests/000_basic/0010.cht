@@ -5,7 +5,7 @@ tcp_pool_age 1
 
 chttp_init
 
-chttp_connect dns03.nulltech.systems 3
+chttp_connect dns04.nulltech.systems 4
 tcp_pool_fake_connect
 chttp_reset
 
@@ -13,23 +13,11 @@ chttp_connect dns04.nulltech.systems 4
 tcp_pool_fake_connect
 chttp_reset
 
-chttp_connect dns03.nulltech.systems 3
-tcp_pool_fake_connect
-chttp_reset
-
 chttp_connect dns04.nulltech.systems 4
 tcp_pool_fake_connect
 chttp_reset
 
-chttp_connect dns03.nulltech.systems 3
-tcp_pool_fake_connect
-chttp_reset
-
 chttp_connect dns04.nulltech.systems 4
-tcp_pool_fake_connect
-chttp_reset
-
-chttp_connect dns03.nulltech.systems 3
 tcp_pool_fake_connect
 chttp_reset
 
@@ -52,6 +40,13 @@ chttp_reset
 chttp_connect dns03.nulltech.systems 3
 tcp_pool_fake_connect
 chttp_reset
+
+chttp_connect dns03.nulltech.systems 3
+tcp_pool_fake_connect
+chttp_reset
+
+equal $tcp_pool_insertions 10
+equal $tcp_pool_nuked 7
 
 chttp_url /
 chttp_connect dns03.nulltech.systems 3
@@ -60,6 +55,9 @@ chttp_take_error
 chttp_reset
 
 tcp_pool_debug
+
+equal $tcp_pool_lookups 1
+equal $tcp_pool_cache_hits 1
 
 sleep_ms 1200
 
@@ -70,3 +68,7 @@ chttp_take_error
 chttp_reset
 
 tcp_pool_debug
+
+equal $tcp_pool_expired 1
+equal $tcp_pool_cache_misses 1
+equal $tcp_pool_lru 2
