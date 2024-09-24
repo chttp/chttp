@@ -19,7 +19,8 @@
 			"src"
 		],
 		"C_Cpp.default.compilerArgs": [
-			"-DCHTTP_OPENSSL"
+			"-DCHTTP_OPENSSL",
+			"-DCHTTP_ZLIB"
 		],
 		"files.exclude": {
 			"**/*.o": true

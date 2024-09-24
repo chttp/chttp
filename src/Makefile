@@ -1,16 +1,13 @@
 # CHTTP Makefile (src)
 
 CC=gcc
-CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I.
+CFLAGS=-O3 -Wall -Wextra -Wpedantic -Werror -g -fPIC -I. -fno-omit-frame-pointer
 LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
-RM=rm -f
-RMDIR=rm -rf
-
-INCLUDES=$(wildcard *.h data/*.h dns/*.h tls/*.h)
-SOURCE=$(wildcard *.c dns/*.c tcp/*.c tls/*.c)
+INCLUDES=$(wildcard *.h data/*.h dns/*.h tls/*.h compress/*.h)
+SOURCE=$(wildcard *.c dns/*.c tcp/*.c tls/*.c compress/*.c)
 OBJS=$(SOURCE:.c=.o)
 CLIENT=$(wildcard client/*.c)
 CLIENT_OBJS=$(CLIENT:.c=.o)
@@ -18,15 +15,29 @@ TEST=$(wildcard test/*.c)
 TEST_INCLUDES=$(wildcard test/*.h)
 TEST_OBJS=$(TEST:.c=.o)
 
+RM=rm -f
+RMDIR=rm -rf
+N=/dev/null
+
 # Detect openssl
 OPENSSL_C='\#include <openssl/ssl.h>\nint main() {}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
-OPENSSL_LIBFLAGS=-lssl
+OPENSSL_LIB=-lssl
 N=/dev/null
 OPENSSL=$(shell printf $(OPENSSL_C) | $(CC) -x c - $(OPENSSL_LIB) -o $(N) > $(N) 2>&1 && echo true)
 ifeq ($(OPENSSL),true)
 	CFLAGS+=$(OPENSSL_CFLAGS)
-	LIBFLAGS+=$(OPENSSL_LIBFLAGS)
+	LIBFLAGS+=$(OPENSSL_LIB)
+endif
+
+# Detect zlib
+ZLIB_C='\#include <zlib.h>\nint main() {zlibVersion();}'
+ZLIB_CFLAGS=-DCHTTP_ZLIB
+ZLIB_LIB=-lz
+ZLIB=$(shell printf $(ZLIB_C) | $(CC) -x c - $(ZLIB_LIB) -o $(N) > $(N) 2>&1 && echo true)
+ifeq ($(ZLIB),true)
+	CFLAGS+=$(ZLIB_CFLAGS)
+	LIBFLAGS+=$(ZLIB_LIB)
 endif
 
 # gcov

@@ -1,7 +1,7 @@
 chttp_test "TCP pool tests 2"
 
 tcp_pool_size 5
-tcp_pool_age_ms 250
+tcp_pool_age_ms 100
 
 chttp_init
 
@@ -47,7 +47,7 @@ chttp_reset
 
 tcp_pool_debug
 
-sleep_ms 350
+sleep_ms 200
 
 chttp_connect dns02.nulltech.systems 2
 tcp_pool_fake_connect
