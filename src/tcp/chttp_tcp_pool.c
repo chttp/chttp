@@ -6,7 +6,7 @@
 #include "chttp.h"
 #include "chttp_tcp_pool.h"
 
-long _TCP_POOL_AGE_SEC = CHTTP_TCP_POOL_AGE_SEC;
+double _TCP_POOL_AGE_SEC = CHTTP_TCP_POOL_AGE_SEC;
 size_t _TCP_POOL_SIZE = CHTTP_TCP_POOL_SIZE;
 
 struct chttp_tcp_pool _TCP_POOL = {

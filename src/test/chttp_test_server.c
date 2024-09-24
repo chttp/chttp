@@ -329,6 +329,8 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 
 	_server_init_socket(server);
 
+	// TODO tls support
+
 	ctx->server = server;
 
 	chttp_test_register_finish(ctx, "server", _server_finish);

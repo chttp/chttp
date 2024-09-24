@@ -12,7 +12,7 @@
 #include <fcntl.h>
 
 
-extern long _TCP_POOL_AGE_SEC;
+extern double _TCP_POOL_AGE_SEC;
 extern size_t _TCP_POOL_SIZE;
 
 struct chttp_test_tcp_pool {
@@ -57,7 +57,7 @@ _tcp_pool_init(struct chttp_test_context *ctx)
 }
 
 void
-chttp_test_cmd_tcp_pool_age(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+chttp_test_cmd_tcp_pool_age_ms(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	long ttl;
 
@@ -66,9 +66,9 @@ chttp_test_cmd_tcp_pool_age(struct chttp_test_context *ctx, struct chttp_test_cm
 
 	ttl = chttp_test_parse_long(cmd->params[0].value);
 
-	_TCP_POOL_AGE_SEC = ttl;
+	_TCP_POOL_AGE_SEC = ((double)ttl) / 1000;
 
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool age %ld", _TCP_POOL_AGE_SEC);
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "tcp pool age %lf", _TCP_POOL_AGE_SEC);
 }
 
 void
