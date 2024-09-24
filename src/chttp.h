@@ -149,6 +149,8 @@ struct chttp_context {
 	unsigned int			chunked:1;
 	unsigned int			seen_first:1;
 	unsigned int			new_conn:1;
+	unsigned int			skip_compress:1;
+	unsigned int			is_gzip:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };
@@ -293,7 +295,8 @@ double chttp_get_time(void);
 #define chttp_ABORT(reason)						\
 	chttp_do_abort(__func__, __FILE__, __LINE__, reason);
 #define chttp_ASSERT(cond, fmt, ...)					\
-	chttp_do_assert(cond, __func__, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+	chttp_do_assert(cond, __func__, __FILE__, __LINE__, fmt,	\
+		##__VA_ARGS__);
 #define chttp_ZERO(p)							\
 	explicit_bzero(p, sizeof(*(p)))
 

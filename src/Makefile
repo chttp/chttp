@@ -18,13 +18,14 @@ TEST_OBJS=$(TEST:.c=.o)
 RM=rm -f
 RMDIR=rm -rf
 N=/dev/null
+T=echo true
+TCC=$(CC) -x c - -o $(N)
 
 # Detect openssl
 OPENSSL_C='\#include <openssl/ssl.h>\nint main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
 OPENSSL_LIB=-lssl
-N=/dev/null
-OPENSSL=$(shell printf $(OPENSSL_C) | $(CC) -x c - $(OPENSSL_LIB) -o $(N) > $(N) 2>&1 && echo true)
+OPENSSL=$(shell printf $(OPENSSL_C) | $(TCC) $(OPENSSL_LIB) > $(N) 2>&1 && $(T))
 ifeq ($(OPENSSL),true)
 	CFLAGS+=$(OPENSSL_CFLAGS)
 	LIBFLAGS+=$(OPENSSL_LIB)
@@ -34,7 +35,7 @@ endif
 ZLIB_C='\#include <zlib.h>\nint main() {zlibVersion();}'
 ZLIB_CFLAGS=-DCHTTP_ZLIB
 ZLIB_LIB=-lz
-ZLIB=$(shell printf $(ZLIB_C) | $(CC) -x c - $(ZLIB_LIB) -o $(N) > $(N) 2>&1 && echo true)
+ZLIB=$(shell printf $(ZLIB_C) | $(TCC) $(ZLIB_LIB) > $(N) 2>&1 && $(T))
 ifeq ($(ZLIB),true)
 	CFLAGS+=$(ZLIB_CFLAGS)
 	LIBFLAGS+=$(ZLIB_LIB)

@@ -9,6 +9,7 @@
 		"editor.insertSpaces": false,
 		"editor.detectIndentation": false,
 		"editor.stickyScroll.enabled": false,
+		"files.insertFinalNewline": true,
 		"C_Cpp.default.cStandard": "gnu17",
 		"C_Cpp.default.intelliSenseMode": "gcc-x64",
 		"C_Cpp.codeAnalysis.clangTidy.enabled": true,
