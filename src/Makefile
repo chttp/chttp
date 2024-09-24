@@ -20,7 +20,7 @@ RMDIR=rm -rf
 N=/dev/null
 
 # Detect openssl
-OPENSSL_C='\#include <openssl/ssl.h>\nint main() {}'
+OPENSSL_C='\#include <openssl/ssl.h>\nint main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
 OPENSSL_LIB=-lssl
 N=/dev/null
