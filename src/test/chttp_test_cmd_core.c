@@ -115,12 +115,12 @@ chttp_test_cmd_tls_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd
 	assert(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
 
-#ifdef CHTTP_OPENSSL
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "TLS is supported");
-	return;
-#else
-	chttp_test_skip(ctx);
-	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "TLS not configured");
-	return;
-#endif
+	if (chttp_tls_enabled()) {
+		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "TLS is supported");
+		return;
+	} else {
+		chttp_test_skip(ctx);
+		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "TLS not configured");
+		return;
+	}
 }

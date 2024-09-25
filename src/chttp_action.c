@@ -33,6 +33,11 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 	assert(host_len);
 	assert(port > 0);
 
+	if (tls && !chttp_tls_enabled()) {
+		chttp_error(ctx, CHTTP_ERR_TLS_INIT);
+		return;
+	}
+
 	if (ctx->addr.state) {
 		chttp_addr_ok(&ctx->addr);
 		chttp_ABORT("invalid state, you can only connect once");

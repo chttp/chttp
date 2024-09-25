@@ -241,6 +241,7 @@ int chttp_tcp_pool_lookup(struct chttp_addr *addr);
 void chttp_tcp_pool_store(struct chttp_addr *addr);
 void chttp_tcp_pool_close(void);
 
+int chttp_tls_enabled(void);
 void chttp_tls_free(void);
 void chttp_tls_connect(struct chttp_context *ctx);
 void chttp_tls_close(struct chttp_addr *addr);

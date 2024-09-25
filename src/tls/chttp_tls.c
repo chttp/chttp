@@ -6,6 +6,16 @@
 #include "chttp.h"
 #include "tls_openssl.h"
 
+int
+chttp_tls_enabled(void)
+{
+#ifdef CHTTP_OPENSSL
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 void
 chttp_tls_free(void)
 {
