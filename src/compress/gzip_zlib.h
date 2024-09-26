@@ -13,8 +13,6 @@
 #include <stddef.h>
 #include <zlib.h>
 
-#include "chttp_gzip.h"
-
 enum chttp_zlib_type {
 	CHTTP_ZLIB_NONE = 0,
 	CHTTP_ZLIB_INFLATE,
@@ -36,9 +34,8 @@ struct chttp_zlib {
 void chttp_zlib_inflate_init(struct chttp_zlib *zlib);
 struct chttp_zlib *chttp_zlib_inflate_alloc(void);
 void chttp_zlib_free(struct chttp_zlib *zlib);
-enum chttp_gzip_status chttp_zlib_inflate(struct chttp_zlib *zlib,
-	const unsigned char *input, size_t input_len, unsigned char *output,
-	size_t output_len, size_t *written);
+int chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
+	size_t input_len, unsigned char *output, size_t output_len, size_t *written);
 
 #endif /* CHTTP_ZLIB */
 

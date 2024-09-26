@@ -70,13 +70,13 @@ chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
 	*written = 0;
 
 	if (zlib->state == Z_STREAM_END) {
-		return 0;
+		return CHTTP_GZIP_DONE;
 	} else if (zlib->state == Z_BUF_ERROR) {
 		if (output_len <= zlib->zs.avail_out) {
-			return 1;
+			return CHTTP_GZIP_ERROR;
 		}
 	} else if (zlib->state != Z_OK) {
-		return 1;
+		return CHTTP_GZIP_ERROR;
 	}
 
 	if (input) {
@@ -96,22 +96,22 @@ chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
 	assert(zlib->zs.avail_out <= output_len);
 	*written = output_len - zlib->zs.avail_out;
 
-	if (*written < output_len) {
-		assert(zlib->zs.avail_out);
+	if (*written == output_len) {
+		assert_zero(zlib->zs.avail_out);
 
-		if (zlib->state == Z_BUF_ERROR) {
-			return -1;
-		}
-
-		assert_zero(zlib->zs.avail_in);
-
-		return 0;
+		return CHTTP_GZIP_MORE_BUFFER;
 	}
 
-	assert(*written == output_len);
-	assert_zero(zlib->zs.avail_out);
+	assert(*written < output_len);
+	assert(zlib->zs.avail_out);
 
-	return -1;
+	if (zlib->state == Z_BUF_ERROR) {
+		return CHTTP_GZIP_MORE_BUFFER;
+	}
+
+	assert_zero(zlib->zs.avail_in);
+
+	return CHTTP_GZIP_DONE;
 }
 
 void
