@@ -482,7 +482,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	assert(server->chttp);
 	chttp_context_init_buf(server->chttp, sizeof(struct chttp_context));
 
-	server->chttp->free = 1;
+	server->chttp->do_free = 1;
 	server->chttp->state = CHTTP_STATE_RESP_HEADERS;
 
 	chttp_tcp_import(server->chttp, server->http_sock);

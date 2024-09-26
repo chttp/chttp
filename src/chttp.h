@@ -130,7 +130,7 @@ struct chttp_context {
 
 	struct chttp_addr		addr;
 
-	unsigned int			free:1;
+	unsigned int			do_free:1;
 
 	/* NOTE: see chttp_context_reset()
 	   Anything below here is reset between requests

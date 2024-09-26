@@ -28,7 +28,7 @@ _test_client_finish(struct chttp_test_context *ctx)
 	chttp_test_ERROR(ctx->chttp->error, "chttp context has an error (%s)",
 		chttp_error_msg(ctx->chttp));
 
-	if (ctx->chttp->free) {
+	if (ctx->chttp->do_free) {
 		allocs++;
 	}
 

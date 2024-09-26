@@ -32,7 +32,7 @@ _context_alloc_size(size_t dpage_size)
 
 	_context_init_size(ctx, dpage_size);
 
-	ctx->free = 1;
+	ctx->do_free = 1;
 
 	return (ctx);
 }
@@ -99,7 +99,7 @@ chttp_context_free(struct chttp_context *ctx)
 	chttp_context_reset(ctx);
 	chttp_dpage_free(ctx->dpage);
 
-	do_free = ctx->free;
+	do_free = ctx->do_free;
 
 	explicit_bzero(ctx, CHTTP_CTX_SIZE);
 

@@ -5,15 +5,21 @@
 
 #include "chttp.h"
 
+#include <assert.h>
 #include <stdio.h>
+
+// TODO
+#include "compress/chttp_zlib.h"
 
 int
 main(int argc, char **argv)
 {
 	struct chttp_context *context, scontext, *tlsc;
 	char ctx_buf[2000], ctx_buf2[CHTTP_CTX_SIZE + 1];
-	char body_buf[100];
-	size_t body_len;
+	char body_buf[100], gzip_buf[200];
+	size_t body_len, gzip_len;
+	struct chttp_zlib *zlib;
+	int gzip_ret;
 
 	(void)argc;
 	(void)argv;
@@ -106,6 +112,40 @@ main(int argc, char **argv)
 		chttp_print_hex(body_buf, body_len);
 	} while (body_len && tlsc->state == CHTTP_STATE_RESP_BODY);
 	chttp_context_free(tlsc);
+
+	// gzip
+	printf("\n*** gzip test\n\n");
+
+	context = chttp_context_alloc();
+
+	chttp_set_method(context, "GET");
+	chttp_set_url(context, "/");
+	chttp_add_header(context, "Accept-Encoding", "gzip");
+	chttp_connect(context, "ec2.rezsoft.org", strlen("ec2.rezsoft.org"), 80, 0);
+	chttp_send(context);
+	chttp_receive(context);
+	chttp_context_debug(context);
+	zlib = chttp_zlib_inflate_alloc();
+	do {
+		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
+		printf("***GZBODY*** (%zu, %d)\n", body_len, context->state);
+		gzip_ret = chttp_zlib_inflate(zlib, (unsigned char*)body_buf, body_len,
+			(unsigned char*)gzip_buf, sizeof(gzip_buf), &gzip_len);
+		printf("***GUNZBODY*** (%zu, %d, %d %s)\n", gzip_len, gzip_ret, zlib->state,
+			zlib->zs.msg);
+		assert(gzip_ret <= 0);
+		chttp_print_hex(gzip_buf, gzip_len);
+		while (gzip_ret < 0) {
+			gzip_ret = chttp_zlib_inflate(zlib, NULL, 0,
+				(unsigned char*)gzip_buf, sizeof(gzip_buf), &gzip_len);
+			printf("***GUNZBODY*** (%zu, %d, %d %s)\n", gzip_len, gzip_ret,
+				zlib->state, zlib->zs.msg);
+			assert(gzip_ret <= 0);
+			chttp_print_hex(gzip_buf, gzip_len);
+		}
+	} while (body_len && context->state == CHTTP_STATE_RESP_BODY);
+	chttp_zlib_free(zlib);
+	chttp_context_free(context);
 
 	chttp_tcp_pool_close();
 	chttp_tls_free();
