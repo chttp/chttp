@@ -4,30 +4,30 @@
  */
 
 #include "chttp.h"
-#include "chttp_zlib.h"
-
-#include <stdlib.h>
+#include "chttp_gzip.h"
+#include "gzip_zlib.h"
 
 #ifdef CHTTP_ZLIB
 
-#define ZLIB_CONST
+#include <stdlib.h>
 
-#include <zlib.h>
+#define chttp_zlib_ok(zlib)						\
+	do {								\
+		assert(zlib);						\
+		assert((zlib)->magic == CHTTP_ZLIB_MAGIC);		\
+	} while (0)
 
-struct chttp_zlib *
-chttp_zlib_inflate_alloc(void)
+void
+chttp_zlib_inflate_init(struct chttp_zlib *zlib)
 {
-	struct chttp_zlib *zlib;
 	int ret;
 
-	zlib = malloc(sizeof(*zlib));
 	assert(zlib);
 
 	chttp_ZERO(zlib);
 
 	zlib->magic = CHTTP_ZLIB_MAGIC;
 	zlib->type = CHTTP_ZLIB_INFLATE;
-	zlib->do_free = 1;
 
 	zlib->zs.zalloc = Z_NULL;
 	zlib->zs.zfree = Z_NULL;
@@ -38,17 +38,29 @@ chttp_zlib_inflate_alloc(void)
 	ret = inflateInit2(&zlib->zs, 15 + 16);
 	assert(ret == Z_OK);
 
+	chttp_zlib_ok(zlib);
+}
+
+struct chttp_zlib *
+chttp_zlib_inflate_alloc(void)
+{
+	struct chttp_zlib *zlib;
+
+	zlib = malloc(sizeof(*zlib));
+	assert(zlib);
+
+	chttp_zlib_inflate_init(zlib);
+
+	chttp_zlib_ok(zlib);
+
+	zlib->do_free = 1;
+
 	return zlib;
 }
 
-/*
- * greater than 0, error
- * less than 0, need more output buffer
- * equal to 0, done
- */
-int
-chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input, size_t input_len,
-    unsigned char *output, size_t output_len, size_t *written)
+enum chttp_gzip_status
+chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
+    size_t input_len, unsigned char *output, size_t output_len, size_t *written)
 {
 	chttp_zlib_ok(zlib);
 	assert(output);
@@ -94,12 +106,12 @@ chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input, size_t i
 		assert_zero(zlib->zs.avail_in);
 
 		return 0;
-	} else {
-		assert_zero(zlib->zs.avail_out);
-		return -1;
 	}
 
-	return 0;
+	assert(*written == output_len);
+	assert_zero(zlib->zs.avail_out);
+
+	return -1;
 }
 
 void

@@ -8,9 +8,12 @@
 
 #ifdef CHTTP_ZLIB
 
-// TODO
 #define ZLIB_CONST
+
+#include <stddef.h>
 #include <zlib.h>
+
+#include "chttp_gzip.h"
 
 enum chttp_zlib_type {
 	CHTTP_ZLIB_NONE = 0,
@@ -30,16 +33,12 @@ struct chttp_zlib {
 	z_stream			zs;
 };
 
+void chttp_zlib_inflate_init(struct chttp_zlib *zlib);
 struct chttp_zlib *chttp_zlib_inflate_alloc(void);
 void chttp_zlib_free(struct chttp_zlib *zlib);
-int chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input, size_t input_len,
-	unsigned char *output, size_t output_len, size_t *written);
-
-#define chttp_zlib_ok(zlib)						\
-	do {								\
-		assert(zlib);						\
-		assert((zlib)->magic == CHTTP_ZLIB_MAGIC);		\
-	} while (0)
+enum chttp_gzip_status chttp_zlib_inflate(struct chttp_zlib *zlib,
+	const unsigned char *input, size_t input_len, unsigned char *output,
+	size_t output_len, size_t *written);
 
 #endif /* CHTTP_ZLIB */
 
