@@ -128,14 +128,14 @@ main(int argc, char **argv)
 	do {
 		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
 		printf("***GZBODY*** (%zu, %d)\n", body_len, context->state);
-		gzip_ret = chttp_gzip_inflate(&gzip, (unsigned char*)body_buf, body_len,
-			(unsigned char*)gzip_buf, sizeof(gzip_buf), &gzip_len);
+		gzip_ret = chttp_gzip_inflate(&gzip, body_buf, body_len,
+			gzip_buf, sizeof(gzip_buf), &gzip_len);
 		printf("***GUNZBODY*** (%zu, %d)\n", gzip_len, gzip_ret);
 		assert(gzip_ret <= 0);
 		chttp_print_hex(gzip_buf, gzip_len);
 		while (gzip_ret < 0) {
 			gzip_ret = chttp_gzip_inflate(&gzip, NULL, 0,
-				(unsigned char*)gzip_buf, sizeof(gzip_buf), &gzip_len);
+				gzip_buf, sizeof(gzip_buf), &gzip_len);
 			printf("***GUNZBODY*** (%zu, %d)\n", gzip_len, gzip_ret);
 			assert(gzip_ret <= 0);
 			chttp_print_hex(gzip_buf, gzip_len);

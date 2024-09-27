@@ -22,10 +22,10 @@ struct chttp_gzip {
 #endif
 
 int chttp_gzip_enabled(void);
-void chttp_gzip_inflate_init(struct chttp_gzip *zlib);
-void chttp_gzip_free(struct chttp_gzip *zlib);
-enum chttp_gzip_status chttp_gzip_inflate(struct chttp_gzip *zlib,
-	const unsigned char *input, size_t input_len, unsigned char *output,
+void chttp_gzip_inflate_init(struct chttp_gzip *gzip);
+void chttp_gzip_free(struct chttp_gzip *gzip);
+enum chttp_gzip_status chttp_gzip_inflate(struct chttp_gzip *gzip,
+	const char *input, size_t input_len, char *output,
 	size_t output_len, size_t *written);
 
 #endif /* _CHTTP_GZIP_H_INCLUDED_ */

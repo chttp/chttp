@@ -29,11 +29,12 @@ chttp_gzip_inflate_init(struct chttp_gzip *gzip)
 }
 
 enum chttp_gzip_status
-chttp_gzip_inflate(struct chttp_gzip *gzip, const unsigned char *input, size_t input_len,
-    unsigned char *output, size_t output_len, size_t *written)
+chttp_gzip_inflate(struct chttp_gzip *gzip, const char *input, size_t input_len,
+    char *output, size_t output_len, size_t *written)
 {
 #ifdef CHTTP_ZLIB
-	return chttp_zlib_inflate(gzip, input, input_len, output, output_len, written);
+	return chttp_zlib_inflate(gzip, (const unsigned char*)input, input_len,
+		(unsigned char*)output, output_len, written);
 #else
 	(void)gzip;
 	(void)input;
