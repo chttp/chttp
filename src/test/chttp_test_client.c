@@ -545,10 +545,18 @@ chttp_test_cmd_chttp_body_match(struct chttp_test_context *ctx, struct chttp_tes
 void
 chttp_test_cmd_chttp_body_submatch(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
-	_test_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	long size = 0;
 
-	_test_body_match(ctx, cmd->params[0].value, 1, 0);
+	_test_context_ok(ctx);
+	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
+	chttp_test_ERROR(cmd->param_count < 1, "missing parameters");
+
+	if (cmd->param_count == 2) {
+		size = chttp_test_parse_long(cmd->params[1].value);
+		chttp_test_ERROR(size < 0, "invalid size");
+	}
+
+	_test_body_match(ctx, cmd->params[0].value, 1, size);
 }
 
 void
