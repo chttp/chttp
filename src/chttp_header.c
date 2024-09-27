@@ -119,6 +119,10 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 		ctx->close = 1;
 	}
 
+	if (!strcasecmp(name, "accept-encoding")) {
+		ctx->gzip = 0;
+	}
+
 	name_len = strlen(name);
 	value_len = strlen(value);
 

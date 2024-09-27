@@ -22,6 +22,10 @@ _finalize_request(struct chttp_context *ctx)
 		assert(ctx->has_host);
 	}
 
+	if (ctx->gzip) {
+		chttp_add_header(ctx, "Accept-Encoding", "gzip");
+	}
+
 	chttp_dpage_append(ctx, "\r\n", 2);
 }
 

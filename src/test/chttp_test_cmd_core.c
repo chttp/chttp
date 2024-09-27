@@ -4,6 +4,7 @@
  */
 
 #include "test/chttp_test.h"
+#include "compress/chttp_gzip.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -121,6 +122,22 @@ chttp_test_cmd_tls_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd
 	} else {
 		chttp_test_skip(ctx);
 		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "TLS not configured");
+		return;
+	}
+}
+
+void
+chttp_test_cmd_gzip_or_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	if (chttp_gzip_enabled()) {
+		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "gzip is supported");
+		return;
+	} else {
+		chttp_test_skip(ctx);
+		chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "gzip not configured");
 		return;
 	}
 }

@@ -185,9 +185,9 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	header = chttp_get_header(ctx, "content-encoding");
 
 	if (header && !strcmp(header, "gzip")) {
-		ctx->is_gzip = 1;
+		ctx->gzip = 1;
 	} else {
-		ctx->is_gzip = 0;
+		ctx->gzip = 0;
 	}
 
 	if (ctx->is_head) {

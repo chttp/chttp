@@ -243,6 +243,17 @@ chttp_test_cmd_chttp_new_connection(struct chttp_test_context *ctx, struct chttp
 }
 
 void
+chttp_test_cmd_chttp_enable_gzip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	ctx->chttp->gzip = 1;
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "gzip enabled");
+}
+
+void
 chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	_test_context_ok(ctx);
@@ -555,17 +566,17 @@ chttp_test_cmd_chttp_reset(struct chttp_test_context *ctx, struct chttp_test_cmd
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "context reset");
 }
 
-#define _CHTTP_FLAG_NAME(name)							\
+#define _CHTTP_FLAG_NAME(name, var)						\
 char *										\
 chttp_test_var_chttp_##name(struct chttp_test_context *ctx)			\
 {										\
 	_test_context_ok(ctx);							\
 										\
-	if (ctx->chttp->name) {							\
+	if (ctx->chttp->var) {							\
 		return "1";							\
 	} else {								\
 		return "0";							\
 	}									\
 }
 
-_CHTTP_FLAG_NAME(is_gzip)
+_CHTTP_FLAG_NAME(is_gzip, gzip)
