@@ -16,9 +16,8 @@ main(int argc, char **argv)
 	struct chttp_context *context, scontext, *tlsc;
 	char ctx_buf[2000], ctx_buf2[CHTTP_CTX_SIZE + 1];
 	char body_buf[100], gzip_buf[200];
-	size_t body_len, gzip_len;
+	size_t body_len;
 	struct chttp_gzip gzip;
-	int gzip_ret;
 
 	(void)argc;
 	(void)argv;
@@ -125,23 +124,12 @@ main(int argc, char **argv)
 	chttp_receive(context);
 	chttp_context_debug(context);
 	chttp_gzip_inflate_init(&gzip);
+	chttp_gzip_register(context, &gzip, gzip_buf, sizeof(gzip_buf));
 	do {
 		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
-		printf("***GZBODY*** (%zu, %d)\n", body_len, context->state);
-		gzip_ret = chttp_gzip_inflate(&gzip, body_buf, body_len,
-			gzip_buf, sizeof(gzip_buf), &gzip_len);
-		printf("***GUNZBODY*** (%zu, %d)\n", gzip_len, gzip_ret);
-		assert(gzip_ret <= 0);
-		chttp_print_hex(gzip_buf, gzip_len);
-		while (gzip_ret < 0) {
-			gzip_ret = chttp_gzip_inflate(&gzip, NULL, 0,
-				gzip_buf, sizeof(gzip_buf), &gzip_len);
-			printf("***GUNZBODY*** (%zu, %d)\n", gzip_len, gzip_ret);
-			assert(gzip_ret <= 0);
-			chttp_print_hex(gzip_buf, gzip_len);
-		}
-	} while (body_len && context->state == CHTTP_STATE_RESP_BODY);
-	chttp_gzip_free(&gzip);
+		printf("***BODY*** (%zu, %d)\n", body_len, tlsc->state);
+		chttp_print_hex(body_buf, body_len);
+	} while (body_len);
 	chttp_context_free(context);
 
 	chttp_tcp_pool_close();

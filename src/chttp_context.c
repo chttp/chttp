@@ -80,6 +80,7 @@ chttp_context_reset(struct chttp_context *ctx)
 	assert(ctx->state >= CHTTP_STATE_DONE);
 	assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
 	assert_zero(ctx->addr.tls_priv);
+	assert_zero(ctx->gzip_priv);
 
 	chttp_addr_reset(&ctx->addr);
 

@@ -412,12 +412,9 @@ chttp_test_cmd_chttp_version_match(struct chttp_test_context *ctx, struct chttp_
 static void
 _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, size_t size)
 {
-	char *body;
-	size_t body_len, old_size, calls;
-	size_t gzip_len, gzip_bytes, gzip_calls, gzip_loops, gbuf_len;
-	struct chttp_gzip gzip;
-	int gzip_ret, do_gzip;
-	char *gbuf;
+	char *body, gzip_buf[4096];
+	size_t read, body_len, old_size, calls;
+	struct chttp_gzip *gzip;
 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);
@@ -426,18 +423,14 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 	body = NULL;
 	body_len = 0;
 	calls = 0;
-	gbuf = NULL;
-	do_gzip = 0;
-	gzip_bytes = 0;
-	gzip_calls = 0;
 
 	if (size == 0) {
 		size = 1024;
 	}
 
 	if (ctx->chttp->gzip && chttp_gzip_enabled()) {
-		do_gzip = 1;
-		chttp_gzip_inflate_init(&gzip);
+		gzip = chttp_gzip_inflate_alloc();
+		chttp_gzip_register(ctx->chttp, gzip, gzip_buf, sizeof(gzip_buf));
 	}
 
 	do {
@@ -450,60 +443,20 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 		body = realloc(body, size + 1);
 		assert(body);
 
-		if (do_gzip) {
-			gbuf = realloc(gbuf, size + 1);
-			assert(gbuf);
+		read = chttp_get_body(ctx->chttp, body + body_len,
+			size - body_len);
 
-			gbuf_len = chttp_get_body(ctx->chttp, gbuf, size);
-			gzip_bytes += gbuf_len;
-
-			gzip_loops = 0;
-
-			do {
-				if (gzip_loops) {
-					old_size = size;
-					size *= 2;
-					assert(size / 2 == old_size);
-
-					body = realloc(body, size + 1);
-					assert(body);
-
-					gzip_ret = chttp_gzip_inflate(&gzip, NULL, 0,
-						body + body_len, size - body_len, &gzip_len);
-				} else {
-					gzip_ret = chttp_gzip_inflate(&gzip, gbuf, gbuf_len,
-						body + body_len, size - body_len, &gzip_len);
-				}
-
-				chttp_test_ERROR(gzip_ret >= CHTTP_GZIP_ERROR,
-					"chttp bad gzip body");
-
-				body_len += gzip_len;
-
-				gzip_loops++;
-				gzip_calls++;
-			} while (gzip_ret == CHTTP_GZIP_MORE_BUFFER);
-			assert(gzip_ret == CHTTP_GZIP_DONE);
-		} else {
-			body_len += chttp_get_body(ctx->chttp, body + body_len,
-				size - body_len);
+		// TODO test
+		if (ctx->chttp->state == CHTTP_STATE_RESP_BODY) {
+			assert(read > 0);
 		}
 
+		body_len += read;
 		calls++;
-	} while (ctx->chttp->state == CHTTP_STATE_RESP_BODY);
+	} while (read);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
-
-	if (do_gzip) {
-		free(gbuf);
-		gbuf = NULL;
-
-		chttp_gzip_free(&gzip);
-
-		chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "inflated %zu body bytes in %zu call(s)",
-			gzip_bytes, gzip_calls);
-	}
 
 	if (!expected) {
 		free(body);

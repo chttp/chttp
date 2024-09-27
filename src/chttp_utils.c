@@ -156,6 +156,8 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "TLS initialization error";
 		case CHTTP_ERR_TLS_HANDSHAKE:
 			return "TLS handshake error";
+		case CHTTP_ERR_GZIP:
+			return "gzip error";
 	}
 
 	return "unknown";

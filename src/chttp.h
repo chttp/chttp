@@ -56,7 +56,8 @@ enum chttp_error {
 	CHTTP_ERR_RESP_CHUNK,
 	CHTTP_ERR_RESP_BODY,
 	CHTTP_ERR_TLS_INIT,
-	CHTTP_ERR_TLS_HANDSHAKE
+	CHTTP_ERR_TLS_HANDSHAKE,
+	CHTTP_ERR_GZIP
 };
 
 enum chttp_addr_state {
@@ -129,6 +130,8 @@ struct chttp_context {
 	struct chttp_dpage_ptr		hostname;
 
 	struct chttp_addr		addr;
+
+	void				*gzip_priv;
 
 	unsigned int			do_free:1;
 
@@ -207,6 +210,7 @@ void chttp_finish(struct chttp_context *ctx);
 
 void chttp_body_length(struct chttp_context *ctx, int do_error);
 size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
+size_t chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 #define DNS_FRESH_LOOKUP			(1 << 0)
 #define DNS_DISABLE_RR				(1 << 1)

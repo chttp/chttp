@@ -4,6 +4,7 @@
  */
 
 #include "chttp.h"
+#include "compress/chttp_gzip.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -239,21 +240,15 @@ chttp_body_length(struct chttp_context *ctx, int response)
 }
 
 size_t
-chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	size_t start, ret_dpage, ret, len;
 
 	chttp_context_ok(ctx);
 	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
-	assert(ctx->state <= CHTTP_STATE_DONE);
 	assert(buf);
 
-	if (!buf_len) {
-		return 0;
-	}
-
-	if (ctx->state >= CHTTP_STATE_IDLE) {
-		assert(ctx->state != CHTTP_STATE_IDLE && !ctx->close);
+	if (ctx->state >= CHTTP_STATE_IDLE || !buf_len) {
 		return 0;
 	}
 
@@ -309,7 +304,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 			buf_len -= ret_dpage;
 
 			if (ctx->data_start.dpage) {
-				return ret_dpage + chttp_get_body(ctx, buf, buf_len);
+				return ret_dpage + chttp_read_body_raw(ctx, buf, buf_len);
 			}
 		} else {
 			// Not enough room
@@ -373,8 +368,24 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	if (ctx->length) {
-		return ret + ret_dpage + chttp_get_body(ctx, buf, buf_len);
+		return ret + ret_dpage + chttp_read_body_raw(ctx, buf, buf_len);
 	}
 
 	return ret + ret_dpage;
+}
+
+size_t
+chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
+{
+	chttp_context_ok(ctx);
+	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
+	assert(buf);
+	assert(buf_len > 0);
+
+	if (ctx->gzip_priv) {
+		assert(ctx->gzip);
+		return chttp_gzip_read(ctx, buf, buf_len);
+	}
+
+	return chttp_read_body_raw(ctx, buf, buf_len);
 }

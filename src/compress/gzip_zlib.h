@@ -25,8 +25,12 @@ struct chttp_zlib {
 
 	enum chttp_zlib_type		type;
 	int				state;
+	int				status;
 
 	unsigned int			do_free:1;
+
+	unsigned char			*buffer;
+	size_t				buffer_len;
 
 	z_stream			zs;
 };
@@ -36,6 +40,7 @@ struct chttp_zlib *chttp_zlib_inflate_alloc(void);
 void chttp_zlib_free(struct chttp_zlib *zlib);
 int chttp_zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
 	size_t input_len, unsigned char *output, size_t output_len, size_t *written);
+void chttp_zlib_register(struct chttp_zlib *zlib, unsigned char *buffer, size_t buffer_len);
 
 #endif /* CHTTP_ZLIB */
 

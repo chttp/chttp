@@ -4,6 +4,7 @@
  */
 
 #include "chttp.h"
+#include "compress/chttp_gzip.h"
 
 static void
 _finalize_request(struct chttp_context *ctx)
@@ -187,6 +188,11 @@ chttp_finish(struct chttp_context *ctx)
 		} else {
 			chttp_tcp_pool_store(&ctx->addr);
 		}
+	}
+
+	if (ctx->gzip_priv) {
+		chttp_gzip_free(ctx->gzip_priv);
+		ctx->gzip_priv = NULL;
 	}
 
 	chttp_dpage_reset_all(ctx);

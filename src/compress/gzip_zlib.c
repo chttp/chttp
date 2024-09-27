@@ -138,4 +138,15 @@ chttp_zlib_free(struct chttp_zlib *zlib)
 	}
 }
 
+void
+chttp_zlib_register(struct chttp_zlib *zlib, unsigned char *buffer, size_t buffer_len)
+{
+	chttp_zlib_ok(zlib);
+	assert(buffer);
+	assert(buffer_len > 0);
+
+	zlib->buffer = buffer;
+	zlib->buffer_len = buffer_len;
+}
+
 #endif /* CHTTP_ZLIB */
