@@ -4,7 +4,6 @@
  */
 
 #include "chttp.h"
-#include "chttp_gzip.h"
 #include "gzip_zlib.h"
 
 #ifdef CHTTP_ZLIB
@@ -118,7 +117,7 @@ _zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
 size_t
 chttp_zlib_read(struct chttp_context *ctx, unsigned char *output, size_t output_len)
 {
-	struct chttp_gzip *gzip;
+	struct chttp_zlib *zlib;
 	size_t read, written;
 
 	chttp_context_ok(ctx);
@@ -129,50 +128,50 @@ chttp_zlib_read(struct chttp_context *ctx, unsigned char *output, size_t output_
 		return 0;
 	}
 
-	gzip = ctx->gzip_priv;
-	assert(gzip->status <= CHTTP_ZLIB_DONE);
+	zlib = ctx->gzip_priv;
+	assert(zlib->status <= CHTTP_ZLIB_DONE);
 
-	if (gzip->status == CHTTP_ZLIB_MORE_BUFFER) {
-		gzip->status = _zlib_inflate(gzip, NULL, 0, output, output_len, &written);
+	if (zlib->status == CHTTP_ZLIB_MORE_BUFFER) {
+		zlib->status = _zlib_inflate(zlib, NULL, 0, output, output_len, &written);
 
-		if (gzip->status >= CHTTP_ZLIB_ERROR) {
+		if (zlib->status >= CHTTP_ZLIB_ERROR) {
 			chttp_error(ctx, CHTTP_ERR_GZIP);
 			return 0;
 		}
 
-		if (gzip->status == CHTTP_ZLIB_MORE_BUFFER) {
+		if (zlib->status == CHTTP_ZLIB_MORE_BUFFER) {
 			assert(written == output_len);
 			return written;
 		}
 
 		assert(written < output_len);
 
-		return written + chttp_gzip_read(ctx, output + written, output_len - written);
+		return written + chttp_zlib_read(ctx, output + written, output_len - written);
 	}
 
-	assert(gzip->status == CHTTP_ZLIB_DONE);
+	assert(zlib->status == CHTTP_ZLIB_DONE);
 
-	read = chttp_read_body_raw(ctx, gzip->buffer, gzip->buffer_len);
+	read = chttp_read_body_raw(ctx, zlib->buffer, zlib->buffer_len);
 
 	if (!read) {
 		return 0;
 	}
 
-	gzip->status = _zlib_inflate(gzip, gzip->buffer, read, output, output_len, &written);
+	zlib->status = _zlib_inflate(zlib, zlib->buffer, read, output, output_len, &written);
 
-	if (gzip->status >= CHTTP_ZLIB_ERROR) {
+	if (zlib->status >= CHTTP_ZLIB_ERROR) {
 		chttp_error(ctx, CHTTP_ERR_GZIP);
 		return 0;
 	}
 
-	if (gzip->status == CHTTP_ZLIB_MORE_BUFFER) {
+	if (zlib->status == CHTTP_ZLIB_MORE_BUFFER) {
 		assert(written == output_len);
 		return written;
 	}
 
 	assert(written < output_len);
 
-	return written + chttp_gzip_read(ctx, output + written, output_len - written);
+	return written + chttp_zlib_read(ctx, output + written, output_len - written);
 }
 
 void
