@@ -6,12 +6,6 @@
 #ifndef _CHTTP_GZIP_H_INCLUDED_
 #define _CHTTP_GZIP_H_INCLUDED_
 
-enum chttp_gzip_status {
-	CHTTP_GZIP_MORE_BUFFER = -1,
-	CHTTP_GZIP_DONE = 0,
-	CHTTP_GZIP_ERROR = 1
-};
-
 #ifdef CHTTP_ZLIB
 #include "gzip_zlib.h"
 #define chttp_gzip chttp_zlib

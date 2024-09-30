@@ -455,6 +455,8 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 		calls++;
 	} while (read);
 
+	assert(ctx->chttp->state > CHTTP_STATE_RESP_BODY);
+
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
 

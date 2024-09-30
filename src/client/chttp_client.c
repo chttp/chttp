@@ -54,7 +54,7 @@ main(int argc, char **argv)
 		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
 		printf("***BODY*** (%zu, %d)\n", body_len, context->state);
 		chttp_print_hex(body_buf, body_len);
-	} while (body_len && context->state == CHTTP_STATE_RESP_BODY);
+	} while (body_len);
 	chttp_context_free(context);
 
 	// static
@@ -76,7 +76,7 @@ main(int argc, char **argv)
 		body_len = chttp_get_body(&scontext, body_buf, sizeof(body_buf));
 		printf("***BODY*** (%zu, %d)\n", body_len, scontext.state);
 		chttp_print_hex(body_buf, body_len);
-	} while (body_len && scontext.state == CHTTP_STATE_RESP_BODY);
+	} while (body_len);
 	chttp_context_free(&scontext);
 
 	// custom
@@ -108,7 +108,7 @@ main(int argc, char **argv)
 		body_len = chttp_get_body(tlsc, body_buf, sizeof(body_buf));
 		printf("***BODY*** (%zu, %d)\n", body_len, tlsc->state);
 		chttp_print_hex(body_buf, body_len);
-	} while (body_len && tlsc->state == CHTTP_STATE_RESP_BODY);
+	} while (body_len);
 	chttp_context_free(tlsc);
 
 	// gzip

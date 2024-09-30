@@ -81,62 +81,7 @@ size_t
 chttp_gzip_read(struct chttp_context *ctx, void *output, size_t output_len)
 {
 #ifdef CHTTP_ZLIB
-	struct chttp_gzip *gzip;
-	size_t read, written;
-
-	chttp_context_ok(ctx);
-	assert(ctx->gzip_priv);
-	assert(output);
-
-	if (!output_len) {
-		return 0;
-	}
-
-	gzip = ctx->gzip_priv;
-	assert(gzip->status <= CHTTP_GZIP_DONE);
-
-	if (gzip->status == CHTTP_GZIP_MORE_BUFFER) {
-		gzip->status = chttp_zlib_inflate(gzip, NULL, 0, output, output_len, &written);
-
-		if (gzip->status >= CHTTP_GZIP_ERROR) {
-			chttp_error(ctx, CHTTP_ERR_GZIP);
-			return 0;
-		}
-
-		if (gzip->status == CHTTP_GZIP_MORE_BUFFER) {
-			assert(written == output_len);
-			return written;
-		}
-
-		assert(written < output_len);
-
-		return written + chttp_gzip_read(ctx, (uint8_t*)output + written,
-			output_len - written);
-	}
-
-	assert(gzip->status == CHTTP_GZIP_DONE);
-
-	read = chttp_read_body_raw(ctx, gzip->buffer, gzip->buffer_len);
-
-	if (!read) {
-		return 0;
-	}
-
-	gzip->status = chttp_zlib_inflate(gzip, gzip->buffer, read, output, output_len, &written);
-
-	if (gzip->status >= CHTTP_GZIP_ERROR) {
-		chttp_error(ctx, CHTTP_ERR_GZIP);
-		return 0;
-	}
-
-	if (gzip->status == CHTTP_GZIP_MORE_BUFFER) {
-		assert(written == output_len);
-		return written;
-	}
-
-	assert(written < output_len);
-
-	return written + chttp_gzip_read(ctx, (uint8_t*)output + written, output_len - written);
+	return chttp_zlib_read(ctx, output, output_len);
 #else
 	(void)ctx;
 	(void)output;
