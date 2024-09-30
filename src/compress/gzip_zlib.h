@@ -19,13 +19,19 @@ enum chttp_zlib_type {
 	CHTTP_ZLIB_DEFLATE
 };
 
+enum chttp_zlib_status {
+	CHTTP_ZLIB_MORE_BUFFER = -1,
+	CHTTP_ZLIB_DONE = 0,
+	CHTTP_ZLIB_ERROR = 1
+};
+
 struct chttp_zlib {
 	unsigned int			magic;
 #define CHTTP_ZLIB_MAGIC		0xAE59CB8C
 
 	enum chttp_zlib_type		type;
+	enum chttp_zlib_status		status;
 	int				state;
-	int				status;
 
 	unsigned int			do_free:1;
 
