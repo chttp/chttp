@@ -6,6 +6,8 @@
 #ifndef _CHTTP_H_INCLUDED_
 #define _CHTTP_H_INCLUDED_
 
+#include "memory/chttp_dpage.h"
+
 #include <assert.h>
 #include <netdb.h>
 #include <stddef.h>
@@ -66,29 +68,6 @@ enum chttp_addr_state {
 	CHTTP_ADDR_CACHED,
 	CHTTP_ADDR_STALE,
 	CHTTP_ADDR_CONNECTED
-};
-
-struct chttp_dpage {
-	unsigned int			magic;
-#define CHTTP_DPAGE_MAGIC		0xE8F61099
-
-	struct chttp_dpage		*next;
-
-	size_t				length;
-	size_t				offset;
-
-	unsigned int			free:1;
-
-	uint8_t				data[];
-};
-
-#define CHTTP_DPAGE_MIN_SIZE		2048
-#define CHTTP_DPAGE_SIZE		(sizeof(struct chttp_dpage) + CHTTP_DPAGE_MIN_SIZE)
-
-struct chttp_dpage_ptr {
-	struct chttp_dpage		*dpage;
-	size_t				offset;
-	size_t				length;
 };
 
 struct chttp_addr {
@@ -169,24 +148,6 @@ struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_reset(struct chttp_context *ctx);
 void chttp_context_free(struct chttp_context *ctx);
 
-size_t chttp_dpage_size(int min);
-struct chttp_dpage *chttp_dpage_alloc(size_t dpage_size);
-void chttp_dpage_init(struct chttp_dpage *dpage, size_t dpage_size);
-void chttp_dpage_reset_all(struct chttp_context *ctx);
-void chttp_dpage_reset_end(struct chttp_context *ctx);
-struct chttp_dpage *chttp_dpage_get(struct chttp_context *ctx, size_t bytes);
-void chttp_dpage_append(struct chttp_context *ctx, const void *buffer, size_t buffer_len);
-void chttp_dpage_append_mark(struct chttp_context *ctx, const void *buffer, size_t buffer_len,
-	struct chttp_dpage_ptr *dptr);
-void chttp_dpage_shift_full(struct chttp_context *ctx);
-void chttp_dpage_ptr_set(struct chttp_dpage_ptr *dptr, struct chttp_dpage *dpage,
-    size_t offset, size_t len);
-void chttp_dpage_ptr_reset(struct chttp_dpage_ptr *dptr);
-size_t chttp_dpage_ptr_offset(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
-uint8_t *chttp_dpage_ptr_convert(struct chttp_context *ctx, struct chttp_dpage_ptr *dptr);
-void chttp_dpage_free(struct chttp_dpage *dpage);
-extern size_t _DEBUG_CHTTP_DPAGE_MIN_SIZE;
-
 typedef void (chttp_parse_f)(struct chttp_context*, size_t, size_t);
 void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);
@@ -261,11 +222,6 @@ double chttp_get_time(void);
 	do {								\
 		assert(ctx);						\
 		assert((ctx)->magic == CHTTP_CTX_MAGIC);		\
-	} while (0)
-#define chttp_dpage_ok(dpage)						\
-	do {								\
-		assert(dpage);						\
-		assert((dpage)->magic == CHTTP_DPAGE_MAGIC);		\
 	} while (0)
 #define chttp_addr_ok(addr)						\
 	do {								\

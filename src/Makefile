@@ -6,8 +6,8 @@ LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
-INCLUDES=$(wildcard *.h data/*.h dns/*.h tls/*.h compress/*.h)
-SOURCE=$(wildcard *.c dns/*.c tcp/*.c tls/*.c compress/*.c)
+INCLUDES=$(wildcard *.h data/*.h memory/*.h dns/*.h tls/*.h compress/*.h)
+SOURCE=$(wildcard *.c memory/*.c dns/*.c tcp/*.c tls/*.c compress/*.c)
 OBJS=$(SOURCE:.c=.o)
 CLIENT=$(wildcard client/*.c)
 CLIENT_OBJS=$(CLIENT:.c=.o)
