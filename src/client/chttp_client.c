@@ -4,11 +4,11 @@
  */
 
 #include "chttp.h"
+#include "compress/chttp_gzip.h"
+#include "tls/chttp_tls.h"
 
 #include <assert.h>
 #include <stdio.h>
-
-#include "compress/chttp_gzip.h"
 
 int
 main(int argc, char **argv)

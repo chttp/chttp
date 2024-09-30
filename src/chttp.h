@@ -244,13 +244,6 @@ int chttp_tcp_pool_lookup(struct chttp_addr *addr);
 void chttp_tcp_pool_store(struct chttp_addr *addr);
 void chttp_tcp_pool_close(void);
 
-int chttp_tls_enabled(void);
-void chttp_tls_free(void);
-void chttp_tls_connect(struct chttp_context *ctx);
-void chttp_tls_close(struct chttp_addr *addr);
-void chttp_tls_write(struct chttp_context *ctx, void *buf, size_t buf_len);
-size_t chttp_tls_read(struct chttp_context *ctx, void *buf, size_t buf_len, int *error);
-
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *dpage);
 void chttp_print_hex(void *buf, size_t buf_len);

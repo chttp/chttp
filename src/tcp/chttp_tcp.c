@@ -4,6 +4,7 @@
  */
 
 #include "chttp.h"
+#include "tls/chttp_tls.h"
 
 #include <errno.h>
 #include <poll.h>

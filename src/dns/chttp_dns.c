@@ -103,6 +103,7 @@ chttp_dns_lookup(struct chttp_context *ctx, const char *host, size_t host_len, i
 	ret = chttp_dns_resolve(&ctx->addr, host, host_len, port, flags);
 
 	if (ret) {
-		ctx->error = CHTTP_ERR_DNS;
+		chttp_error(ctx, CHTTP_ERR_DNS);
+		return;
 	}
 }

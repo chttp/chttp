@@ -5,6 +5,7 @@
 
 #include "test/chttp_test.h"
 #include "compress/chttp_gzip.h"
+#include "tls/chttp_tls.h"
 
 #include <errno.h>
 #include <limits.h>

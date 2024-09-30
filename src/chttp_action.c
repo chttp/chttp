@@ -5,6 +5,7 @@
 
 #include "chttp.h"
 #include "compress/chttp_gzip.h"
+#include "tls/chttp_tls.h"
 
 static void
 _finalize_request(struct chttp_context *ctx)
@@ -82,7 +83,6 @@ chttp_send(struct chttp_context *ctx)
 	size_t offset;
 
 	chttp_context_ok(ctx);
-	assert(ctx->data_start.dpage);
 
 	if (ctx->state != CHTTP_STATE_INIT_HEADER) {
 		chttp_ABORT("invalid state, request must be setup before sending");
@@ -102,6 +102,7 @@ chttp_send(struct chttp_context *ctx)
 	}
 
 	chttp_caddr_connected(ctx);
+	assert(ctx->data_start.dpage);
 
 	offset = ctx->data_start.offset;
 

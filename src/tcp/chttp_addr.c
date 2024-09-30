@@ -4,6 +4,7 @@
  */
 
 #include "chttp.h"
+#include "tls/chttp_tls.h"
 
 void
 chttp_addr_init(struct chttp_addr *addr)
@@ -101,6 +102,10 @@ chttp_addr_connect(struct chttp_context *ctx)
 
 	if (ctx->addr.tls) {
 		chttp_tls_connect(ctx);
+
+		if (ctx->error) {
+			return;
+		}
 	}
 
 	chttp_addr_connected(&ctx->addr);

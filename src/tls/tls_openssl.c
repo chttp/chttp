@@ -105,7 +105,7 @@ chttp_openssl_connect(struct chttp_context *ctx)
 	_openssl_init_lock();
 
 	if (_OPENSSL_CTX.failed) {
-		ctx->error = CHTTP_ERR_TLS_INIT;
+		chttp_error(ctx, CHTTP_ERR_TLS_INIT);
 		return;
 	}
 	assert(_OPENSSL_CTX.ctx);
@@ -113,7 +113,7 @@ chttp_openssl_connect(struct chttp_context *ctx)
 	ctx->addr.tls_priv = SSL_new(_OPENSSL_CTX.ctx);
 
 	if (!ctx->addr.tls_priv) {
-		ctx->error = CHTTP_ERR_TLS_INIT;
+		chttp_error(ctx, CHTTP_ERR_TLS_INIT);
 		return;
 	}
 
@@ -124,7 +124,7 @@ chttp_openssl_connect(struct chttp_context *ctx)
 	ret = SSL_set_fd(ssl, ctx->addr.sock);
 
 	if (ret != 1) {
-		ctx->error = CHTTP_ERR_TLS_INIT;
+		chttp_error(ctx, CHTTP_ERR_TLS_INIT);
 		return;
 	}
 
@@ -133,7 +133,7 @@ chttp_openssl_connect(struct chttp_context *ctx)
 	ret = SSL_do_handshake(ssl);
 
 	if (ret != 1) {
-		ctx->error = CHTTP_ERR_TLS_HANDSHAKE;
+		chttp_error(ctx, CHTTP_ERR_TLS_HANDSHAKE);
 		return;
 	}
 
