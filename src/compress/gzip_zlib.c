@@ -104,14 +104,24 @@ _zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
 	assert(*written < output_len);
 	assert(zlib->zs.avail_out);
 
-	if (zlib->state == Z_BUF_ERROR && zlib->zs.avail_in) {
-		// TODO this will assert chttp_zlib_read()
-		return CHTTP_ZLIB_MORE_BUFFER;
+	switch(zlib->state)
+	{
+		case Z_BUF_ERROR:
+			if (zlib->zs.avail_in) {
+				return CHTTP_ZLIB_MORE_BUFFER;
+			}
+
+			return CHTTP_ZLIB_DONE;
+		case Z_OK:
+		case Z_STREAM_END:
+			assert_zero(zlib->zs.avail_in);
+
+			return CHTTP_ZLIB_DONE;
+		default:
+			break;
 	}
 
-	assert_zero(zlib->zs.avail_in);
-
-	return CHTTP_ZLIB_DONE;
+	return CHTTP_ZLIB_ERROR;
 }
 
 size_t

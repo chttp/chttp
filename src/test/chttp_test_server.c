@@ -42,7 +42,7 @@ struct chttp_test_server {
 
 	int					sock;
 	int					port;
-	int					http_sock;
+	struct chttp_addr			addr;
 	char					ip_str[128];
 	char					port_str[16];
 
@@ -223,9 +223,12 @@ _server_finish(struct chttp_test_context *ctx)
 	if (server->sock >= 0) {
 		assert_zero(close(server->sock));
 	}
-	if (server->http_sock >= 0) {
-		assert_zero(close(server->http_sock));
+
+	if (server->addr.state == CHTTP_ADDR_CONNECTED) {
+		chttp_tcp_close(&server->addr);
 	}
+	assert(server->addr.state == CHTTP_ADDR_NONE);
+	assert(server->addr.sock == -1);
 
 	chttp_ZERO(server);
 	free(server);
@@ -302,7 +305,7 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 	server->ctx = ctx;
 	server->sock = -1;
 	server->port = -1;
-	server->http_sock = -1;
+	chttp_addr_init(&server->addr);
 	TAILQ_INIT(&server->cmd_list);
 	assert_zero(pthread_mutex_init(&server->cmd_lock, NULL));
 	assert_zero(pthread_mutex_init(&server->flush_lock, NULL));
@@ -343,8 +346,6 @@ void
 chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	struct sockaddr_storage saddr;
-	struct sockaddr *addr;
 	socklen_t len;
 	char remote[128] = {0};
 	int remote_port = -1;
@@ -359,15 +360,18 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 		return;
 	}
 
-	assert(server->http_sock == -1);
+	chttp_addr_ok(&server->addr);
+	assert(server->addr.state == CHTTP_ADDR_NONE);
+	assert(server->addr.sock == -1);
 
-	addr = (struct sockaddr*)&saddr;
-	len = sizeof(saddr);
+	len = sizeof(server->addr.sa);
 
-	server->http_sock = accept(server->sock, addr, &len);
-	assert(server->http_sock >= 0);
+	server->addr.sock = accept(server->sock, &server->addr.sa, &len);
+	assert(server->addr.sock >= 0);
 
-	chttp_sa_string(addr, remote, sizeof(remote), &remote_port);
+	server->addr.state = CHTTP_ADDR_CONNECTED;
+
+	chttp_sa_string(&server->addr.sa, remote, sizeof(remote), &remote_port);
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* remote client %s:%d",
 		remote, remote_port);
@@ -386,11 +390,12 @@ chttp_test_cmd_server_close(struct chttp_test_context *ctx, struct chttp_test_cm
 		return;
 	}
 
-	assert(server->http_sock >= 0);
+	chttp_addr_connected(&server->addr);
 
-	assert_zero(close(server->http_sock));
+	chttp_tcp_close(&server->addr);
 
-	server->http_sock = -1;
+	assert(server->addr.state == CHTTP_ADDR_NONE);
+	assert(server->addr.sock == -1);
 }
 
 char *
@@ -468,7 +473,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		return;
 	}
 
-	assert(server->http_sock >= 0);
+	chttp_addr_connected(&server->addr);
 
 	if (server->chttp) {
 		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
@@ -486,7 +491,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	server->chttp->do_free = 1;
 	server->chttp->state = CHTTP_STATE_RESP_HEADERS;
 
-	chttp_tcp_import(server->chttp, server->http_sock);
+	chttp_addr_move(&server->chttp->addr, &server->addr);
 
 	do {
 		chttp_tcp_read(server->chttp);
@@ -511,9 +516,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_dpage_debug(server->chttp->dpage);
 	}
 
-	server->http_sock = server->chttp->addr.sock;
-
-	chttp_addr_reset(&server->chttp->addr);
+	chttp_addr_move(&server->addr, &server->chttp->addr);
 }
 
 static void
@@ -721,15 +724,22 @@ chttp_test_cmd_server_header_not_exists(struct chttp_test_context *ctx,
 }
 
 void
-_server_send_buf(struct chttp_test_server *server, const uint8_t *buf, size_t len)
+_server_send_buf(struct chttp_test_server *server, const void *buf, size_t len)
 {
-	ssize_t ret;
+	struct chttp_context ctx;
 
 	_server_ok(server);
-	assert(server->http_sock >= 0);
+	chttp_addr_connected(&server->addr);
 
-	ret = send(server->http_sock, buf, len, MSG_NOSIGNAL);
-	assert(ret > 0 && (size_t)ret == len);
+	// TODO remove the need for a ctx...
+	chttp_context_init(&ctx);
+	chttp_addr_move(&ctx.addr, &server->addr);
+
+	chttp_tcp_send(&ctx, buf, len);
+	chttp_test_ERROR(ctx.error, "server send error");
+
+	chttp_addr_move(&server->addr, &ctx.addr);
+
 }
 void __chttp_attr_printf
 _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
@@ -745,7 +755,7 @@ _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 	len = vsnprintf(buf, sizeof(buf), fmt, ap);
 	assert(len < sizeof(buf));
 
-	_server_send_buf(server, (uint8_t*)buf, len);
+	_server_send_buf(server, buf, len);
 
 	va_end(ap);
 }
@@ -755,34 +765,50 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
     int H1_1, int partial)
 {
 	long status;
-	char *reason, *body = "";
-	ssize_t ret;
-	size_t body_len = 0;
+	char *reason, *body, gzip_buf[1024];
+	size_t body_len, gzip_len;
+	int do_gzip = 0;
 
 	_server_ok(server);
-	assert(server->http_sock >= 0);
+	chttp_addr_connected(&server->addr);
 	assert(cmd);
-	assert(cmd->param_count <= 3);
+	assert(cmd->param_count <= 4);
 
 	status = 200;
 	reason = "OK";
+	body = "";
+	body_len = 0;
 
 	if (cmd->param_count >= 1) {
 		status = chttp_test_parse_long(cmd->params[0].value);
 		assert(status > 0 && status < 1000);
 	}
 	if (cmd->param_count >= 2) {
+		chttp_test_ERROR_string(cmd->params[1].value);
 		reason = cmd->params[1].value;
 	}
-	if (cmd->param_count == 3) {
+	if (cmd->param_count >= 3) {
 		assert_zero(partial);
 		body = cmd->params[2].value;
 		body_len = cmd->params[2].len;
+	}
+	if (cmd->param_count >= 4) {
+		chttp_test_ERROR_string(cmd->params[1].value);
+		if (!strcmp(cmd->params[3].value, "1")) {
+			assert(body_len < sizeof(gzip_buf));
+			do_gzip = 1;
+			(void)gzip_len;
+			chttp_ABORT("TODO")
+		}
 	}
 
 	_server_send_printf(server, "HTTP/1.%c %ld %s\r\n", H1_1 ? '1' : '0', status, reason);
 	_server_send_printf(server, "Server: chttp_test %s\r\n", CHTTP_VERSION);
 	_server_send_printf(server, "Date: // TODO\r\n");
+
+	if (do_gzip) {
+		_server_send_printf(server, "Content-Encoding: gzip\r\n");
+	}
 
 	if (partial) {
 		return;
@@ -795,13 +821,13 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 	}
 
 	if (body_len > 0) {
-		ret = send(server->http_sock, body, body_len, MSG_NOSIGNAL);
-		assert(ret > 0 && (size_t)ret == body_len);
+		_server_send_buf(server, body, body_len);
 	}
 
 	if (!H1_1) {
-		assert_zero(close(server->http_sock));
-		server->http_sock = -1;
+		chttp_tcp_close(&server->addr);
+		assert(server->addr.state == CHTTP_ADDR_NONE);
+		assert(server->addr.sock == -1);
 	}
 }
 
@@ -810,19 +836,10 @@ chttp_test_cmd_server_send_response(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	long status;
 
 	server = _server_context_ok(ctx);
 	assert(cmd);
-	chttp_test_ERROR(cmd->param_count > 3, "too many parameters");
-
-	if (cmd->param_count >= 1) {
-		status = chttp_test_parse_long(cmd->params[0].value);
-		chttp_test_ERROR(status <= 0 || status > 999, "invalid status code");
-	}
-	if (cmd->param_count >= 2) {
-		chttp_test_ERROR_string(cmd->params[1].value);
-	}
+	chttp_test_ERROR(cmd->param_count > 4, "too many parameters");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -837,19 +854,10 @@ chttp_test_cmd_server_send_response_H1_0(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	long status;
 
 	server = _server_context_ok(ctx);
 	assert(cmd);
-	chttp_test_ERROR(cmd->param_count > 3, "too many parameters");
-
-	if (cmd->param_count >= 1) {
-		status = chttp_test_parse_long(cmd->params[0].value);
-		chttp_test_ERROR(status <= 0 || status > 999, "invalid status code");
-	}
-	if (cmd->param_count >= 2) {
-		chttp_test_ERROR_string(cmd->params[1].value);
-	}
+	chttp_test_ERROR(cmd->param_count > 4, "too many parameters");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -864,19 +872,10 @@ chttp_test_cmd_server_send_response_partial(struct chttp_test_context *ctx,
     struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	long status;
 
 	server = _server_context_ok(ctx);
 	assert(cmd);
 	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
-
-	if (cmd->param_count >= 1) {
-		status = chttp_test_parse_long(cmd->params[0].value);
-		chttp_test_ERROR(status <= 0 || status > 999, "invalid status code");
-	}
-	if (cmd->param_count == 2) {
-		chttp_test_ERROR_string(cmd->params[1].value);
-	}
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -984,7 +983,7 @@ chttp_test_cmd_server_send_raw(struct chttp_test_context *ctx, struct chttp_test
 
 	chttp_test_unescape(&cmd->params[0]);
 
-	_server_send_buf(server, (uint8_t*)cmd->params[0].value, cmd->params[0].len);
+	_server_send_buf(server, cmd->params[0].value, cmd->params[0].len);
 }
 
 void

@@ -47,7 +47,7 @@ chttp_tls_close(struct chttp_addr *addr)
 }
 
 void
-chttp_tls_write(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_tls_write(struct chttp_context *ctx, const void *buf, size_t buf_len)
 {
 #ifdef CHTTP_OPENSSL
 	chttp_openssl_write(ctx, buf, buf_len);

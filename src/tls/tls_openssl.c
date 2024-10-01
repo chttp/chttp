@@ -159,7 +159,7 @@ chttp_openssl_close(struct chttp_addr *addr)
 }
 
 void
-chttp_openssl_write(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_openssl_write(struct chttp_context *ctx, const void *buf, size_t buf_len)
 {
 	SSL *ssl;
 	size_t bytes;

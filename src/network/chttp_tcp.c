@@ -87,21 +87,6 @@ _tcp_poll_connected(struct chttp_addr *addr)
 	return 1;
 }
 
-void
-chttp_tcp_import(struct chttp_context *ctx, int sock)
-{
-	chttp_context_ok(ctx);
-	assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
-	assert(sock >= 0);
-
-	chttp_addr_init(&ctx->addr);
-
-	ctx->addr.state = CHTTP_ADDR_CONNECTED;
-	ctx->addr.sock = sock;
-
-	chttp_caddr_connected(ctx);
-}
-
 int
 chttp_tcp_connect(struct chttp_addr *addr)
 {
@@ -161,7 +146,7 @@ chttp_tcp_connect(struct chttp_addr *addr)
 }
 
 void
-chttp_tcp_send(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_tcp_send(struct chttp_context *ctx, const void *buf, size_t buf_len)
 {
 	ssize_t ret;
 	size_t written = 0;
