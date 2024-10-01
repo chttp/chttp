@@ -4,6 +4,7 @@
  */
 
 #include "chttp.h"
+#include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
 
 #include <stdio.h>

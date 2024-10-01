@@ -6,9 +6,9 @@
 #ifndef _CHTTP_DNS_CACHE_H_INCLUDED_
 #define _CHTTP_DNS_CACHE_H_INCLUDED_
 
-#include "chttp.h"
 #include "data/queue.h"
 #include "data/tree.h"
+#include "network/chttp_network.h"
 
 #include <pthread.h>
 

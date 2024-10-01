@@ -4,7 +4,7 @@
  */
 
 #include "test/chttp_test.h"
-#include "tcp/chttp_tcp_pool.h"
+#include "network/chttp_tcp_pool.h"
 
 #include <stdlib.h>
 #include <sys/types.h>

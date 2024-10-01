@@ -7,9 +7,9 @@
 #define _CHTTP_TEST_H_INCLUDED_
 
 #include "chttp.h"
-#include "test/chttp_test_cmds.h"
 #include "data/queue.h"
 #include "data/tree.h"
+#include "test/chttp_test_cmds.h"
 
 #include <stdio.h>
 #include <pthread.h>

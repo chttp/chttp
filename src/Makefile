@@ -6,14 +6,16 @@ LDFLAGS=-shared
 LIBFLAGS=
 LIBFLAGS_TEST=-lpthread $(LIBFLAGS)
 
-INCLUDES=$(wildcard *.h data/*.h memory/*.h dns/*.h tls/*.h compress/*.h)
-SOURCE=$(wildcard *.c memory/*.c dns/*.c tcp/*.c tls/*.c compress/*.c)
-OBJS=$(SOURCE:.c=.o)
-CLIENT=$(wildcard client/*.c)
-CLIENT_OBJS=$(CLIENT:.c=.o)
-TEST=$(wildcard test/*.c)
-TEST_INCLUDES=$(wildcard test/*.h)
-TEST_OBJS=$(TEST:.c=.o)
+CLIENT:=$(wildcard client/*.c)
+CLIENT_OBJS:=$(CLIENT:.c=.o)
+TEST:=$(wildcard test/*.c)
+TEST_INCLUDES:=$(wildcard test/*.h)
+TEST_OBJS:=$(TEST:.c=.o)
+INCLUDES:=$(wildcard *.h */*.h)
+INCLUDES:=$(filter-out $(TEST_INCLUDES), $(INCLUDES))
+SOURCE:=$(wildcard *.c */*.c)
+SOURCE:=$(filter-out $(CLIENT) $(TEST), $(SOURCE))
+OBJS:=$(SOURCE:.c=.o)
 
 RM=rm -f
 RMDIR=rm -rf
@@ -84,7 +86,7 @@ cleanall:
 		$(MAKE) all
 
 gcov:		gcov.data
-		$(GCOV) -r *.c dns/*.c tcp/*.c
+		$(GCOV) -r *.c */*.c
 		$(LCOV) --output-file coverage.info
 		$(LCOVHTML) coverage.info --output-directory $(HTMLDIR)
 

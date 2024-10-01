@@ -41,6 +41,8 @@ struct chttp_zlib {
 	z_stream			zs;
 };
 
+struct chttp_context;
+
 void chttp_zlib_inflate_init(struct chttp_zlib *zlib);
 struct chttp_zlib *chttp_zlib_inflate_alloc(void);
 void chttp_zlib_free(struct chttp_zlib *zlib);

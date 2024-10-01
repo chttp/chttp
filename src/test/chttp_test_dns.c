@@ -3,8 +3,9 @@
  *
  */
 
-#include "test/chttp_test.h"
+#include "dns/chttp_dns.h"
 #include "dns/chttp_dns_cache.h"
+#include "test/chttp_test.h"
 
 #include <stdlib.h>
 

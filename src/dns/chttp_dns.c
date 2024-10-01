@@ -4,6 +4,7 @@
  */
 
 #include "chttp.h"
+#include "dns/chttp_dns.h"
 
 void
 chttp_dns_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)

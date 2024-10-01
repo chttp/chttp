@@ -3,6 +3,7 @@
  *
  */
 
+#include "dns/chttp_dns.h"
 #include "test/chttp_test.h"
 
 #include <stdarg.h>

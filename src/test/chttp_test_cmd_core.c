@@ -3,8 +3,9 @@
  *
  */
 
-#include "test/chttp_test.h"
 #include "compress/chttp_gzip.h"
+#include "dns/chttp_dns.h"
+#include "test/chttp_test.h"
 #include "tls/chttp_tls.h"
 
 #include <errno.h>

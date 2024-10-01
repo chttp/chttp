@@ -6,7 +6,6 @@
 #ifndef _CHTTP_TCP_POOL_H_INCLUDED_
 #define _CHTTP_TCP_POOL_H_INCLUDED_
 
-#include "chttp.h"
 #include "data/queue.h"
 #include "data/tree.h"
 
