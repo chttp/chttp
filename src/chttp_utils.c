@@ -102,7 +102,7 @@ chttp_do_abort(const char *function, const char *file, int line, const char *rea
 	(void)file;
 	(void)line;
 
-	fprintf(stderr, "%s(): %s\n", function, reason);
+	fprintf(stderr, "%s:%d %s(): %s\n", file, line, function, reason);
 
 	abort();
 }
@@ -117,7 +117,7 @@ chttp_do_assert(int cond, const char *function, const char *file, int line,
 		return;
 	}
 
-	fprintf(stderr, "%s:%d: %s: Assertion failed\n", file, line, function);
+	fprintf(stderr, "%s:%d %s(): Assertion failed\n", file, line, function);
 
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
