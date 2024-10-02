@@ -115,9 +115,10 @@ chttp_send(struct chttp_context *ctx)
 			continue;
 		}
 
-		chttp_tcp_send(ctx, dpage->data + offset, dpage->offset - offset);
+		chttp_tcp_send(&ctx->addr, dpage->data + offset, dpage->offset - offset);
 
-		if (ctx->error) {
+		if (ctx->addr.error) {
+			chttp_error(ctx, ctx->addr.error);
 			return;
 		}
 

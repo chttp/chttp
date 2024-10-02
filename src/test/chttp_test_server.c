@@ -726,20 +726,11 @@ chttp_test_cmd_server_header_not_exists(struct chttp_test_context *ctx,
 void
 _server_send_buf(struct chttp_test_server *server, const void *buf, size_t len)
 {
-	struct chttp_context ctx;
-
 	_server_ok(server);
 	chttp_addr_connected(&server->addr);
 
-	// TODO remove the need for a ctx...
-	chttp_context_init(&ctx);
-	chttp_addr_move(&ctx.addr, &server->addr);
-
-	chttp_tcp_send(&ctx, buf, len);
-	chttp_test_ERROR(ctx.error, "server send error");
-
-	chttp_addr_move(&server->addr, &ctx.addr);
-
+	chttp_tcp_send(&server->addr, buf, len);
+	chttp_test_ERROR(server->addr.error, "server send error %d", server->addr.error);
 }
 void __chttp_attr_printf
 _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
@@ -798,7 +789,7 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 			assert(body_len < sizeof(gzip_buf));
 			do_gzip = 1;
 			(void)gzip_len;
-			chttp_ABORT("TODO")
+			// TODO
 		}
 	}
 

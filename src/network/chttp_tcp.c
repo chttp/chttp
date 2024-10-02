@@ -146,28 +146,27 @@ chttp_tcp_connect(struct chttp_addr *addr)
 }
 
 void
-chttp_tcp_send(struct chttp_context *ctx, const void *buf, size_t buf_len)
+chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len)
 {
 	ssize_t ret;
 	size_t written = 0;
 
-	chttp_context_ok(ctx);
-	chttp_caddr_connected(ctx);
-	assert_zero(ctx->addr.nonblocking);
+	chttp_addr_connected(addr);
+	assert_zero(addr->nonblocking);
 	assert(buf);
 	assert(buf_len);
 
-	if (ctx->addr.tls) {
-		chttp_tls_write(ctx, buf, buf_len);
+	if (addr->tls) {
+		chttp_tls_write(addr, buf, buf_len);
 		return;
 	}
 
 	while (written < buf_len) {
-		ret = send(ctx->addr.sock, (uint8_t*)buf + written, buf_len - written,
+		ret = send(addr->sock, (uint8_t*)buf + written, buf_len - written,
 			MSG_NOSIGNAL);
 
 		if (ret <= 0) {
-			chttp_error(ctx, CHTTP_ERR_NETWORK);
+			chttp_tcp_error(addr, CHTTP_ERR_NETWORK);
 			return;
 		}
 
@@ -186,50 +185,85 @@ chttp_tcp_read(struct chttp_context *ctx)
 	chttp_dpage_ok(ctx->dpage_last);
 	assert(ctx->dpage_last->offset < ctx->dpage_last->length);
 
-	ret = chttp_tcp_read_buf(ctx, ctx->dpage_last->data + ctx->dpage_last->offset,
+	ret = chttp_tcp_read_ctx(ctx, ctx->dpage_last->data + ctx->dpage_last->offset,
 		ctx->dpage_last->length - ctx->dpage_last->offset);
+
+	if (ctx->error) {
+		return;
+	}
 
 	ctx->dpage_last->offset += ret;
 	assert(ctx->dpage_last->offset <= ctx->dpage_last->length);
 }
 
 size_t
-chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_tcp_read_ctx(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
-	ssize_t ret;
-	size_t bytes;
-	int error;
+	size_t ret;
 
 	chttp_context_ok(ctx);
-	chttp_caddr_connected(ctx);
-	assert_zero(ctx->addr.nonblocking);
 	assert(buf);
 	assert(buf_len);
 
-	if (ctx->addr.tls) {
-		bytes = chttp_tls_read(ctx, buf, buf_len, &error);
-		ret = (ssize_t)bytes;
+	ret = chttp_tcp_read_buf(&ctx->addr, buf, buf_len);
 
-		if (error) {
-			ret = -1;
-		} else {
-			assert(ret >= 0);
-		}
-	} else {
-		ret = recv(ctx->addr.sock, buf, buf_len, 0);
-	}
-
-	if (ret == 0) {
-		chttp_tcp_close(&ctx->addr);
-		ctx->state = CHTTP_STATE_CLOSED;
+	if (ctx->addr.error) {
+		chttp_error(ctx, ctx->addr.error);
 		return 0;
+	} else if (ret == 0) {
+		assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
+		ctx->state = CHTTP_STATE_CLOSED;
 
-	} else if (ret < 0) {
-		chttp_error(ctx, CHTTP_ERR_NETWORK);
 		return 0;
 	}
 
 	return ret;
+}
+
+size_t
+chttp_tcp_read_buf(struct chttp_addr *addr, void *buf, size_t buf_len)
+{
+	size_t bytes;
+	ssize_t ret;
+
+	chttp_addr_connected(addr);
+	assert_zero(addr->nonblocking);
+	assert(buf);
+	assert(buf_len);
+
+	if (addr->tls) {
+		bytes = chttp_tls_read(addr, buf, buf_len);
+
+		if (addr->error) {
+			return 0;
+		}
+
+		ret = (ssize_t)bytes;
+		assert(ret >= 0);
+	} else {
+		ret = recv(addr->sock, buf, buf_len, 0);
+	}
+
+	if (ret == 0) {
+		chttp_tcp_close(addr);
+		return 0;
+	} else if (ret < 0) {
+		chttp_tcp_error(addr, CHTTP_ERR_NETWORK);
+		return 0;
+	}
+
+	return ret;
+}
+
+void
+chttp_tcp_error(struct chttp_addr *addr, int error)
+{
+	chttp_addr_connected(addr);
+	assert(error > CHTTP_ERR_NONE);
+
+	chttp_tcp_close(addr);
+
+	addr->error = error;
 }
 
 void

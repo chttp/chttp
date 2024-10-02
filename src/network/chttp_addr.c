@@ -37,6 +37,7 @@ chttp_addr_move(struct chttp_addr *addr_dest, struct chttp_addr *addr)
 	addr->reused = 0;
 	addr->tls = 0;
 	addr->tls_priv = NULL;
+	addr->error = 0;
 
 	chttp_addr_resolved(addr);
 }
@@ -84,6 +85,8 @@ chttp_addr_connect(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 	chttp_addr_resolved(&ctx->addr);
 
+	ctx->addr.error = 0;
+
 	if (!ctx->new_conn) {
 		ret = chttp_tcp_pool_lookup(&ctx->addr);
 
@@ -101,9 +104,10 @@ chttp_addr_connect(struct chttp_context *ctx)
 	}
 
 	if (ctx->addr.tls) {
-		chttp_tls_connect(ctx);
+		chttp_tls_connect(&ctx->addr);
 
-		if (ctx->error) {
+		if (ctx->addr.error) {
+			chttp_error(ctx, ctx->addr.error);
 			return;
 		}
 	}

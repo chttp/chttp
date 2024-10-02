@@ -26,6 +26,7 @@ struct chttp_addr {
 #define CHTTP_ADDR_MAGIC		0x8A7CEC19
 
 	enum chttp_addr_state		state;
+	int				error;
 	socklen_t			len;
 	int				sock;
 	int				poll_result;
@@ -59,10 +60,12 @@ void chttp_addr_connect(struct chttp_context *ctx);
 void chttp_addr_try_close(struct chttp_context *ctx);
 
 int chttp_tcp_connect(struct chttp_addr *addr);
-void chttp_tcp_send(struct chttp_context *ctx, const void *buf, size_t buf_len);
+void chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len);
 void chttp_tcp_read(struct chttp_context *ctx);
-size_t chttp_tcp_read_buf(struct chttp_context *ctx, void *buf, size_t buf_len);
+size_t chttp_tcp_read_ctx(struct chttp_context *ctx, void *buf, size_t buf_len);
+size_t chttp_tcp_read_buf(struct chttp_addr *addr, void *buf, size_t buf_len);
 void chttp_tcp_close(struct chttp_addr *addr);
+void chttp_tcp_error(struct chttp_addr *addr, int error);
 
 int chttp_tcp_pool_lookup(struct chttp_addr *addr);
 void chttp_tcp_pool_store(struct chttp_addr *addr);
@@ -78,6 +81,7 @@ void chttp_tcp_pool_close(void);
 		chttp_addr_ok(addr);					\
 		assert((addr)->state == CHTTP_ADDR_CONNECTED);		\
 		assert((addr)->sock >= 0);				\
+		assert_zero((addr)->error);				\
 	} while (0)
 #define chttp_addr_resolved(addr)					\
 	do {								\

@@ -334,8 +334,12 @@ chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	if (len) {
-		ret = chttp_tcp_read_buf(ctx, buf, len);
+		ret = chttp_tcp_read_ctx(ctx, buf, len);
 		assert(ret <= buf_len);
+
+		if (ctx->error) {
+			return 0;
+		}
 	}
 
 	buf = (uint8_t*)buf + ret;
