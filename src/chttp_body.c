@@ -388,7 +388,7 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 
 	if (ctx->gzip_priv) {
 		assert(ctx->gzip);
-		return chttp_gzip_read(ctx, buf, buf_len);
+		return chttp_gzip_read_body(ctx, buf, buf_len);
 	}
 
 	return chttp_read_body_raw(ctx, buf, buf_len);

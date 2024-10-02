@@ -125,7 +125,7 @@ _zlib_inflate(struct chttp_zlib *zlib, const unsigned char *input,
 }
 
 size_t
-chttp_zlib_read(struct chttp_context *ctx, unsigned char *output, size_t output_len)
+chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t output_len)
 {
 	struct chttp_zlib *zlib;
 	size_t read, written;
@@ -156,7 +156,7 @@ chttp_zlib_read(struct chttp_context *ctx, unsigned char *output, size_t output_
 
 		assert(written < output_len);
 
-		return written + chttp_zlib_read(ctx, output + written, output_len - written);
+		return written + chttp_zlib_read_body(ctx, output + written, output_len - written);
 	}
 
 	assert(zlib->status == CHTTP_ZLIB_DONE);
@@ -181,7 +181,7 @@ chttp_zlib_read(struct chttp_context *ctx, unsigned char *output, size_t output_
 
 	assert(written < output_len);
 
-	return written + chttp_zlib_read(ctx, output + written, output_len - written);
+	return written + chttp_zlib_read_body(ctx, output + written, output_len - written);
 }
 
 void

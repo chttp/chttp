@@ -78,10 +78,10 @@ chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip,
 }
 
 size_t
-chttp_gzip_read(struct chttp_context *ctx, void *output, size_t output_len)
+chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len)
 {
 #ifdef CHTTP_ZLIB
-	return chttp_zlib_read(ctx, output, output_len);
+	return chttp_zlib_read_body(ctx, output, output_len);
 #else
 	(void)ctx;
 	(void)output;

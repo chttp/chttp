@@ -30,7 +30,7 @@ chttp_tls_connect(struct chttp_addr *addr)
 #ifdef CHTTP_OPENSSL
 	chttp_openssl_connect(addr);
 #else
-	(void)ctx;
+	(void)addr;
 	chttp_ABORT("TLS not configured");
 #endif
 }

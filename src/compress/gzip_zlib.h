@@ -46,7 +46,7 @@ struct chttp_context;
 void chttp_zlib_inflate_init(struct chttp_zlib *zlib);
 struct chttp_zlib *chttp_zlib_inflate_alloc(void);
 void chttp_zlib_free(struct chttp_zlib *zlib);
-size_t chttp_zlib_read(struct chttp_context *ctx, unsigned char *output, size_t output_len);
+size_t chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t output_len);
 void chttp_zlib_register(struct chttp_zlib *zlib, unsigned char *buffer, size_t buffer_len);
 
 #endif /* CHTTP_ZLIB */
