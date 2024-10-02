@@ -102,7 +102,7 @@ chttp_send(struct chttp_context *ctx)
 		return;
 	}
 
-	chttp_caddr_connected(ctx);
+	chttp_addr_connected(&ctx->addr);
 	assert(ctx->data_start.dpage);
 
 	offset = ctx->data_start.offset;
@@ -116,9 +116,9 @@ chttp_send(struct chttp_context *ctx)
 		}
 
 		chttp_tcp_send(&ctx->addr, dpage->data + offset, dpage->offset - offset);
+		chttp_tcp_error_check(ctx);
 
-		if (ctx->addr.error) {
-			chttp_error(ctx, ctx->addr.error);
+		if (ctx->error) {
 			return;
 		}
 

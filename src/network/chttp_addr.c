@@ -105,9 +105,9 @@ chttp_addr_connect(struct chttp_context *ctx)
 
 	if (ctx->addr.tls) {
 		chttp_tls_connect(&ctx->addr);
+		chttp_tcp_error_check(ctx);
 
-		if (ctx->addr.error) {
-			chttp_error(ctx, ctx->addr.error);
+		if (ctx->error) {
 			return;
 		}
 	}

@@ -66,6 +66,7 @@ struct chttp_test_cmd {
 #endif
 
 CHTTP_TEST_CMD(chttp_test)
+CHTTP_TEST_CMD(skip)
 CHTTP_TEST_CMD(sleep_ms)
 CHTTP_TEST_CMD(equal)
 CHTTP_TEST_CMD(not_equal)

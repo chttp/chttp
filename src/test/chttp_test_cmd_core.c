@@ -143,3 +143,14 @@ chttp_test_cmd_gzip_or_skip(struct chttp_test_context *ctx, struct chttp_test_cm
 		return;
 	}
 }
+
+void
+chttp_test_cmd_skip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	assert(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+
+	chttp_test_skip(ctx);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "Skipping");
+}

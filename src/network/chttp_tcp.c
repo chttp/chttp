@@ -206,9 +206,9 @@ chttp_tcp_read_ctx(struct chttp_context *ctx, void *buf, size_t buf_len)
 	assert(buf_len);
 
 	ret = chttp_tcp_read_buf(&ctx->addr, buf, buf_len);
+	chttp_tcp_error_check(ctx);
 
-	if (ctx->addr.error) {
-		chttp_error(ctx, ctx->addr.error);
+	if (ctx->error) {
 		return 0;
 	} else if (ret == 0) {
 		assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
@@ -264,6 +264,17 @@ chttp_tcp_error(struct chttp_addr *addr, int error)
 	chttp_tcp_close(addr);
 
 	addr->error = error;
+}
+
+void
+chttp_tcp_error_check(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+	chttp_addr_ok(&ctx->addr);
+
+	if (ctx->addr.error) {
+		chttp_error(ctx, ctx->addr.error);
+	}
 }
 
 void
