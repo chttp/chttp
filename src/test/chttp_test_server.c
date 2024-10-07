@@ -3,6 +3,7 @@
  *
  */
 
+#include "compress/chttp_gzip.h"
 #include "dns/chttp_dns.h"
 #include "test/chttp_test.h"
 
@@ -757,8 +758,9 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 {
 	long status;
 	char *reason, *body, gzip_buf[1024];
-	size_t body_len, gzip_len;
+	size_t body_len;
 	int do_gzip = 0;
+	struct chttp_gzip gzip;
 
 	_server_ok(server);
 	chttp_addr_connected(&server->addr);
@@ -787,9 +789,17 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 		chttp_test_ERROR_string(cmd->params[1].value);
 		if (!strcmp(cmd->params[3].value, "1")) {
 			assert(body_len < sizeof(gzip_buf));
+
 			do_gzip = 1;
-			(void)gzip_len;
-			// TODO
+			chttp_gzip_deflate_init(&gzip);
+
+			body_len = chttp_gzip_compress_buffer(&gzip, body, body_len, gzip_buf,
+				sizeof(gzip_buf));
+			assert(body_len > 0);
+
+			body = gzip_buf;
+
+			chttp_gzip_free(&gzip);
 		}
 	}
 

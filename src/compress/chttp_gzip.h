@@ -28,5 +28,7 @@ void chttp_gzip_free(void *gzip_priv);
 size_t chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len);
 void chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip,
 	char *buffer, size_t buffer_len);
+size_t chttp_gzip_compress_buffer(struct chttp_gzip *gzip, void *input, size_t input_len,
+	void *output, size_t output_len);
 
 #endif /* _CHTTP_GZIP_H_INCLUDED_ */
