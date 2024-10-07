@@ -21,7 +21,9 @@ struct chttp_context;
 
 int chttp_gzip_enabled(void);
 struct chttp_gzip *chttp_gzip_inflate_alloc(void);
+struct chttp_gzip *chttp_gzip_deflate_alloc(void);
 void chttp_gzip_inflate_init(struct chttp_gzip *gzip);
+void chttp_gzip_deflate_init(struct chttp_gzip *gzip);
 void chttp_gzip_free(void *gzip_priv);
 size_t chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len);
 void chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip,

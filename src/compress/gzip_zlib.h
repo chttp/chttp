@@ -13,6 +13,10 @@
 #include <stddef.h>
 #include <zlib.h>
 
+#define CHTTP_ZLIB_WINDOW_BITS		(15 + 16)
+#define CHTTP_ZLIB_DEFLATE_LEVEL	6
+#define CHTTP_ZLIB_DEFLATE_MEM		8
+
 enum chttp_zlib_type {
 	CHTTP_ZLIB_NONE = 0,
 	CHTTP_ZLIB_INFLATE,
@@ -44,7 +48,8 @@ struct chttp_zlib {
 struct chttp_context;
 
 void chttp_zlib_inflate_init(struct chttp_zlib *zlib);
-struct chttp_zlib *chttp_zlib_inflate_alloc(void);
+void chttp_zlib_deflate_init(struct chttp_zlib *zlib);
+struct chttp_zlib *chttp_zlib_alloc(enum chttp_zlib_type type);
 void chttp_zlib_free(struct chttp_zlib *zlib);
 size_t chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t output_len);
 void chttp_zlib_register(struct chttp_zlib *zlib, unsigned char *buffer, size_t buffer_len);

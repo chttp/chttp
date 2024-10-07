@@ -34,21 +34,55 @@ chttp_zlib_inflate_init(struct chttp_zlib *zlib)
 	zlib->zs.avail_in = 0;
 	zlib->zs.opaque = Z_NULL;
 
-	ret = inflateInit2(&zlib->zs, 15 + 16);
+	ret = inflateInit2(&zlib->zs, CHTTP_ZLIB_WINDOW_BITS);
+	assert(ret == Z_OK);
+
+	chttp_zlib_ok(zlib);
+}
+
+void
+chttp_zlib_deflate_init(struct chttp_zlib *zlib)
+{
+	int ret;
+
+	assert(zlib);
+
+	chttp_ZERO(zlib);
+
+	zlib->magic = CHTTP_ZLIB_MAGIC;
+	zlib->type = CHTTP_ZLIB_DEFLATE;
+
+	zlib->zs.zalloc = Z_NULL;
+	zlib->zs.zfree = Z_NULL;
+	zlib->zs.opaque = Z_NULL;
+
+	ret = deflateInit2(&zlib->zs, CHTTP_ZLIB_DEFLATE_LEVEL, Z_DEFLATED,
+		CHTTP_ZLIB_WINDOW_BITS, CHTTP_ZLIB_DEFLATE_MEM, Z_DEFAULT_STRATEGY);
 	assert(ret == Z_OK);
 
 	chttp_zlib_ok(zlib);
 }
 
 struct chttp_zlib *
-chttp_zlib_inflate_alloc(void)
+chttp_zlib_alloc(enum chttp_zlib_type type)
 {
 	struct chttp_zlib *zlib;
 
 	zlib = malloc(sizeof(*zlib));
 	assert(zlib);
 
-	chttp_zlib_inflate_init(zlib);
+	switch (type) {
+		case CHTTP_ZLIB_INFLATE:
+			chttp_zlib_inflate_init(zlib);
+			break;
+		case CHTTP_ZLIB_DEFLATE:
+			chttp_zlib_deflate_init(zlib);
+			break;
+		case CHTTP_ZLIB_NONE:
+			chttp_ABORT("invalid chttp_zlib_type");
+			return NULL;
+
+	}
 
 	chttp_zlib_ok(zlib);
 
@@ -193,12 +227,18 @@ chttp_zlib_free(struct chttp_zlib *zlib)
 
 	do_free = zlib->do_free;
 
-	if (zlib->type == CHTTP_ZLIB_INFLATE) {
-		ret = inflateEnd(&zlib->zs);
-		assert(ret == Z_OK);
-	} else if (zlib->type == CHTTP_ZLIB_DEFLATE) {
-		ret = deflateEnd(&zlib->zs);
-		assert(ret == Z_OK);
+	switch (zlib->type) {
+		case CHTTP_ZLIB_INFLATE:
+			ret = inflateEnd(&zlib->zs);
+			assert(ret == Z_OK);
+			break;
+		case CHTTP_ZLIB_DEFLATE:
+			ret = deflateEnd(&zlib->zs);
+			assert(ret == Z_OK);
+			break;
+		case CHTTP_ZLIB_NONE:
+			break;
+
 	}
 
 	chttp_ZERO(zlib);

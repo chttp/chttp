@@ -28,11 +28,33 @@ chttp_gzip_inflate_init(struct chttp_gzip *gzip)
 #endif
 }
 
+void
+chttp_gzip_deflate_init(struct chttp_gzip *gzip)
+{
+#ifdef CHTTP_ZLIB
+	chttp_zlib_deflate_init(gzip);
+#else
+	(void)gzip;
+	chttp_ABORT("gzip not configured")
+#endif
+}
+
 struct chttp_gzip *
 chttp_gzip_inflate_alloc(void)
 {
 #ifdef CHTTP_ZLIB
-	return chttp_zlib_inflate_alloc();
+	return chttp_zlib_alloc(CHTTP_ZLIB_INFLATE);
+#else
+	chttp_ABORT("gzip not configured")
+	return NULL;
+#endif
+}
+
+struct chttp_gzip *
+chttp_gzip_deflate_alloc(void)
+{
+#ifdef CHTTP_ZLIB
+	return chttp_zlib_alloc(CHTTP_ZLIB_DEFLATE);
 #else
 	chttp_ABORT("gzip not configured")
 	return NULL;

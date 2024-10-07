@@ -144,7 +144,9 @@ chttp_receive(struct chttp_context *ctx)
 	do {
 		chttp_tcp_read(ctx);
 
-		if (ctx->state >= CHTTP_STATE_CLOSED) {
+		if (ctx->error) {
+			return;
+		} else if (ctx->state >= CHTTP_STATE_CLOSED) {
 			chttp_error(ctx, CHTTP_ERR_NETWORK);
 			return;
 		}
