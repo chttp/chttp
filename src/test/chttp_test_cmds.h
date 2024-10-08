@@ -15,6 +15,7 @@ struct chttp_test_server;
 struct chttp_test_random;
 struct chttp_test_dns;
 struct chttp_test_tcp_pool;
+struct chttp_gzip;
 
 struct chttp_test_context {
 	struct chttp_context		chttp_static;
@@ -24,6 +25,7 @@ struct chttp_test_context {
 	struct chttp_test_random	*random;
 	struct chttp_test_dns		*dns;
 	struct chttp_test_tcp_pool	*tcp_pool;
+	struct chttp_gzip		*gzip;
 
 	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
 	char				md5_client[CHTTP_TEST_MD5_BUFLEN];
@@ -120,8 +122,10 @@ CHTTP_TEST_CMD(server_send_response_H1_0)
 CHTTP_TEST_CMD(server_send_response_partial)
 CHTTP_TEST_CMD(server_send_header)
 CHTTP_TEST_CMD(server_send_header_done)
+CHTTP_TEST_CMD(server_enable_gzip)
 CHTTP_TEST_CMD(server_start_chunked)
 CHTTP_TEST_CMD(server_send_chunked)
+CHTTP_TEST_CMD(server_send_chunked_gzip)
 CHTTP_TEST_CMD(server_end_chunked)
 CHTTP_TEST_CMD(server_send_raw)
 CHTTP_TEST_CMD(server_send_random_body)

@@ -238,6 +238,17 @@ _server_finish(struct chttp_test_context *ctx)
 }
 
 static void
+_gzip_finish(struct chttp_test_context *ctx)
+{
+	assert(ctx);
+	assert(ctx->gzip);
+
+	chttp_gzip_free(ctx->gzip);
+
+	ctx->gzip = NULL;
+}
+
+static void
 _server_init_socket(struct chttp_test_server *server)
 {
 	struct chttp_addr caddr;
@@ -733,6 +744,7 @@ _server_send_buf(struct chttp_test_server *server, const void *buf, size_t len)
 	chttp_tcp_send(&server->addr, buf, len);
 	chttp_test_ERROR(server->addr.error, "server send error %d", server->addr.error);
 }
+
 void __chttp_attr_printf
 _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 {
@@ -794,7 +806,7 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 			chttp_gzip_deflate_init(&gzip);
 
 			body_len = chttp_gzip_compress_buffer(&gzip, body, body_len, gzip_buf,
-				sizeof(gzip_buf));
+				sizeof(gzip_buf), 1);
 			assert(body_len > 0);
 
 			body = gzip_buf;
@@ -919,6 +931,28 @@ chttp_test_cmd_server_send_header_done(struct chttp_test_context *ctx, struct ch
 }
 
 void
+chttp_test_cmd_server_enable_gzip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 0);
+	chttp_test_ERROR(ctx->gzip != NULL, "gzip already initialized");
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	ctx->gzip = chttp_gzip_deflate_alloc();
+	assert(ctx->gzip);
+
+	chttp_test_register_finish(ctx, "gzip", _gzip_finish);
+
+	_server_send_printf(server, "Content-Encoding: gzip\r\n");
+}
+
+void
 chttp_test_cmd_server_start_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
@@ -954,9 +988,42 @@ chttp_test_cmd_server_send_chunked(struct chttp_test_context *ctx, struct chttp_
 }
 
 void
+chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+	char gzip_buf[1024];
+	size_t gzip_len;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	assert(ctx->gzip);
+
+	chttp_test_unescape(&cmd->params[0]);
+
+	gzip_len = chttp_gzip_compress_buffer(ctx->gzip, cmd->params[0].value,
+		cmd->params[0].len, gzip_buf, sizeof(gzip_buf), 0);
+
+	if (gzip_len == 0) {
+		return;
+	}
+
+	_server_send_printf(server, "%x\r\n", (unsigned int)gzip_len);
+	_server_send_buf(server, gzip_buf, gzip_len);
+	_server_send_buf(server, "\r\n", 2);
+}
+
+void
 chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
+	char gzip_buf[1024];
+	size_t gzip_len;
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
@@ -964,6 +1031,17 @@ chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_t
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
+	}
+
+	if (ctx->gzip) {
+		gzip_len = chttp_gzip_compress_buffer(ctx->gzip, cmd->params[0].value,
+			cmd->params[0].len, gzip_buf, sizeof(gzip_buf), 1);
+
+		if (gzip_len > 0) {
+			_server_send_printf(server, "%x\r\n", (unsigned int)gzip_len);
+			_server_send_buf(server, gzip_buf, gzip_len);
+			_server_send_buf(server, "\r\n", 2);
+		}
 	}
 
 	_server_send_printf(server, "0\r\n\r\n");

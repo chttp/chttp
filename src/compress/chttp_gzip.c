@@ -73,30 +73,37 @@ chttp_gzip_free(void *gzip_priv)
 }
 
 void
-chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip,
-    char *buffer, size_t buffer_len)
+chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip, void *buffer,
+    size_t buffer_len)
 {
 	chttp_context_ok(ctx);
 	assert(gzip);
 	assert(buffer);
-	assert(buffer_len > 0);
+	assert(buffer_len);
 
 	chttp_ASSERT(chttp_gzip_enabled(), "gzip not configured");
-	chttp_ASSERT(!ctx->gzip_priv, "gzip already registered");
-	chttp_ASSERT(ctx->gzip, "gzip not detected");
-	chttp_ASSERT(ctx->state >= CHTTP_STATE_RESP_BODY, "bad chttp state");
-	chttp_ASSERT(ctx->state < CHTTP_STATE_CLOSED, "bad chttp state");
-
-	if (ctx->state > CHTTP_STATE_RESP_BODY) {
-		chttp_gzip_free(gzip);
-		return;
-	}
 
 #ifdef CHTTP_ZLIB
-	chttp_zlib_register(gzip, (unsigned char*)buffer, buffer_len);
-#endif
+	chttp_ASSERT(!ctx->gzip_priv, "gzip already registered");
+
+	if (gzip->type == CHTTP_ZLIB_INFLATE) {
+		chttp_ASSERT(ctx->gzip, "gzip not detected");
+		chttp_ASSERT(ctx->state >= CHTTP_STATE_RESP_BODY, "bad chttp state");
+		chttp_ASSERT(ctx->state < CHTTP_STATE_CLOSED, "bad chttp state");
+
+		if (ctx->state > CHTTP_STATE_RESP_BODY) {
+			chttp_gzip_free(gzip);
+			return;
+		}
+	} else {
+		assert(gzip->type == CHTTP_ZLIB_DEFLATE);
+		chttp_ABORT("TODO");
+	}
+
+	chttp_zlib_register(gzip, buffer, buffer_len);
 
 	ctx->gzip_priv = gzip;
+#endif
 }
 
 size_t
@@ -115,7 +122,7 @@ chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len)
 
 size_t
 chttp_gzip_compress_buffer(struct chttp_gzip *gzip, void *input, size_t input_len,
-    void *output, size_t output_len)
+    void *output, size_t output_len, int finish)
 {
 #ifdef CHTTP_ZLIB
 	size_t written;
@@ -123,9 +130,8 @@ chttp_gzip_compress_buffer(struct chttp_gzip *gzip, void *input, size_t input_le
 
 	assert(gzip->type == CHTTP_ZLIB_DEFLATE);
 
-	status = chttp_zlib_flate(gzip, input, input_len, output, output_len, &written, 1);
+	status = chttp_zlib_flate(gzip, input, input_len, output, output_len, &written, finish);
 	chttp_ASSERT(status == CHTTP_ZLIB_DONE, "bad gzip compress status %d", status);
-	assert(written > 0);
 
 	return written;
 #else

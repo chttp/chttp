@@ -185,6 +185,8 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 	}
 
 	zlib = ctx->gzip_priv;
+	assert(zlib->buffer);
+	assert(zlib->buffer_len);
 	assert(zlib->type == CHTTP_ZLIB_INFLATE);
 	assert(zlib->status <= CHTTP_ZLIB_DONE);
 
@@ -265,7 +267,9 @@ chttp_zlib_register(struct chttp_zlib *zlib, unsigned char *buffer, size_t buffe
 {
 	chttp_zlib_ok(zlib);
 	assert(buffer);
-	assert(buffer_len > 0);
+	assert(buffer_len);
+	assert_zero(zlib->buffer);
+	assert_zero(zlib->buffer_len);
 
 	zlib->buffer = buffer;
 	zlib->buffer_len = buffer_len;
