@@ -773,6 +773,7 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 	size_t body_len;
 	int do_gzip = 0;
 	struct chttp_gzip gzip;
+	enum chttp_gzip_status gret;
 
 	_server_ok(server);
 	chttp_addr_connected(&server->addr);
@@ -805,8 +806,9 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 			do_gzip = 1;
 			chttp_gzip_deflate_init(&gzip);
 
-			body_len = chttp_gzip_compress_buffer(&gzip, body, body_len, gzip_buf,
-				sizeof(gzip_buf), 1);
+			gret = chttp_gzip_flate(&gzip, body, body_len, gzip_buf, sizeof(gzip_buf),
+				&body_len, 1);
+			assert(gret == CHTTP_GZIP_DONE);
 			assert(body_len > 0);
 
 			body = gzip_buf;
@@ -993,6 +995,7 @@ chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct c
 	struct chttp_test_server *server;
 	char gzip_buf[1024];
 	size_t gzip_len;
+	enum chttp_gzip_status gret;
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -1006,8 +1009,9 @@ chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct c
 
 	chttp_test_unescape(&cmd->params[0]);
 
-	gzip_len = chttp_gzip_compress_buffer(ctx->gzip, cmd->params[0].value,
-		cmd->params[0].len, gzip_buf, sizeof(gzip_buf), 0);
+	gret = chttp_gzip_flate(ctx->gzip, cmd->params[0].value, cmd->params[0].len, gzip_buf,
+		sizeof(gzip_buf), &gzip_len, 0);
+	assert(gret == CHTTP_GZIP_DONE);
 
 	if (gzip_len == 0) {
 		return;
@@ -1024,6 +1028,7 @@ chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_t
 	struct chttp_test_server *server;
 	char gzip_buf[1024];
 	size_t gzip_len;
+	enum chttp_gzip_status gret;
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
@@ -1034,8 +1039,9 @@ chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_t
 	}
 
 	if (ctx->gzip) {
-		gzip_len = chttp_gzip_compress_buffer(ctx->gzip, NULL, 0, gzip_buf,
-			sizeof(gzip_buf), 1);
+		gret = chttp_gzip_flate(ctx->gzip, NULL, 0, gzip_buf, sizeof(gzip_buf),
+			&gzip_len, 1);
+		assert(gret == CHTTP_GZIP_DONE);
 
 		if (gzip_len > 0) {
 			_server_send_printf(server, "%x\r\n", (unsigned int)gzip_len);
@@ -1071,10 +1077,11 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 	struct chttp_test_server *server;
 	struct chttp_test_md5 md5;
 	long bodylen, chunklen;
-	size_t sent, send_size, partial, len, glen, gsent;;
+	size_t sent, send_size, partial, len, glen, gsent, gplen;
 	size_t chunks, subchunks;
-	uint8_t buf[8000], gbuf[20000];
+	uint8_t buf[8192], gbuf[4096], *gpin;
 	struct chttp_gzip gzip;
+	enum chttp_gzip_status gret;
 	int do_gzip;
 
 	server = _server_context_ok(ctx);
@@ -1154,16 +1161,26 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 			if (do_gzip) {
 				assert(chunklen);
 
-				glen = chttp_gzip_compress_buffer(&gzip, buf, len, gbuf,
-					sizeof(gbuf), 0);
+				gpin = buf;
+				gplen = len;
 
-				if (glen > 0) {
-					_server_send_printf(server, "%x\r\n", (unsigned int)glen);
-					_server_send_buf(server, gbuf, glen);
-					_server_send_printf(server, "\r\n");
+				do {
+					gret = chttp_gzip_flate(&gzip, gpin, gplen, gbuf,
+						sizeof(gbuf), &glen, 0);
 
-					gsent += glen;
-				}
+					if (glen > 0) {
+						_server_send_printf(server, "%x\r\n",
+							(unsigned int)glen);
+						_server_send_buf(server, gbuf, glen);
+						_server_send_printf(server, "\r\n");
+
+						gsent += glen;
+					}
+
+					gpin = NULL;
+					gplen = 0;
+					subchunks++;
+				} while (gret == CHTTP_GZIP_MORE_BUFFER);
 			} else {
 				_server_send_buf(server, buf, len);
 			}
@@ -1171,7 +1188,10 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 			chttp_test_md5_update(&md5, buf, len);
 
 			partial += len;
-			subchunks++;
+
+			if (!do_gzip) {
+				subchunks++;
+			}
 		}
 
 		assert(partial == send_size);
@@ -1187,15 +1207,17 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 	assert(sent == (size_t)bodylen);
 
 	if (do_gzip) {
-		glen = chttp_gzip_compress_buffer(&gzip, NULL, 0, gbuf, sizeof(gbuf), 1);
+		do {
+			gret = chttp_gzip_flate(&gzip, NULL, 0, gbuf, sizeof(gbuf), &glen, 1);
 
-		if (glen > 0) {
-			_server_send_printf(server, "%x\r\n", (unsigned int)glen);
-			_server_send_buf(server, gbuf, glen);
-			_server_send_printf(server, "\r\n");
+			if (glen > 0) {
+				_server_send_printf(server, "%x\r\n", (unsigned int)glen);
+				_server_send_buf(server, gbuf, glen);
+				_server_send_printf(server, "\r\n");
 
-			gsent += glen;
-		}
+				gsent += glen;
+			}
+		} while (gret == CHTTP_GZIP_MORE_BUFFER);
 
 		chttp_gzip_free(&gzip);
 	}

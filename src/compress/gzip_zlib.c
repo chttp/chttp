@@ -4,6 +4,7 @@
  */
 
 #include "chttp.h"
+#include "chttp_gzip.h"
 #include "gzip_zlib.h"
 
 #ifdef CHTTP_ZLIB
@@ -91,7 +92,7 @@ chttp_zlib_alloc(enum chttp_zlib_type type)
 	return zlib;
 }
 
-enum chttp_zlib_status
+int
 chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t input_len,
     unsigned char *output, size_t output_len, size_t *written, int finish)
 {
@@ -103,13 +104,13 @@ chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t inp
 	*written = 0;
 
 	if (zlib->state == Z_STREAM_END) {
-		return CHTTP_ZLIB_DONE;
+		return CHTTP_GZIP_DONE;
 	} else if (zlib->state == Z_BUF_ERROR) {
 		if (output_len <= zlib->zs.avail_out && !input) {
-			return CHTTP_ZLIB_ERROR;
+			return CHTTP_GZIP_ERROR;
 		}
 	} else if (zlib->state != Z_OK) {
-		return CHTTP_ZLIB_ERROR;
+		return CHTTP_GZIP_ERROR;
 	}
 
 	if (input) {
@@ -135,7 +136,7 @@ chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t inp
 			break;
 		default:
 			chttp_ABORT("bad zlib flate type");
-			return CHTTP_ZLIB_ERROR;
+			return CHTTP_GZIP_ERROR;
 	}
 
 	assert(zlib->zs.avail_out <= output_len);
@@ -144,7 +145,7 @@ chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t inp
 	if (*written == output_len) {
 		assert_zero(zlib->zs.avail_out);
 
-		return CHTTP_ZLIB_MORE_BUFFER;
+		return CHTTP_GZIP_MORE_BUFFER;
 	}
 
 	assert(*written < output_len);
@@ -154,20 +155,20 @@ chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t inp
 	{
 		case Z_BUF_ERROR:
 			if (zlib->zs.avail_in) {
-				return CHTTP_ZLIB_MORE_BUFFER;
+				return CHTTP_GZIP_MORE_BUFFER;
 			}
 
-			return CHTTP_ZLIB_DONE;
+			return CHTTP_GZIP_DONE;
 		case Z_OK:
 		case Z_STREAM_END:
 			assert_zero(zlib->zs.avail_in);
 
-			return CHTTP_ZLIB_DONE;
+			return CHTTP_GZIP_DONE;
 		default:
 			break;
 	}
 
-	return CHTTP_ZLIB_ERROR;
+	return CHTTP_GZIP_ERROR;
 }
 
 size_t
@@ -188,17 +189,17 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 	assert(zlib->buffer);
 	assert(zlib->buffer_len);
 	assert(zlib->type == CHTTP_ZLIB_INFLATE);
-	assert(zlib->status <= CHTTP_ZLIB_DONE);
+	assert(zlib->status <= CHTTP_GZIP_DONE);
 
-	if (zlib->status == CHTTP_ZLIB_MORE_BUFFER) {
+	if (zlib->status == CHTTP_GZIP_MORE_BUFFER) {
 		zlib->status = chttp_zlib_flate(zlib, NULL, 0, output, output_len, &written, 0);
 
-		if (zlib->status >= CHTTP_ZLIB_ERROR) {
+		if (zlib->status >= CHTTP_GZIP_ERROR) {
 			chttp_error(ctx, CHTTP_ERR_GZIP);
 			return 0;
 		}
 
-		if (zlib->status == CHTTP_ZLIB_MORE_BUFFER) {
+		if (zlib->status == CHTTP_GZIP_MORE_BUFFER) {
 			assert(written == output_len);
 			return written;
 		}
@@ -208,7 +209,7 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 		return written + chttp_zlib_read_body(ctx, output + written, output_len - written);
 	}
 
-	assert(zlib->status == CHTTP_ZLIB_DONE);
+	assert(zlib->status == CHTTP_GZIP_DONE);
 
 	read = chttp_read_body_raw(ctx, zlib->buffer, zlib->buffer_len);
 
@@ -218,12 +219,12 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 
 	zlib->status = chttp_zlib_flate(zlib, zlib->buffer, read, output, output_len, &written, 0);
 
-	if (zlib->status >= CHTTP_ZLIB_ERROR) {
+	if (zlib->status >= CHTTP_GZIP_ERROR) {
 		chttp_error(ctx, CHTTP_ERR_GZIP);
 		return 0;
 	}
 
-	if (zlib->status == CHTTP_ZLIB_MORE_BUFFER) {
+	if (zlib->status == CHTTP_GZIP_MORE_BUFFER) {
 		assert(written == output_len);
 		return written;
 	}

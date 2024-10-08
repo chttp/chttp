@@ -8,6 +8,12 @@
 
 #include <stddef.h>
 
+enum chttp_gzip_status {
+	CHTTP_GZIP_MORE_BUFFER = -1,
+	CHTTP_GZIP_DONE = 0,
+	CHTTP_GZIP_ERROR = 1
+};
+
 #ifdef CHTTP_ZLIB
 #include "gzip_zlib.h"
 #define chttp_gzip chttp_zlib
@@ -28,7 +34,7 @@ void chttp_gzip_free(void *gzip_priv);
 size_t chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len);
 void chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip,
 	void *buffer, size_t buffer_len);
-size_t chttp_gzip_compress_buffer(struct chttp_gzip *gzip, void *input, size_t input_len,
-	void *output, size_t output_len, int finish);
+enum chttp_gzip_status chttp_gzip_flate(struct chttp_gzip *gzip, void *input, size_t input_len,
+	void *output, size_t output_len, size_t *written, int finish);
 
 #endif /* _CHTTP_GZIP_H_INCLUDED_ */

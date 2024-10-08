@@ -120,26 +120,20 @@ chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len)
 #endif
 }
 
-size_t
-chttp_gzip_compress_buffer(struct chttp_gzip *gzip, void *input, size_t input_len,
-    void *output, size_t output_len, int finish)
+enum chttp_gzip_status
+chttp_gzip_flate(struct chttp_gzip *gzip, void *input, size_t input_len,
+    void *output, size_t output_len, size_t *written, int finish)
 {
 #ifdef CHTTP_ZLIB
-	size_t written;
-	enum chttp_zlib_status status;
-
-	assert(gzip->type == CHTTP_ZLIB_DEFLATE);
-
-	status = chttp_zlib_flate(gzip, input, input_len, output, output_len, &written, finish);
-	chttp_ASSERT(status == CHTTP_ZLIB_DONE, "bad gzip compress status %d", status);
-
-	return written;
+	return chttp_zlib_flate(gzip, input, input_len, output, output_len, written, finish);
 #else
 	(void)gzip;
 	(void)input;
 	(void)input_len;
 	(void)output;
 	(void)output_len;
+	(void)written;
+	(void)finish;
 	chttp_ABORT("gzip not configured")
 	return 0;
 #endif

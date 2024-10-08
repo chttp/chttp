@@ -1,5 +1,7 @@
 chttp_test "Chunked gzip"
 
+gzip_or_skip
+
 server_init
 server_accept
 server_read_request
