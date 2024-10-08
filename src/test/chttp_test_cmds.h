@@ -10,6 +10,7 @@
 
 #define CHTTP_TEST_MAX_PARAMS		16
 #define CHTTP_TEST_MD5_BUFLEN		33
+#define CHTTP_TEST_GZIP_BUFLEN		4096
 
 struct chttp_test_server;
 struct chttp_test_random;
@@ -26,6 +27,7 @@ struct chttp_test_context {
 	struct chttp_test_dns		*dns;
 	struct chttp_test_tcp_pool	*tcp_pool;
 	struct chttp_gzip		*gzip;
+	char				gzip_buf[CHTTP_TEST_GZIP_BUFLEN];
 
 	char				md5_server[CHTTP_TEST_MD5_BUFLEN];
 	char				md5_client[CHTTP_TEST_MD5_BUFLEN];

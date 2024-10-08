@@ -40,6 +40,7 @@ struct chttp_zlib {
 };
 
 struct chttp_context;
+struct chttp_addr;
 
 void chttp_zlib_inflate_init(struct chttp_zlib *zlib);
 void chttp_zlib_deflate_init(struct chttp_zlib *zlib);
@@ -48,6 +49,8 @@ void chttp_zlib_free(struct chttp_zlib *zlib);
 int chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t input_len,
 	unsigned char *output, size_t output_len, size_t *written, int finish);
 size_t chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t output_len);
+void chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr,
+	const unsigned char *input, size_t input_len);
 void chttp_zlib_register(struct chttp_zlib *zlib, unsigned char *buffer, size_t buffer_len);
 
 #endif /* CHTTP_ZLIB */

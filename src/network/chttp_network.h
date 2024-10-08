@@ -50,6 +50,10 @@ struct chttp_addr {
 	};
 };
 
+#define __chttp_nattr_printf		__chttp_nattr_printf_p(2)
+#define __chttp_nattr_printf_p(fpos)	__attribute__((__format__( \
+						__printf__, (fpos), ((fpos) + 1))))
+
 struct chttp_context;
 
 void chttp_addr_init(struct chttp_addr *addr);
@@ -62,6 +66,7 @@ void chttp_addr_try_close(struct chttp_context *ctx);
 
 int chttp_tcp_connect(struct chttp_addr *addr);
 void chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len);
+void __chttp_nattr_printf chttp_tcp_send_printf(struct chttp_addr *addr, const char *fmt, ...);
 void chttp_tcp_read(struct chttp_context *ctx);
 size_t chttp_tcp_read_ctx(struct chttp_context *ctx, void *buf, size_t buf_len);
 size_t chttp_tcp_read_buf(struct chttp_addr *addr, void *buf, size_t buf_len);

@@ -24,6 +24,7 @@ struct chttp_gzip {
 #endif
 
 struct chttp_context;
+struct chttp_addr;
 
 int chttp_gzip_enabled(void);
 struct chttp_gzip *chttp_gzip_inflate_alloc(void);
@@ -34,7 +35,9 @@ void chttp_gzip_free(void *gzip_priv);
 size_t chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len);
 void chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip,
 	void *buffer, size_t buffer_len);
-enum chttp_gzip_status chttp_gzip_flate(struct chttp_gzip *gzip, void *input, size_t input_len,
-	void *output, size_t output_len, size_t *written, int finish);
+enum chttp_gzip_status chttp_gzip_flate(struct chttp_gzip *gzip, const void *input,
+	size_t input_len, void *output, size_t output_len, size_t *written, int finish);
+void chttp_gzip_send_chunk(struct chttp_gzip *gzip, struct chttp_addr *addr,
+	const void *input, size_t input_len);
 
 #endif /* _CHTTP_GZIP_H_INCLUDED_ */

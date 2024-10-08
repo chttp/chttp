@@ -6,6 +6,7 @@
 #include "chttp.h"
 #include "chttp_gzip.h"
 #include "gzip_zlib.h"
+#include "network/chttp_network.h"
 
 #ifdef CHTTP_ZLIB
 
@@ -232,6 +233,62 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 	assert(written < output_len);
 
 	return written + chttp_zlib_read_body(ctx, output + written, output_len - written);
+}
+
+void
+chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const unsigned char *input,
+    size_t input_len)
+{
+	const unsigned char *inbuf;
+	size_t inlen, written;
+	enum chttp_gzip_status gret;
+	int final;
+
+	chttp_zlib_ok(zlib);
+	chttp_addr_connected(addr);
+	assert(zlib->buffer);
+	assert(zlib->buffer_len);
+
+	inbuf = input;
+	inlen = input_len;
+
+	if (input) {
+		assert(input_len);
+		final = 0;
+	} else {
+		assert_zero(input_len);
+		final = 1;
+	}
+
+	do {
+		gret = chttp_zlib_flate(zlib, inbuf, inlen, zlib->buffer, zlib->buffer_len,
+			&written, final);
+
+		if (gret == CHTTP_GZIP_ERROR) {
+			chttp_tcp_error(addr, CHTTP_ERR_GZIP);
+			return;
+		}
+
+		if (written > 0) {
+			chttp_tcp_send_printf(addr, "%x\r\n", (unsigned int)written);
+			if (addr->error) {
+				return;
+			}
+
+			chttp_tcp_send(addr, zlib->buffer, written);
+			if (addr->error) {
+				return;
+			}
+
+			chttp_tcp_send(addr, "\r\n", 2);
+			if (addr->error) {
+				return;
+			}
+		}
+
+		inbuf = NULL;
+		inlen = 0;
+	} while (gret == CHTTP_GZIP_MORE_BUFFER);
 }
 
 void

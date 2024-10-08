@@ -76,7 +76,7 @@ void
 chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip, void *buffer,
     size_t buffer_len)
 {
-	chttp_context_ok(ctx);
+	(void)ctx;
 	assert(gzip);
 	assert(buffer);
 	assert(buffer_len);
@@ -84,9 +84,9 @@ chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip, void *bu
 	chttp_ASSERT(chttp_gzip_enabled(), "gzip not configured");
 
 #ifdef CHTTP_ZLIB
-	chttp_ASSERT(!ctx->gzip_priv, "gzip already registered");
-
 	if (gzip->type == CHTTP_ZLIB_INFLATE) {
+		chttp_context_ok(ctx);
+		chttp_ASSERT(!ctx->gzip_priv, "gzip already registered");
 		chttp_ASSERT(ctx->gzip, "gzip not detected");
 		chttp_ASSERT(ctx->state >= CHTTP_STATE_RESP_BODY, "bad chttp state");
 		chttp_ASSERT(ctx->state < CHTTP_STATE_CLOSED, "bad chttp state");
@@ -95,14 +95,17 @@ chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip, void *bu
 			chttp_gzip_free(gzip);
 			return;
 		}
+
+		chttp_zlib_register(gzip, buffer, buffer_len);
+
+		ctx->gzip_priv = gzip;
+	} else if (gzip->type == CHTTP_ZLIB_DEFLATE) {
+		assert_zero(ctx);
+
+		chttp_zlib_register(gzip, buffer, buffer_len);
 	} else {
-		assert(gzip->type == CHTTP_ZLIB_DEFLATE);
-		chttp_ABORT("TODO");
+		chttp_ABORT("Bad gzip type");
 	}
-
-	chttp_zlib_register(gzip, buffer, buffer_len);
-
-	ctx->gzip_priv = gzip;
 #endif
 }
 
@@ -121,8 +124,8 @@ chttp_gzip_read_body(struct chttp_context *ctx, void *output, size_t output_len)
 }
 
 enum chttp_gzip_status
-chttp_gzip_flate(struct chttp_gzip *gzip, void *input, size_t input_len,
-    void *output, size_t output_len, size_t *written, int finish)
+chttp_gzip_flate(struct chttp_gzip *gzip, const void *input, size_t input_len, void *output,
+    size_t output_len, size_t *written, int finish)
 {
 #ifdef CHTTP_ZLIB
 	return chttp_zlib_flate(gzip, input, input_len, output, output_len, written, finish);
@@ -136,5 +139,21 @@ chttp_gzip_flate(struct chttp_gzip *gzip, void *input, size_t input_len,
 	(void)finish;
 	chttp_ABORT("gzip not configured")
 	return 0;
+#endif
+}
+
+void
+chttp_gzip_send_chunk(struct chttp_gzip *gzip, struct chttp_addr *addr, const void *input,
+    size_t input_len)
+{
+#ifdef CHTTP_ZLIB
+	chttp_zlib_send_chunk(gzip, addr, input, input_len);
+#else
+	(void)gzip;
+	(void)addr;
+	(void)input;
+	(void)input_len;
+	chttp_ABORT("gzip not configured")
+	return;
 #endif
 }

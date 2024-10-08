@@ -8,6 +8,8 @@
 
 #include <errno.h>
 #include <poll.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -174,6 +176,29 @@ chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len)
 	}
 
 	assert(written == buf_len);
+}
+
+void __chttp_nattr_printf
+chttp_tcp_send_printf(struct chttp_addr *addr, const char *fmt, ...)
+{
+	va_list ap;
+	char buf[256];
+	size_t len;
+
+	chttp_addr_connected(addr);
+
+	va_start(ap, fmt);
+
+	len = vsnprintf(buf, sizeof(buf), fmt, ap);
+
+	va_end(ap);
+
+	if (len >= sizeof(buf)) {
+		chttp_tcp_error(addr, CHTTP_ERR_BUFFER);
+		return;
+	}
+
+	chttp_tcp_send(addr, buf, len);
 }
 
 void

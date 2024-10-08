@@ -55,7 +55,8 @@ enum chttp_error {
 	CHTTP_ERR_RESP_BODY,
 	CHTTP_ERR_TLS_INIT,
 	CHTTP_ERR_TLS_HANDSHAKE,
-	CHTTP_ERR_GZIP
+	CHTTP_ERR_GZIP,
+	CHTTP_ERR_BUFFER
 };
 
 struct chttp_context {

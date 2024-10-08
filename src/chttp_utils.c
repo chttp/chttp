@@ -158,6 +158,8 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "TLS handshake error";
 		case CHTTP_ERR_GZIP:
 			return "gzip error";
+		case CHTTP_ERR_BUFFER:
+			return "buffer error";
 	}
 
 	return "unknown";
