@@ -530,6 +530,8 @@ chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_
 	struct chttp_test_md5 md5;
 	uint8_t buf[8192];
 	size_t body_len, len, calls;
+	struct chttp_gzip *gzip;
+	char gzip_buf[4096];
 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);
@@ -541,6 +543,11 @@ chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_
 	body_len = 0;
 	calls = 0;
 
+	if (ctx->chttp->gzip && chttp_gzip_enabled()) {
+		gzip = chttp_gzip_inflate_alloc();
+		chttp_gzip_register(ctx->chttp, gzip, gzip_buf, sizeof(gzip_buf));
+	}
+
 	do {
 		len = chttp_get_body(ctx->chttp, buf, sizeof(buf));
 
@@ -548,8 +555,9 @@ chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_
 
 		body_len += len;
 		calls++;
-	} while (ctx->chttp->state == CHTTP_STATE_RESP_BODY);
+	} while (len > 0);
 
+	assert(ctx->chttp->state > CHTTP_STATE_RESP_BODY);
 	chttp_test_ERROR(ctx->chttp->error, "chttp error %s", chttp_error_msg(ctx->chttp));
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",

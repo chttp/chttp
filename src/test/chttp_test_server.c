@@ -1034,8 +1034,8 @@ chttp_test_cmd_server_end_chunked(struct chttp_test_context *ctx, struct chttp_t
 	}
 
 	if (ctx->gzip) {
-		gzip_len = chttp_gzip_compress_buffer(ctx->gzip, cmd->params[0].value,
-			cmd->params[0].len, gzip_buf, sizeof(gzip_buf), 1);
+		gzip_len = chttp_gzip_compress_buffer(ctx->gzip, NULL, 0, gzip_buf,
+			sizeof(gzip_buf), 1);
 
 		if (gzip_len > 0) {
 			_server_send_printf(server, "%x\r\n", (unsigned int)gzip_len);
@@ -1071,15 +1071,18 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 	struct chttp_test_server *server;
 	struct chttp_test_md5 md5;
 	long bodylen, chunklen;
-	size_t sent, send_size, partial, len;
+	size_t sent, send_size, partial, len, glen, gsent;;
 	size_t chunks, subchunks;
-	uint8_t buf[8192];
+	uint8_t buf[8000], gbuf[20000];
+	struct chttp_gzip gzip;
+	int do_gzip;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR(cmd->param_count > 2, "Too many params");
+	chttp_test_ERROR(cmd->param_count > 3, "Too many params");
 
 	bodylen = -1;
 	chunklen = -1;
+	do_gzip = 0;
 
 	if (cmd->param_count > 0) {
 		bodylen = chttp_test_parse_long(cmd->params[0].value);
@@ -1087,17 +1090,28 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 	if (cmd->param_count > 1) {
 		chunklen = chttp_test_parse_long(cmd->params[1].value);
 	}
+	if (cmd->param_count > 2) {
+		do_gzip = chttp_test_parse_long(cmd->params[2].value) > 0 ? 1 : 0;
+	}
 
-	chttp_test_random_seed();
-	chttp_test_md5_init(&md5);
+	chttp_test_ERROR(do_gzip && !chunklen, "gzip requires a valid chunklen");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
 		return;
 	}
 
+	chttp_test_random_seed();
+	chttp_test_md5_init(&md5);
+
 	if (bodylen < 0) {
 		bodylen = chttp_test_random(0, _SERVER_MAX_RANDOM_BODYLEN);
+	}
+
+	if (do_gzip) {
+		chttp_gzip_deflate_init(&gzip);
+
+		_server_send_printf(server, "Content-Encoding: gzip\r\n");
 	}
 
 	if (chunklen) {
@@ -1106,7 +1120,7 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 		_server_send_printf(server, "Content-Length: %zd\r\n\r\n", bodylen);
 	}
 
-	sent = 0;
+	sent = gsent = 0;
 	chunks = subchunks = 0;
 	assert(bodylen >= 0);
 
@@ -1123,7 +1137,7 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 			send_size = bodylen - sent;
 		}
 
-		if (chunklen) {
+		if (chunklen && !do_gzip) {
 			_server_send_printf(server, "%x\r\n", (unsigned int)send_size);
 		}
 
@@ -1137,7 +1151,22 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 
 			chttp_test_fill_random(buf, len);
 
-			_server_send_buf(server, buf, len);
+			if (do_gzip) {
+				assert(chunklen);
+
+				glen = chttp_gzip_compress_buffer(&gzip, buf, len, gbuf,
+					sizeof(gbuf), 0);
+
+				if (glen > 0) {
+					_server_send_printf(server, "%x\r\n", (unsigned int)glen);
+					_server_send_buf(server, gbuf, glen);
+					_server_send_printf(server, "\r\n");
+
+					gsent += glen;
+				}
+			} else {
+				_server_send_buf(server, buf, len);
+			}
 
 			chttp_test_md5_update(&md5, buf, len);
 
@@ -1150,19 +1179,33 @@ chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct ch
 
 		chunks++;
 
-		if (chunklen) {
+		if (chunklen && !do_gzip) {
 			_server_send_printf(server, "\r\n");
 		}
 	}
 
 	assert(sent == (size_t)bodylen);
 
+	if (do_gzip) {
+		glen = chttp_gzip_compress_buffer(&gzip, NULL, 0, gbuf, sizeof(gbuf), 1);
+
+		if (glen > 0) {
+			_server_send_printf(server, "%x\r\n", (unsigned int)glen);
+			_server_send_buf(server, gbuf, glen);
+			_server_send_printf(server, "\r\n");
+
+			gsent += glen;
+		}
+
+		chttp_gzip_free(&gzip);
+	}
+
 	if (chunklen) {
 		_server_send_printf(server, "0\r\n\r\n");
 	}
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* sent random body bytes %zu "
-		"(%zu %zu)", sent, chunks, subchunks);
+		"(%zu %zu %zu)", sent, chunks, subchunks, gsent);
 
 	chttp_test_md5_final(&md5);
 	chttp_test_md5_store_server(ctx, &md5);
