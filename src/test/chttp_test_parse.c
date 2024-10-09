@@ -31,6 +31,7 @@ chttp_test_unescape(struct chttp_test_param *param)
 	size_t offset, i;
 
 	assert(param);
+	assert(param->value);
 	// TODO remove
 	assert(param->len == strlen(param->value));
 

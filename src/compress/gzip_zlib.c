@@ -107,6 +107,9 @@ chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t inp
 	*written = 0;
 
 	if (zlib->state == Z_STREAM_END) {
+		if (input) {
+			return CHTTP_GZIP_ERROR;
+		}
 		return CHTTP_GZIP_DONE;
 	} else if (zlib->state == Z_BUF_ERROR) {
 		if (output_len <= zlib->zs.avail_out && !input) {
@@ -164,7 +167,9 @@ chttp_zlib_flate(struct chttp_zlib *zlib, const unsigned char *input, size_t inp
 			return CHTTP_GZIP_DONE;
 		case Z_OK:
 		case Z_STREAM_END:
-			assert_zero(zlib->zs.avail_in);
+			if(zlib->zs.avail_in) {
+				return CHTTP_GZIP_ERROR;
+			}
 
 			return CHTTP_GZIP_DONE;
 		default:
@@ -243,7 +248,6 @@ chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const un
 {
 	const unsigned char *inbuf;
 	size_t inlen, written, max_chunklen, chunklen, chunk_shift;
-	enum chttp_gzip_status gret;
 	int final;
 
 	chttp_zlib_ok(zlib);
@@ -262,15 +266,17 @@ chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const un
 		final = 1;
 	}
 
+	assert(zlib->status == CHTTP_GZIP_DONE);
+
 	do {
 		max_chunklen = chttp_make_chunk((char*)zlib->buffer, zlib->buffer_len);
 		assert(max_chunklen);
 		assert(zlib->buffer_len > max_chunklen + 2);
 
-		gret = chttp_zlib_flate(zlib, inbuf, inlen, zlib->buffer + max_chunklen,
+		zlib->status = chttp_zlib_flate(zlib, inbuf, inlen, zlib->buffer + max_chunklen,
 			zlib->buffer_len - max_chunklen - 2, &written, final);
 
-		if (gret == CHTTP_GZIP_ERROR) {
+		if (zlib->status == CHTTP_GZIP_ERROR) {
 			chttp_tcp_error(addr, CHTTP_ERR_GZIP);
 			return;
 		}
@@ -299,7 +305,9 @@ chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const un
 
 		inbuf = NULL;
 		inlen = 0;
-	} while (gret == CHTTP_GZIP_MORE_BUFFER);
+	} while (zlib->status == CHTTP_GZIP_MORE_BUFFER);
+
+	assert(zlib->status == CHTTP_GZIP_DONE);
 }
 
 void

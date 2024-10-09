@@ -997,7 +997,7 @@ chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct c
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	chttp_test_ERROR_param_count(cmd, 1);
+	chttp_test_ERROR(cmd->param_count != 1, "bad parameters");
 
 	if (!cmd->async) {
 		_server_cmd_async(server, cmd);
@@ -1008,7 +1008,11 @@ chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct c
 
 	chttp_test_unescape(&cmd->params[0]);
 
-	chttp_gzip_send_chunk(ctx->gzip, &server->addr, cmd->params[0].value, cmd->params[0].len);
+	if (cmd->params[0].len == 0) {
+		chttp_gzip_send_chunk(ctx->gzip, &server->addr, NULL, 0);
+	} else {
+		chttp_gzip_send_chunk(ctx->gzip, &server->addr, cmd->params[0].value, cmd->params[0].len);
+	}
 }
 
 void
