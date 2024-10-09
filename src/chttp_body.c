@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 static void
 _body_chunk_end(struct chttp_context *ctx)
@@ -158,6 +159,28 @@ _body_chunk_parse(struct chttp_context *ctx)
 	} else {
 		assert(ctx->error);
 	}
+}
+
+size_t
+chttp_make_chunk(char *buffer, unsigned int buffer_len)
+{
+	size_t ret;
+
+	assert(buffer);
+	assert(buffer_len);
+
+	ret = snprintf(buffer, buffer_len, "%x", buffer_len);
+
+	if (ret + 2 > buffer_len) {
+		return 0;
+	}
+
+	buffer[ret++] = '\r';
+	buffer[ret++] = '\n';
+
+	assert(ret <= buffer_len);
+
+	return ret;
 }
 
 void

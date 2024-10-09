@@ -4,13 +4,15 @@
  */
 
 #include "chttp.h"
+
+#ifdef CHTTP_ZLIB
+
 #include "chttp_gzip.h"
 #include "gzip_zlib.h"
 #include "network/chttp_network.h"
 
-#ifdef CHTTP_ZLIB
-
 #include <stdlib.h>
+#include <string.h>
 
 #define chttp_zlib_ok(zlib)						\
 	do {								\
@@ -240,7 +242,7 @@ chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const un
     size_t input_len)
 {
 	const unsigned char *inbuf;
-	size_t inlen, written;
+	size_t inlen, written, max_chunklen, chunklen, chunk_shift;
 	enum chttp_gzip_status gret;
 	int final;
 
@@ -261,8 +263,12 @@ chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const un
 	}
 
 	do {
-		gret = chttp_zlib_flate(zlib, inbuf, inlen, zlib->buffer, zlib->buffer_len,
-			&written, final);
+		max_chunklen = chttp_make_chunk((char*)zlib->buffer, zlib->buffer_len);
+		assert(max_chunklen);
+		assert(zlib->buffer_len > max_chunklen + 2);
+
+		gret = chttp_zlib_flate(zlib, inbuf, inlen, zlib->buffer + max_chunklen,
+			zlib->buffer_len - max_chunklen - 2, &written, final);
 
 		if (gret == CHTTP_GZIP_ERROR) {
 			chttp_tcp_error(addr, CHTTP_ERR_GZIP);
@@ -270,17 +276,22 @@ chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const un
 		}
 
 		if (written > 0) {
-			chttp_tcp_send_printf(addr, "%x\r\n", (unsigned int)written);
-			if (addr->error) {
-				return;
+			chunklen = chttp_make_chunk((char*)zlib->buffer, written);
+			assert(chunklen);
+			assert(chunklen <= max_chunklen);
+
+			chunk_shift = max_chunklen - chunklen;
+			written += chunklen;
+
+			if (chunk_shift) {
+				memmove(zlib->buffer + chunk_shift, zlib->buffer, chunklen);
 			}
 
-			chttp_tcp_send(addr, zlib->buffer, written);
-			if (addr->error) {
-				return;
-			}
+			zlib->buffer[chunk_shift + written++] = '\r';
+			zlib->buffer[chunk_shift + written++] = '\n';
 
-			chttp_tcp_send(addr, "\r\n", 2);
+			chttp_tcp_send(addr, zlib->buffer + chunk_shift, written);
+
 			if (addr->error) {
 				return;
 			}
