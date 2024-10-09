@@ -131,7 +131,6 @@ void chttp_receive(struct chttp_context *ctx);
 void chttp_error(struct chttp_context *ctx, enum chttp_error error);
 void chttp_finish(struct chttp_context *ctx);
 
-size_t chttp_make_chunk(char *buffer, unsigned int buffer_len);
 void chttp_body_length(struct chttp_context *ctx, int do_error);
 size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 size_t chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len);
@@ -146,6 +145,7 @@ void __chttp_attr_printf_p(5) chttp_do_assert(int cond, const char *function,
 const char *chttp_error_msg(struct chttp_context *ctx);
 void chttp_sa_string(const struct sockaddr *sa, char *buf, size_t buf_len, int *port);
 double chttp_get_time(void);
+size_t chttp_make_chunk(char *buffer, unsigned int buffer_len);
 
 #define assert_zero(expr)						\
 	assert(!(expr))

@@ -76,14 +76,11 @@ void
 chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip, void *buffer,
     size_t buffer_len)
 {
-	(void)ctx;
+#ifdef CHTTP_ZLIB
 	assert(gzip);
 	assert(buffer);
 	assert(buffer_len);
 
-	chttp_ASSERT(chttp_gzip_enabled(), "gzip not configured");
-
-#ifdef CHTTP_ZLIB
 	if (gzip->type == CHTTP_ZLIB_INFLATE) {
 		chttp_context_ok(ctx);
 		chttp_ASSERT(!ctx->gzip_priv, "gzip already registered");
@@ -106,6 +103,12 @@ chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip, void *bu
 	} else {
 		chttp_ABORT("Bad gzip type");
 	}
+#else
+	(void)ctx;
+	(void)gzip;
+	(void)buffer;
+	(void)buffer_len;
+	chttp_ABORT("gzip not configured")
 #endif
 }
 

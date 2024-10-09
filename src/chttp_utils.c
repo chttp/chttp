@@ -198,3 +198,25 @@ chttp_get_time(void)
 
         return ts.tv_sec + ((double)ts.tv_nsec / (1000 * 1000 * 1000));
 }
+
+size_t
+chttp_make_chunk(char *buffer, unsigned int buffer_len)
+{
+	size_t ret;
+
+	assert(buffer);
+	assert(buffer_len);
+
+	ret = snprintf(buffer, buffer_len, "%x", buffer_len);
+
+	if (ret + 2 > buffer_len) {
+		return 0;
+	}
+
+	buffer[ret++] = '\r';
+	buffer[ret++] = '\n';
+
+	assert(ret <= buffer_len);
+
+	return ret;
+}

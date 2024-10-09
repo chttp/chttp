@@ -296,6 +296,8 @@ chttp_zlib_send_chunk(struct chttp_zlib *zlib, struct chttp_addr *addr, const un
 			zlib->buffer[chunk_shift + written++] = '\r';
 			zlib->buffer[chunk_shift + written++] = '\n';
 
+			assert(chunk_shift + written <= zlib->buffer_len);
+
 			chttp_tcp_send(addr, zlib->buffer + chunk_shift, written);
 
 			if (addr->error) {
