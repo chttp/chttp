@@ -146,8 +146,8 @@ chttp_dns_cache_debug(void)
 	RB_FOREACH(dns_entry, chttp_dns_cache_tree, &_DNS_CACHE.cache_tree) {
 		chttp_dns_entry_ok(dns_entry);
 		chttp_addr_ok(&dns_entry->addr);
-		assert(dns_entry->addr.state == CHTTP_ADDR_CACHED ||
-			dns_entry->addr.state == CHTTP_ADDR_STALE);
+		assert(dns_entry->state == CHTTP_DNS_CACHE_OK ||
+			dns_entry->state == CHTTP_DNS_CACHE_STALE);
 
 		printf("\tRB entry: '%s'\n", dns_entry->hostname);
 		tree_count++;
@@ -161,7 +161,7 @@ chttp_dns_cache_debug(void)
 		while(dns_temp) {
 			chttp_dns_entry_ok(dns_temp);
 			chttp_addr_ok(&dns_temp->addr);
-			assert(dns_temp->addr.state == CHTTP_ADDR_CACHED);
+			assert(dns_temp->state == CHTTP_DNS_CACHE_OK);
 
 			tree_sub_count++;
 			sub_count++;

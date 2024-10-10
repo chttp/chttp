@@ -132,8 +132,8 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 		pos--;
 	}
 
-	assert(addr->addr.state == CHTTP_ADDR_CACHED ||
-		addr->addr.state == CHTTP_ADDR_STALE);
+	assert(addr->state == CHTTP_DNS_CACHE_OK ||
+		addr->state == CHTTP_DNS_CACHE_STALE);
 
 	// Move to the front of the LRU
 	if (TAILQ_FIRST(&_DNS_CACHE.lru_list) != addr_head) {
@@ -149,7 +149,7 @@ chttp_dns_cache_lookup(const char *host, size_t host_len, struct chttp_addr *add
 	if (addr_head->expiration < now) {
 		// Expired, mark as stale and add more time
 		// Force this client to do a fresh lookup
-		addr_head->addr.state = CHTTP_ADDR_STALE;
+		addr_head->state = CHTTP_DNS_CACHE_STALE;
 		addr_head->expiration = now + 10;
 
 		_DNS_CACHE.stats.expired++;
@@ -289,7 +289,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 		chttp_dns_copy(&dns_entry->addr, ai_entry->ai_addr, 0);
 		chttp_addr_resolved(&dns_entry->addr);
 
-		dns_entry->addr.state = CHTTP_ADDR_CACHED;
+		dns_entry->state = CHTTP_DNS_CACHE_OK;
 
 		count++;
 		_DNS_CACHE.stats.insertions++;
@@ -310,7 +310,7 @@ chttp_dns_cache_store(const char *host, size_t host_len, struct addrinfo *ai_lis
 		chttp_dns_entry_ok(dns_entry);
 		chttp_addr_ok(&dns_entry->addr);
 
-		if (dns_entry->addr.state == CHTTP_ADDR_CACHED) {
+		if (dns_entry->state == CHTTP_DNS_CACHE_OK) {
 			_DNS_CACHE.stats.dups++;
 		}
 
