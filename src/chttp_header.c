@@ -5,6 +5,10 @@
 
 #include "chttp.h"
 
+#include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
+
 const char *_CHTTP_HEADER_FIRST	 = "_FIRST";
 const char *CHTTP_HEADER_REASON	 = "_REASON";
 
@@ -102,6 +106,7 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 {
 	size_t name_len, value_len;
 	struct chttp_dpage *dpage;
+	char *len_end;
 
 	chttp_context_ok(ctx);
 	assert(name && *name);
@@ -113,14 +118,21 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 
 	if (!strcasecmp(name, "host")) {
 		ctx->has_host = 1;
-	}
-
-	if (!strcasecmp(name, "connection") && !strcasecmp(value, "close")) {
+	} else if (!strcasecmp(name, "connection") && !strcasecmp(value, "close")) {
 		ctx->close = 1;
-	}
-
-	if (!strcasecmp(name, "accept-encoding")) {
+	} else if (!strcasecmp(name, "accept-encoding")) {
 		ctx->gzip = 0;
+	} else if (!strcasecmp(name, "content-length")) {
+		errno = 0;
+		ctx->length = strtol(value, &len_end, 10);
+
+		if (ctx->length < 0 || ctx->length == LONG_MAX || errno ||
+		    len_end == value || *len_end != '\0') {
+			ctx->length = 0;
+		}
+	} else if (!strcasecmp(name, "transfer-encoding") && !strcasecmp(value, "chunked")) {
+		ctx->chunked = 1;
+		ctx->length = -1;
 	}
 
 	name_len = strlen(name);
@@ -203,10 +215,13 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 
 	if (!strcasecmp(name, "host")) {
 		ctx->has_host = 0;
-	}
-
-	if (!strcasecmp(name, "connection")) {
+	} else if (!strcasecmp(name, "connection")) {
 		ctx->close = 0;
+	} else if (!strcasecmp(name, "content-length")) {
+		ctx->length = 0;
+	} else if (!strcasecmp(name, "transfer-encoding")) {
+		ctx->chunked = 0;
+		ctx->length = 0;
 	}
 
 	name_len = strlen(name);

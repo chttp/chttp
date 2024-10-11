@@ -144,6 +144,8 @@ chttp_error_msg(struct chttp_context *ctx)
 			return "cannot make connection";
 		case CHTTP_ERR_NETWORK:
 			return "network error";
+		case CHTTP_ERR_REQ_BODY:
+			return "bad request body";
 		case CHTTP_ERR_RESP_PARSE:
 			return "cannot parse response";
 		case CHTTP_ERR_RESP_LENGTH:

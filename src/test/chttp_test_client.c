@@ -267,6 +267,17 @@ chttp_test_cmd_chttp_send_only(struct chttp_test_context *ctx, struct chttp_test
 }
 
 void
+chttp_test_cmd_chttp_send_body(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	chttp_send_body(ctx->chttp, cmd->params[0].value, cmd->params[0].len);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request body sent");
+}
+
+void
 chttp_test_cmd_chttp_receive(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test *test;

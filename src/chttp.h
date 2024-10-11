@@ -49,6 +49,7 @@ enum chttp_error {
 	CHTTP_ERR_DNS,
 	CHTTP_ERR_CONNECT,
 	CHTTP_ERR_NETWORK,
+	CHTTP_ERR_REQ_BODY,
 	CHTTP_ERR_RESP_PARSE,
 	CHTTP_ERR_RESP_LENGTH,
 	CHTTP_ERR_RESP_CHUNK,
@@ -134,6 +135,7 @@ void chttp_finish(struct chttp_context *ctx);
 void chttp_body_length(struct chttp_context *ctx, int do_error);
 size_t chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 size_t chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len);
+void chttp_send_body(struct chttp_context *ctx, void *buf, size_t buf_len);
 
 void chttp_context_debug(struct chttp_context *ctx);
 void chttp_dpage_debug(struct chttp_dpage *dpage);

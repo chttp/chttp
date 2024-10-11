@@ -519,16 +519,20 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	assert(server->chttp->state == CHTTP_STATE_RESP_BODY);
 
 	chttp_body_length(server->chttp, 0);
-	chttp_test_ERROR(server->chttp->length, "*SERVER* request bodies not supported");
 
-	assert(server->chttp->state == CHTTP_STATE_IDLE);
+	server->chttp->close = 0; // TODO support close somewhere else
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
 		chttp_dpage_debug(server->chttp->dpage);
 	}
 
-	chttp_addr_move(&server->addr, &server->chttp->addr);
+	if (server->chttp->state == CHTTP_STATE_IDLE) {
+		chttp_addr_move(&server->addr, &server->chttp->addr);
+		chttp_addr_connected(&server->addr);
+	} else {
+		assert(server->chttp->state == CHTTP_STATE_RESP_BODY);
+	}
 }
 
 static void
@@ -736,6 +740,35 @@ chttp_test_cmd_server_header_not_exists(struct chttp_test_context *ctx,
 }
 
 void
+chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+	char body[1024];
+	size_t body_len;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	chttp_context_ok(server->chttp);
+
+	body_len = chttp_get_body(server->chttp, body, sizeof(body_len) - 1);
+
+	body[body_len] = '\0';
+
+	chttp_test_ERROR(strcmp(body, cmd->params[0].value), "bodies dont match");
+
+	assert(server->chttp->state == CHTTP_STATE_IDLE);
+
+	chttp_addr_move(&server->addr, &server->chttp->addr);
+	chttp_addr_connected(&server->addr);
+}
+
+void
 _server_send_buf(struct chttp_test_server *server, const void *buf, size_t len)
 {
 	_server_ok(server);
@@ -776,6 +809,8 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 	enum chttp_gzip_status gret;
 
 	_server_ok(server);
+	chttp_context_ok(server->chttp);
+	assert(server->chttp->state == CHTTP_STATE_IDLE);
 	chttp_addr_connected(&server->addr);
 	assert(cmd);
 	assert(cmd->param_count <= 4);
