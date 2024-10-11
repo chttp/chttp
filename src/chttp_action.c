@@ -143,7 +143,6 @@ chttp_receive(struct chttp_context *ctx)
 	}
 
 	ctx->length = 0;
-	ctx->chunked = 0;
 	ctx->state = CHTTP_STATE_RESP_HEADERS;
 
 	chttp_dpage_reset_all(ctx);

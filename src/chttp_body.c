@@ -400,18 +400,16 @@ chttp_send_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_SENT);
-	assert(ctx->length);
+	assert(ctx->length > 0);
 	assert(buf);
 	assert(buf_len);
 
-	if (ctx->length > 0) {
-		if (buf_len > (size_t)ctx->length) {
-			chttp_error(ctx, CHTTP_ERR_REQ_BODY);
-			return;
-		}
-
-		ctx->length -= buf_len;
+	if ((size_t)ctx->length < buf_len) {
+		chttp_error(ctx, CHTTP_ERR_REQ_BODY);
+		return;
 	}
+
+	ctx->length -= buf_len;
 
 	chttp_tcp_send(&ctx->addr, buf, buf_len);
 	chttp_tcp_error_check(ctx);
