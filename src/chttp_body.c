@@ -152,10 +152,6 @@ _body_chunk_parse(struct chttp_context *ctx)
 
 	if (ctx->state == CHTTP_STATE_RESP_BODY) {
 		_body_chunk_start(ctx);
-
-		if (ctx->state == CHTTP_STATE_IDLE) {
-			chttp_addr_try_close(ctx);
-		}
 	} else {
 		assert(ctx->error);
 	}
@@ -369,7 +365,6 @@ chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 		}
 	} else if (ctx->length == 0) {
 		ctx->state = CHTTP_STATE_IDLE;
-		chttp_addr_try_close(ctx);
 	}
 
 	if (ctx->length) {

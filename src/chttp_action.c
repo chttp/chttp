@@ -172,8 +172,6 @@ chttp_receive(struct chttp_context *ctx)
 	if (ctx->error) {
 		return;
 	}
-
-	chttp_addr_try_close(ctx);
 }
 
 void

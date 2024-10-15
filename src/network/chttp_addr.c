@@ -114,16 +114,3 @@ chttp_addr_connect(struct chttp_context *ctx)
 
 	chttp_addr_connected(&ctx->addr);
 }
-
-void
-chttp_addr_try_close(struct chttp_context *ctx)
-{
-	chttp_context_ok(ctx);
-	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
-	assert(ctx->state < CHTTP_STATE_CLOSED);
-
-	if (ctx->state == CHTTP_STATE_IDLE && ctx->close) {
-		chttp_tcp_close(&ctx->addr);
-		ctx->state = CHTTP_STATE_CLOSED;
-	}
-}
