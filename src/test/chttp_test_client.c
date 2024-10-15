@@ -278,6 +278,31 @@ chttp_test_cmd_chttp_send_body(struct chttp_test_context *ctx, struct chttp_test
 }
 
 void
+chttp_test_cmd_chttp_send_body_chunkgzip(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_gzip gzip;
+	char buf[1024];
+
+	_test_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+	chttp_context_ok(ctx->chttp);
+	assert(ctx->chttp->state == CHTTP_STATE_SENT);
+	chttp_addr_connected(&ctx->chttp->addr);
+
+	chttp_gzip_deflate_init(&gzip);
+	chttp_gzip_register(NULL, &gzip, buf, sizeof(buf));
+
+	chttp_gzip_send_chunk(&gzip, &ctx->chttp->addr, cmd->params[0].value,
+		cmd->params[0].len);
+	chttp_gzip_send_chunk(&gzip, &ctx->chttp->addr, NULL, 0);
+	chttp_tcp_send(&ctx->chttp->addr, "0\r\n\r\n", 5);
+
+	chttp_gzip_free(&gzip);
+
+	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request body sent chunked gzip");
+}
+
+void
 chttp_test_cmd_chttp_receive(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test *test;

@@ -215,8 +215,7 @@ _server_finish(struct chttp_test_context *ctx)
 		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
 			chttp_error_msg(server->chttp));
 
-		server->chttp->state = CHTTP_STATE_DONE;
-
+		chttp_finish(server->chttp);
 		chttp_context_free(server->chttp);
 		server->chttp = NULL;
 	}
@@ -741,8 +740,9 @@ void
 chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	char body[1024];
-	size_t body_len;
+	char body[1024], gzip_buf[1024];
+	size_t body_len, read_len;
+	struct chttp_gzip *gzip;
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
@@ -754,7 +754,19 @@ chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_te
 
 	chttp_context_ok(server->chttp);
 
-	body_len = chttp_get_body(server->chttp, body, sizeof(body_len) - 1);
+	if (server->chttp->gzip && chttp_gzip_enabled()) {
+		gzip = chttp_gzip_inflate_alloc();
+		chttp_gzip_register(server->chttp, gzip, gzip_buf, sizeof(gzip_buf));
+	}
+
+	body_len = 0;
+
+	do {
+		read_len = chttp_get_body(server->chttp, body + body_len,
+			sizeof(body) - 1 - body_len);
+		body_len += read_len;
+		assert(body_len < sizeof(body));
+	} while (read_len > 0);
 
 	body[body_len] = '\0';
 
@@ -832,7 +844,7 @@ _server_send_response(struct chttp_test_server *server, struct chttp_test_cmd *c
 		body_len = cmd->params[2].len;
 	}
 	if (cmd->param_count >= 4) {
-		chttp_test_ERROR_string(cmd->params[1].value);
+		chttp_test_ERROR_string(cmd->params[3].value);
 		if (!strcmp(cmd->params[3].value, "1")) {
 			assert(body_len < sizeof(gzip_buf));
 
@@ -1030,6 +1042,7 @@ chttp_test_cmd_server_send_chunked_gzip(struct chttp_test_context *ctx, struct c
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
+	assert(cmd);
 	chttp_test_ERROR(cmd->param_count != 1, "bad parameters");
 
 	if (!cmd->async) {
