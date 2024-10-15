@@ -143,7 +143,7 @@ chttp_receive(struct chttp_context *ctx)
 	}
 
 	ctx->length = 0;
-	ctx->state = CHTTP_STATE_RESP_HEADERS;
+	ctx->state = CHTTP_STATE_HEADERS;
 
 	chttp_dpage_reset_all(ctx);
 
@@ -162,9 +162,9 @@ chttp_receive(struct chttp_context *ctx)
 		if (ctx->error) {
 			return;
 		}
-	} while (ctx->state == CHTTP_STATE_RESP_HEADERS);
+	} while (ctx->state == CHTTP_STATE_HEADERS);
 
-	assert(ctx->state == CHTTP_STATE_RESP_BODY);
+	assert(ctx->state == CHTTP_STATE_BODY);
 	chttp_dpage_ok(ctx->data_end.dpage);
 
 	chttp_body_length(ctx, 1);

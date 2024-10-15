@@ -348,7 +348,7 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 	int binary, error;
 
 	chttp_context_ok(ctx);
-	assert(ctx->state == CHTTP_STATE_RESP_HEADERS);
+	assert(ctx->state == CHTTP_STATE_HEADERS);
 	chttp_dpage_ok(ctx->dpage_last);
 	assert(func);
 
@@ -397,7 +397,7 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 
 			ctx->seen_first = 1;
 		} else if (start + 1 == end) {
-			ctx->state = CHTTP_STATE_RESP_BODY;
+			ctx->state = CHTTP_STATE_BODY;
 
 			if (end + 1 < dpage->offset) {
 				assert(ctx->data_start.dpage == dpage);
@@ -429,7 +429,7 @@ chttp_get_header_pos(struct chttp_context *ctx, const char *name, size_t pos)
 	chttp_context_ok(ctx);
 	assert(name && *name);
 
-	if (ctx->state < CHTTP_STATE_RESP_BODY || ctx->state > CHTTP_STATE_CLOSED) {
+	if (ctx->state < CHTTP_STATE_BODY || ctx->state > CHTTP_STATE_CLOSED) {
 		chttp_ABORT("invalid state, headers must be read after receiving");
 	}
 

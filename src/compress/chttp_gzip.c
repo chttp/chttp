@@ -85,10 +85,10 @@ chttp_gzip_register(struct chttp_context *ctx, struct chttp_gzip *gzip, void *bu
 		chttp_context_ok(ctx);
 		chttp_ASSERT(!ctx->gzip_priv, "gzip already registered");
 		chttp_ASSERT(ctx->gzip, "gzip not detected");
-		chttp_ASSERT(ctx->state >= CHTTP_STATE_RESP_BODY, "bad chttp state");
+		chttp_ASSERT(ctx->state >= CHTTP_STATE_BODY, "bad chttp state");
 		chttp_ASSERT(ctx->state < CHTTP_STATE_CLOSED, "bad chttp state");
 
-		if (ctx->state > CHTTP_STATE_RESP_BODY) {
+		if (ctx->state > CHTTP_STATE_BODY) {
 			chttp_gzip_free(gzip);
 			return;
 		}

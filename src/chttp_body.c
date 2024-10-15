@@ -18,7 +18,7 @@ _body_chunk_end(struct chttp_context *ctx)
 	int error;
 
 	chttp_context_ok(ctx);
-	assert(ctx->state == CHTTP_STATE_RESP_BODY);
+	assert(ctx->state == CHTTP_STATE_BODY);
 	assert(ctx->chunked);
 	assert_zero(ctx->length);
 	chttp_dpage_ok(ctx->dpage_last);
@@ -61,7 +61,7 @@ _body_chunk_end(struct chttp_context *ctx)
 	chttp_dpage_ok(ctx->data_start.dpage);
 	chttp_tcp_read(ctx);
 
-	if (ctx->state == CHTTP_STATE_RESP_BODY) {
+	if (ctx->state == CHTTP_STATE_BODY) {
 		_body_chunk_end(ctx);
 		return;
 	}
@@ -79,7 +79,7 @@ _body_chunk_start(struct chttp_context *ctx)
 	char *len_start, *len_end;
 
 	chttp_context_ok(ctx);
-	assert(ctx->state == CHTTP_STATE_RESP_BODY);
+	assert(ctx->state == CHTTP_STATE_BODY);
 	assert(ctx->chunked);
 	assert_zero(ctx->length);
 	chttp_dpage_ok(ctx->dpage_last);
@@ -117,7 +117,7 @@ _body_chunk_start(struct chttp_context *ctx)
 			if (ctx->length == 0) {
 				_body_chunk_end(ctx);
 
-				if (ctx->state == CHTTP_STATE_RESP_BODY) {
+				if (ctx->state == CHTTP_STATE_BODY) {
 					assert_zero(ctx->data_start.dpage);
 					ctx->state = CHTTP_STATE_IDLE;
 				}
@@ -135,7 +135,7 @@ _body_chunk_start(struct chttp_context *ctx)
 	chttp_dpage_ok(ctx->data_start.dpage);
 	chttp_tcp_read(ctx);
 
-	if (ctx->state == CHTTP_STATE_RESP_BODY) {
+	if (ctx->state == CHTTP_STATE_BODY) {
 		_body_chunk_start(ctx);
 		return;
 	}
@@ -150,7 +150,7 @@ _body_chunk_parse(struct chttp_context *ctx)
 
 	_body_chunk_end(ctx);
 
-	if (ctx->state == CHTTP_STATE_RESP_BODY) {
+	if (ctx->state == CHTTP_STATE_BODY) {
 		_body_chunk_start(ctx);
 	} else {
 		assert(ctx->error);
@@ -164,7 +164,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	char *len_end;
 
 	chttp_context_ok(ctx);
-	assert(ctx->state == CHTTP_STATE_RESP_BODY);
+	assert(ctx->state == CHTTP_STATE_BODY);
 	assert_zero(ctx->length);
 	assert_zero(ctx->chunked);
 
@@ -242,7 +242,7 @@ chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 	size_t start, ret_dpage, ret, len;
 
 	chttp_context_ok(ctx);
-	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
+	assert(ctx->state >= CHTTP_STATE_BODY);
 	assert(buf);
 
 	if (ctx->state >= CHTTP_STATE_IDLE || !buf_len) {
@@ -295,7 +295,7 @@ chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 				}
 			}
 
-			assert(ctx->state == CHTTP_STATE_RESP_BODY);
+			assert(ctx->state == CHTTP_STATE_BODY);
 
 			buf = (uint8_t*)buf + ret_dpage;
 			buf_len -= ret_dpage;
@@ -378,7 +378,7 @@ size_t
 chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	chttp_context_ok(ctx);
-	assert(ctx->state >= CHTTP_STATE_RESP_BODY);
+	assert(ctx->state >= CHTTP_STATE_BODY);
 	assert(buf);
 	assert(buf_len);
 

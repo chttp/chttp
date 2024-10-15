@@ -501,7 +501,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	chttp_context_init_buf(server->chttp, sizeof(struct chttp_context));
 
 	server->chttp->do_free = 1;
-	server->chttp->state = CHTTP_STATE_RESP_HEADERS;
+	server->chttp->state = CHTTP_STATE_HEADERS;
 
 	chttp_addr_move(&server->chttp->addr, &server->addr);
 
@@ -513,14 +513,12 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_parse_headers(server->chttp, &_server_parse_request_url);
 		chttp_test_ERROR(server->chttp->error, "*SERVER* %s",
 			chttp_error_msg(server->chttp));
-	} while (server->chttp->state == CHTTP_STATE_RESP_HEADERS);
+	} while (server->chttp->state == CHTTP_STATE_HEADERS);
 
 	assert_zero(server->chttp->error);
-	assert(server->chttp->state == CHTTP_STATE_RESP_BODY);
+	assert(server->chttp->state == CHTTP_STATE_BODY);
 
 	chttp_body_length(server->chttp, 0);
-
-	server->chttp->close = 0; // TODO support close somewhere else
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
@@ -531,7 +529,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_addr_move(&server->addr, &server->chttp->addr);
 		chttp_addr_connected(&server->addr);
 	} else {
-		assert(server->chttp->state == CHTTP_STATE_RESP_BODY);
+		assert(server->chttp->state == CHTTP_STATE_BODY);
 	}
 }
 

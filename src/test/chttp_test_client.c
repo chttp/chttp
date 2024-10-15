@@ -430,7 +430,7 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);
-	chttp_test_ERROR(ctx->chttp->state != CHTTP_STATE_RESP_BODY, "chttp no body found");
+	chttp_test_ERROR(ctx->chttp->state != CHTTP_STATE_BODY, "chttp no body found");
 
 	body = NULL;
 	body_len = 0;
@@ -459,7 +459,7 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 			size - body_len);
 
 		// TODO test
-		if (ctx->chttp->state == CHTTP_STATE_RESP_BODY) {
+		if (ctx->chttp->state == CHTTP_STATE_BODY) {
 			assert(read > 0);
 		}
 
@@ -467,7 +467,7 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 		calls++;
 	} while (read);
 
-	assert(ctx->chttp->state > CHTTP_STATE_RESP_BODY);
+	assert(ctx->chttp->state > CHTTP_STATE_BODY);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
 		body_len, calls);
@@ -546,7 +546,7 @@ chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_
 
 	_test_context_ok(ctx);
 	chttp_context_ok(ctx->chttp);
-	chttp_test_ERROR(ctx->chttp->state != CHTTP_STATE_RESP_BODY, "chttp no body found");
+	chttp_test_ERROR(ctx->chttp->state != CHTTP_STATE_BODY, "chttp no body found");
 	chttp_test_ERROR_param_count(cmd, 0);
 
 	chttp_test_md5_init(&md5);
@@ -568,7 +568,7 @@ chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_
 		calls++;
 	} while (len > 0);
 
-	assert(ctx->chttp->state > CHTTP_STATE_RESP_BODY);
+	assert(ctx->chttp->state > CHTTP_STATE_BODY);
 	chttp_test_ERROR(ctx->chttp->error, "chttp error %s", chttp_error_msg(ctx->chttp));
 
 	chttp_test_log(ctx, CHTTP_LOG_VERY_VERBOSE, "read %zu body bytes in %zu call(s)",
