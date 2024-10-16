@@ -112,10 +112,11 @@ struct chttp_context *chttp_context_init_buf(void *buffer, size_t buffer_len);
 void chttp_context_reset(struct chttp_context *ctx);
 void chttp_context_free(struct chttp_context *ctx);
 
-typedef void (chttp_parse_f)(struct chttp_context*, size_t, size_t);
 void chttp_set_version(struct chttp_context *ctx, enum chttp_version version);
 void chttp_set_method(struct chttp_context *ctx, const char *method);
 void chttp_set_url(struct chttp_context *ctx, const char *url);
+
+extern const char *CHTTP_HEADER_REASON;
 void chttp_header_add(struct chttp_context *ctx, const char *name, const char *value);
 void chttp_header_delete(struct chttp_context *ctx, const char *name);
 void chttp_header_parse_response(struct chttp_context *ctx);
@@ -124,7 +125,6 @@ const char *chttp_header_get(struct chttp_context *ctx, const char *name);
 const char *chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos);
 int chttp_find_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary);
-extern const char *CHTTP_HEADER_REASON;
 
 void chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int port,
 	int tls);

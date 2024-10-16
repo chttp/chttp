@@ -12,7 +12,7 @@
 const char *_CHTTP_HEADER_FIRST	 = "_FIRST";
 const char *CHTTP_HEADER_REASON	 = "_REASON";
 
-static void _setup_request(struct chttp_context *ctx);
+typedef void (chttp_parse_f)(struct chttp_context*, size_t, size_t);
 
 void
 chttp_set_version(struct chttp_context *ctx, enum chttp_version version)
@@ -59,26 +59,6 @@ chttp_set_method(struct chttp_context *ctx, const char *method)
 	ctx->state = CHTTP_STATE_INIT_METHOD;
 }
 
-void
-chttp_set_url(struct chttp_context *ctx, const char *url)
-{
-	chttp_context_ok(ctx);
-	assert(url && *url);
-
-	if (ctx->state == CHTTP_STATE_NONE) {
-		chttp_set_method(ctx, CHTTP_DEFAULT_METHOD);
-	}
-
-	if (ctx->state != CHTTP_STATE_INIT_METHOD) {
-		chttp_ABORT("invalid state, method must after method and before headers");
-	}
-
-	chttp_dpage_append(ctx, " ", 1);
-	chttp_dpage_append(ctx, url, strlen(url));
-
-	_setup_request(ctx);
-}
-
 static void
 _setup_request(struct chttp_context *ctx)
 {
@@ -99,6 +79,26 @@ _setup_request(struct chttp_context *ctx)
 	ctx->state = CHTTP_STATE_INIT_HEADER;
 
 	chttp_header_add(ctx, "User-Agent", CHTTP_USER_AGENT);
+}
+
+void
+chttp_set_url(struct chttp_context *ctx, const char *url)
+{
+	chttp_context_ok(ctx);
+	assert(url && *url);
+
+	if (ctx->state == CHTTP_STATE_NONE) {
+		chttp_set_method(ctx, CHTTP_DEFAULT_METHOD);
+	}
+
+	if (ctx->state != CHTTP_STATE_INIT_METHOD) {
+		chttp_ABORT("invalid state, method must after method and before headers");
+	}
+
+	chttp_dpage_append(ctx, " ", 1);
+	chttp_dpage_append(ctx, url, strlen(url));
+
+	_setup_request(ctx);
 }
 
 void
