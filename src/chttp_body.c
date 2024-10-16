@@ -165,7 +165,6 @@ chttp_body_length(struct chttp_context *ctx, int response)
 
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_BODY);
-	assert_zero(ctx->length);
 	assert_zero(ctx->chunked);
 
 	if (ctx->version == CHTTP_H_VERSION_1_0) {
@@ -174,28 +173,47 @@ chttp_body_length(struct chttp_context *ctx, int response)
 
 	header = chttp_get_header(ctx, "connection");
 
-	if (header && !strcmp(header, "close")) {
+	if (header && !strcasecmp(header, "close")) {
 		ctx->close = 1;
-	} else if (header && !strcmp(header, "keep-alive")) {
+	} else if (header && !strcasecmp(header, "keep-alive")) {
 		// Default, do nothing
 	}
 
 	header = chttp_get_header(ctx, "content-encoding");
 
-	if (header && !strcmp(header, "gzip")) {
+	if (header && !strcasecmp(header, "gzip")) {
 		ctx->gzip = 1;
 	} else {
 		ctx->gzip = 0;
 	}
 
-	if (ctx->is_head || ctx->status == 304 || ctx->status == 204) {
+	switch (ctx->status) {
+		case 100:
+			if (ctx->want_100) {
+				ctx->state = CHTTP_STATE_SENT;
+				ctx->want_100 = 0;
+				return;
+			}
+			/* Fallthru */
+		case 204:
+		case 304:
+			ctx->state = CHTTP_STATE_IDLE;
+			return;
+	}
+
+	if (ctx->is_head) {
 		ctx->state = CHTTP_STATE_IDLE;
+		return;
+	}
+
+	if (ctx->length) {
+		chttp_error(ctx, CHTTP_ERR_REQ_BODY);
 		return;
 	}
 
 	header = chttp_get_header(ctx, "transfer-encoding");
 
-	if (header && !strcmp(header, "chunked")) {
+	if (header && !strcasecmp(header, "chunked")) {
 		ctx->chunked = 1;
 		_body_chunk_start(ctx);
 		return;

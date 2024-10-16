@@ -130,6 +130,8 @@ chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
 		    len_end == value || *len_end != '\0') {
 			ctx->length = 0;
 		}
+	} else if (!strcasecmp(name, "expect") && !strcasecmp(value, "100-continue")) {
+		ctx->want_100 = 1;
 	}
 
 	name_len = strlen(name);
@@ -216,6 +218,8 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 		ctx->close = 0;
 	} else if (!strcasecmp(name, "content-length")) {
 		ctx->length = 0;
+	} else if (!strcasecmp(name, "expect")) {
+		ctx->want_100 = 0;
 	}
 
 	name_len = strlen(name);

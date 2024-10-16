@@ -95,6 +95,7 @@ struct chttp_context {
 	unsigned int			seen_first:1;
 	unsigned int			new_conn:1;
 	unsigned int			gzip:1;
+	unsigned int			want_100:1;
 
 	uint8_t				_data[CHTTP_DPAGE_SIZE];
 };

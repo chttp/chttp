@@ -474,6 +474,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 {
 	struct chttp_test_server *server;
 	struct chttp_test *test;
+	const char *expect;
 
 	server = _server_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 0);
@@ -522,6 +523,12 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
 		chttp_dpage_debug(server->chttp->dpage);
+	}
+
+	expect = chttp_get_header(server->chttp, "expect");
+
+	if (expect && !strcasecmp(expect, "100-continue")) {
+		chttp_tcp_send(&server->chttp->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
 	}
 
 	if (server->chttp->state == CHTTP_STATE_IDLE) {

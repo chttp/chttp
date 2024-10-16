@@ -137,12 +137,14 @@ chttp_receive(struct chttp_context *ctx)
 		chttp_ABORT("invalid state, request must be setup before sending");
 	}
 
-	if (ctx->length > 0) {
+	if (!ctx->want_100 && ctx->length > 0) {
 		chttp_error(ctx, CHTTP_ERR_REQ_BODY);
 		return;
 	}
 
-	ctx->length = 0;
+	ctx->status = 0;
+	ctx->chunked = 0;
+	ctx->seen_first = 0;
 	ctx->state = CHTTP_STATE_HEADERS;
 
 	chttp_dpage_reset_all(ctx);
