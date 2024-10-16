@@ -231,6 +231,11 @@ chttp_body_length(struct chttp_context *ctx, int response)
 		return;
 	}
 
+	if (ctx->status == 204) {
+		ctx->state = CHTTP_STATE_IDLE;
+		return;
+	}
+
 	chttp_error(ctx, CHTTP_ERR_RESP_LENGTH);
 
 	return;
