@@ -177,6 +177,8 @@ chttp_test_cmd_chttp_add_header(struct chttp_test_context *ctx, struct chttp_tes
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
 
+	chttp_test_unescape(&cmd->params[1]);
+
 	chttp_add_header(ctx->chttp, cmd->params[0].value, cmd->params[1].value);
 }
 
@@ -398,6 +400,8 @@ chttp_test_cmd_chttp_header_match(struct chttp_test_context *ctx, struct chttp_t
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
 
+	chttp_test_unescape(&cmd->params[1]);
+
 	_test_header_match(ctx, cmd->params[0].value, cmd->params[1].value, 0);
 }
 
@@ -406,6 +410,8 @@ chttp_test_cmd_chttp_header_submatch(struct chttp_test_context *ctx, struct chtt
 {
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 2);
+
+	chttp_test_unescape(&cmd->params[1]);
 
 	_test_header_match(ctx, cmd->params[0].value, cmd->params[1].value, 1);
 }

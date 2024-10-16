@@ -188,8 +188,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 		ctx->gzip = 0;
 	}
 
-	if (ctx->is_head) {
-		// TODO 1xx, 204, 304 ?
+	if (ctx->is_head || ctx->status == 304) {
 		ctx->state = CHTTP_STATE_IDLE;
 		return;
 	}

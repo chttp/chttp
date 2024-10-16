@@ -582,12 +582,16 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 	} else if (!strcmp(cmd->name, "server_header_match")) {
 		assert(cmd->param_count == 2);
 
+		chttp_test_unescape(&cmd->params[1]);
+
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
 		header_value = chttp_get_header(server->chttp, header);
 		dup = chttp_get_header_pos(server->chttp, header, 1);
 	} else if (!strcmp(cmd->name, "server_header_submatch")) {
 		assert(cmd->param_count == 2);
+
+		chttp_test_unescape(&cmd->params[1]);
 
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
@@ -957,6 +961,8 @@ chttp_test_cmd_server_send_header(struct chttp_test_context *ctx, struct chttp_t
 		_server_cmd_async(server, cmd);
 		return;
 	}
+
+	chttp_test_unescape(&cmd->params[0]);
 
 	_server_send_printf(server, "%s\r\n", cmd->params[0].value);
 }
