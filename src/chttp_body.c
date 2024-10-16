@@ -188,7 +188,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 		ctx->gzip = 0;
 	}
 
-	if (ctx->is_head || ctx->status == 304) {
+	if (ctx->is_head || ctx->status == 304 || ctx->status == 204) {
 		ctx->state = CHTTP_STATE_IDLE;
 		return;
 	}
@@ -227,11 +227,6 @@ chttp_body_length(struct chttp_context *ctx, int response)
 
 	if (ctx->close) {
 		ctx->length = -1;
-		return;
-	}
-
-	if (ctx->status == 204) {
-		ctx->state = CHTTP_STATE_IDLE;
 		return;
 	}
 
