@@ -37,21 +37,21 @@ main(int argc, char **argv)
 	chttp_set_version(context, CHTTP_H_VERSION_1_1);
 	chttp_set_method(context, "GET");
 	chttp_set_url(context, "/abc");
-	chttp_add_header(context, "header1", "abc123");
-	chttp_add_header(context, "header1", "duplicate");
-	chttp_add_header(context, "header2", "XYZZZZ");
-	chttp_add_header(context, "header1", "again, why");
-	chttp_add_header(context, "header3", "very, imortant; information");
+	chttp_header_add(context, "header1", "abc123");
+	chttp_header_add(context, "header1", "duplicate");
+	chttp_header_add(context, "header2", "XYZZZZ");
+	chttp_header_add(context, "header1", "again, why");
+	chttp_header_add(context, "header3", "very, imortant; information");
 	chttp_context_debug(context);
-	chttp_delete_header(context, "header1");
-	chttp_delete_header(context, "header2");
+	chttp_header_delete(context, "header1");
+	chttp_header_delete(context, "header2");
 	chttp_connect(context, "ec2.rezsoft.org", strlen("ec2.rezsoft.org"), 80, 0);
 	chttp_send(context);
 	chttp_context_debug(context);
 	chttp_receive(context);
 	chttp_context_debug(context);
 	do {
-		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
+		body_len = chttp_body_read(context, body_buf, sizeof(body_buf));
 		printf("***BODY*** (%zu, %d)\n", body_len, context->state);
 		chttp_print_hex(body_buf, body_len);
 	} while (body_len);
@@ -61,19 +61,19 @@ main(int argc, char **argv)
 	printf("\n*** static test\n\n");
 	chttp_context_init(&scontext);
 	chttp_set_url(&scontext, "/");
-	chttp_add_header(&scontext, "a", "1");
-	chttp_add_header(&scontext, "a", "1");
+	chttp_header_add(&scontext, "a", "1");
+	chttp_header_add(&scontext, "a", "1");
 	chttp_context_debug(&scontext);
-	chttp_delete_header(&scontext, "x");
-	chttp_delete_header(&scontext, "a");
-	chttp_add_header(&scontext, "x", "2");
+	chttp_header_delete(&scontext, "x");
+	chttp_header_delete(&scontext, "a");
+	chttp_header_add(&scontext, "x", "2");
 	chttp_connect(&scontext, "textglass.org", strlen("textglass.org"), 80, 0);
 	chttp_send(&scontext);
 	chttp_context_debug(&scontext);
 	chttp_receive(&scontext);
 	chttp_context_debug(&scontext);
 	do {
-		body_len = chttp_get_body(&scontext, body_buf, sizeof(body_buf));
+		body_len = chttp_body_read(&scontext, body_buf, sizeof(body_buf));
 		printf("***BODY*** (%zu, %d)\n", body_len, scontext.state);
 		chttp_print_hex(body_buf, body_len);
 	} while (body_len);
@@ -105,7 +105,7 @@ main(int argc, char **argv)
 	chttp_receive(tlsc);
 	chttp_context_debug(tlsc);
 	do {
-		body_len = chttp_get_body(tlsc, body_buf, sizeof(body_buf));
+		body_len = chttp_body_read(tlsc, body_buf, sizeof(body_buf));
 		printf("***BODY*** (%zu, %d)\n", body_len, tlsc->state);
 		chttp_print_hex(body_buf, body_len);
 	} while (body_len);
@@ -118,7 +118,7 @@ main(int argc, char **argv)
 
 	chttp_set_method(context, "GET");
 	chttp_set_url(context, "/");
-	chttp_add_header(context, "Accept-Encoding", "gzip");
+	chttp_header_add(context, "Accept-Encoding", "gzip");
 	chttp_connect(context, "ec2.rezsoft.org", strlen("ec2.rezsoft.org"), 80, 0);
 	chttp_send(context);
 	chttp_receive(context);
@@ -126,7 +126,7 @@ main(int argc, char **argv)
 	chttp_gzip_inflate_init(&gzip);
 	chttp_gzip_register(context, &gzip, gzip_buf, sizeof(gzip_buf));
 	do {
-		body_len = chttp_get_body(context, body_buf, sizeof(body_buf));
+		body_len = chttp_body_read(context, body_buf, sizeof(body_buf));
 		printf("***BODY*** (%zu, %d)\n", body_len, tlsc->state);
 		chttp_print_hex(body_buf, body_len);
 	} while (body_len);

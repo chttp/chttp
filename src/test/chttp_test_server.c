@@ -432,43 +432,6 @@ chttp_test_var_server_port(struct chttp_test_context *ctx)
 	return server->port_str;
 }
 
-static void
-_server_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
-{
-	struct chttp_dpage *dpage;
-	size_t len, count, i;
-
-	chttp_context_ok(ctx);
-	chttp_dpage_ok(ctx->dpage_last);
-	assert_zero(ctx->seen_first);
-
-	dpage = ctx->dpage_last;
-	len = end - start;
-
-	// TODO remove
-	assert(strlen((char*)&dpage->data[start]) == len);
-
-	for (i = start, count = 0; i < end; i++) {
-		if (dpage->data[i] < ' ') {
-			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
-			return;
-		} else if (dpage->data[i] == ' ') {
-			dpage->data[i] = '\0';
-			count++;
-
-			if (dpage->data[i + 1] <= ' ') {
-				chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
-				return;
-			}
-		}
-	}
-
-	if (count != 2) {
-		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
-		return;
-	}
-}
-
 void
 chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
@@ -510,7 +473,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_test_ERROR(server->chttp->state >= CHTTP_STATE_CLOSED,
 			"server read network error");
 
-		chttp_parse_headers(server->chttp, &_server_parse_request_url);
+		chttp_header_parse_request(server->chttp);
 		chttp_test_ERROR(server->chttp->error, "*SERVER* %s",
 			chttp_error_msg(server->chttp));
 	} while (server->chttp->state == CHTTP_STATE_HEADERS);
@@ -518,14 +481,14 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 	assert_zero(server->chttp->error);
 	assert(server->chttp->state == CHTTP_STATE_BODY);
 
-	chttp_body_length(server->chttp, 0);
+	chttp_body_init(server->chttp, CHTTP_BODY_REQUEST);
 
 	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
 		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
 		chttp_dpage_debug(server->chttp->dpage);
 	}
 
-	expect = chttp_get_header(server->chttp, "expect");
+	expect = chttp_header_get(server->chttp, "expect");
 
 	if (expect && !strcasecmp(expect, "100-continue")) {
 		chttp_tcp_send(&server->chttp->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
@@ -560,7 +523,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 
 		header = "_METHOD";
 		expected = cmd->params[0].value;
-		header_value = chttp_get_header(server->chttp, _CHTTP_HEADER_FIRST);
+		header_value = chttp_header_get(server->chttp, _CHTTP_HEADER_FIRST);
 		dup = NULL;
 	} else if (!strcmp(cmd->name, "server_url_match")) {
 		assert(cmd->param_count == 1);
@@ -568,7 +531,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 		header = "_URL";
 		expected = cmd->params[0].value;
 
-		header_value = chttp_get_header(server->chttp, _CHTTP_HEADER_FIRST);
+		header_value = chttp_header_get(server->chttp, _CHTTP_HEADER_FIRST);
 		assert(header_value);
 		len = strlen(header_value);
 		header_value += len + 1;
@@ -579,7 +542,7 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 		header = "_VERSION";
 		expected = cmd->params[0].value;
 
-		header_value = chttp_get_header(server->chttp, _CHTTP_HEADER_FIRST);
+		header_value = chttp_header_get(server->chttp, _CHTTP_HEADER_FIRST);
 		assert(header_value);
 		len = strlen(header_value);
 		header_value += len + 1;
@@ -593,8 +556,8 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
-		header_value = chttp_get_header(server->chttp, header);
-		dup = chttp_get_header_pos(server->chttp, header, 1);
+		header_value = chttp_header_get(server->chttp, header);
+		dup = chttp_header_get_pos(server->chttp, header, 1);
 	} else if (!strcmp(cmd->name, "server_header_submatch")) {
 		assert(cmd->param_count == 2);
 
@@ -602,21 +565,21 @@ _server_match_header(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 
 		header = cmd->params[0].value;
 		expected = cmd->params[1].value;
-		header_value = chttp_get_header(server->chttp, header);
-		dup = chttp_get_header_pos(server->chttp, header, 1);
+		header_value = chttp_header_get(server->chttp, header);
+		dup = chttp_header_get_pos(server->chttp, header, 1);
 		sub = 1;
 	} else if (!strcmp(cmd->name, "server_header_exists")) {
 		assert(cmd->param_count == 1);
 
 		header = cmd->params[0].value;
 		expected = NULL;
-		header_value = chttp_get_header(server->chttp, header);
-		dup = chttp_get_header_pos(server->chttp, header, 1);
+		header_value = chttp_header_get(server->chttp, header);
+		dup = chttp_header_get_pos(server->chttp, header, 1);
 	} else if (!strcmp(cmd->name, "server_header_not_exists")) {
 		assert(cmd->param_count == 1);
 
 		header = cmd->params[0].value;
-		header_value = chttp_get_header(server->chttp, header);
+		header_value = chttp_header_get(server->chttp, header);
 
 		chttp_test_ERROR(header_value != NULL, "header %s exists", header);
 
@@ -773,7 +736,7 @@ chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_te
 	body_len = 0;
 
 	do {
-		read_len = chttp_get_body(server->chttp, body + body_len,
+		read_len = chttp_body_read(server->chttp, body + body_len,
 			sizeof(body) - 1 - body_len);
 		body_len += read_len;
 		assert(body_len < sizeof(body));

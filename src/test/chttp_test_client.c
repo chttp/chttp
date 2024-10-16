@@ -179,7 +179,7 @@ chttp_test_cmd_chttp_add_header(struct chttp_test_context *ctx, struct chttp_tes
 
 	chttp_test_unescape(&cmd->params[1]);
 
-	chttp_add_header(ctx->chttp, cmd->params[0].value, cmd->params[1].value);
+	chttp_header_add(ctx->chttp, cmd->params[0].value, cmd->params[1].value);
 }
 
 void
@@ -188,7 +188,7 @@ chttp_test_cmd_chttp_delete_header(struct chttp_test_context *ctx, struct chttp_
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	chttp_delete_header(ctx->chttp, cmd->params[0].value);
+	chttp_header_delete(ctx->chttp, cmd->params[0].value);
 }
 
 void
@@ -274,7 +274,7 @@ chttp_test_cmd_chttp_send_body(struct chttp_test_context *ctx, struct chttp_test
 	_test_context_ok(ctx);
 	chttp_test_ERROR_param_count(cmd, 1);
 
-	chttp_send_body(ctx->chttp, cmd->params[0].value, cmd->params[0].len);
+	chttp_body_send(ctx->chttp, cmd->params[0].value, cmd->params[0].len);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "request body sent");
 }
@@ -362,10 +362,10 @@ _test_header_match(struct chttp_test_context *ctx, const char *header, const cha
 	chttp_context_ok(ctx->chttp);
 	assert(header);
 
-	header_value = chttp_get_header(ctx->chttp, header);
+	header_value = chttp_header_get(ctx->chttp, header);
 	chttp_test_ERROR(!header_value, "header %s not found", header);
 
-	dup = chttp_get_header_pos(ctx->chttp, header, 1);
+	dup = chttp_header_get_pos(ctx->chttp, header, 1);
 	chttp_test_warn(dup != NULL, "duplicate %s header found", header);
 
 	if (!expected) {
@@ -486,8 +486,7 @@ _test_body_match(struct chttp_test_context *ctx, const char *expected, int sub, 
 		body = realloc(body, size + 1);
 		assert(body);
 
-		read = chttp_get_body(ctx->chttp, body + body_len,
-			size - body_len);
+		read = chttp_body_read(ctx->chttp, body + body_len, size - body_len);
 
 		// TODO test
 		if (ctx->chttp->state == CHTTP_STATE_BODY) {
@@ -591,7 +590,7 @@ chttp_test_cmd_chttp_body_md5(struct chttp_test_context *ctx, struct chttp_test_
 	}
 
 	do {
-		len = chttp_get_body(ctx->chttp, buf, sizeof(buf));
+		len = chttp_body_read(ctx->chttp, buf, sizeof(buf));
 
 		chttp_test_md5_update(&md5, buf, len);
 

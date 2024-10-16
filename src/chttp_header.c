@@ -98,11 +98,11 @@ _setup_request(struct chttp_context *ctx)
 
 	ctx->state = CHTTP_STATE_INIT_HEADER;
 
-	chttp_add_header(ctx, "User-Agent", CHTTP_USER_AGENT);
+	chttp_header_add(ctx, "User-Agent", CHTTP_USER_AGENT);
 }
 
 void
-chttp_add_header(struct chttp_context *ctx, const char *name, const char *value)
+chttp_header_add(struct chttp_context *ctx, const char *name, const char *value)
 {
 	size_t name_len, value_len;
 	struct chttp_dpage *dpage;
@@ -199,7 +199,7 @@ chttp_find_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t 
 }
 
 void
-chttp_delete_header(struct chttp_context *ctx, const char *name)
+chttp_header_delete(struct chttp_context *ctx, const char *name)
 {
 	struct chttp_dpage *dpage;
 	size_t name_len, start, mid, end, tail;
@@ -265,7 +265,44 @@ chttp_delete_header(struct chttp_context *ctx, const char *name)
 }
 
 static void
-_parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
+_parse_request_url(struct chttp_context *ctx, size_t start, size_t end)
+{
+	struct chttp_dpage *dpage;
+	size_t len, count, i;
+
+	chttp_context_ok(ctx);
+	chttp_dpage_ok(ctx->dpage_last);
+	assert_zero(ctx->seen_first);
+
+	dpage = ctx->dpage_last;
+	len = end - start;
+
+	// TODO remove
+	assert(strlen((char*)&dpage->data[start]) == len);
+
+	for (i = start, count = 0; i < end; i++) {
+		if (dpage->data[i] < ' ') {
+			chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+			return;
+		} else if (dpage->data[i] == ' ') {
+			dpage->data[i] = '\0';
+			count++;
+
+			if (dpage->data[i + 1] <= ' ') {
+				chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+				return;
+			}
+		}
+	}
+
+	if (count != 2) {
+		chttp_error(ctx, CHTTP_ERR_RESP_PARSE);
+		return;
+	}
+}
+
+static void
+_parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 {
 	struct chttp_dpage *dpage;
 	size_t len;
@@ -338,14 +375,7 @@ _parse_resp_status(struct chttp_context *ctx, size_t start, size_t end)
 }
 
 void
-chttp_parse_response(struct chttp_context *ctx)
-{
-	chttp_context_ok(ctx);
-
-	chttp_parse_headers(ctx, &_parse_resp_status);
-}
-void
-chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
+_header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 {
 	struct chttp_dpage *dpage;
 	size_t start, end, i;
@@ -423,8 +453,24 @@ chttp_parse_headers(struct chttp_context *ctx, chttp_parse_f *func)
 	chttp_dpage_shift_full(ctx);
 }
 
+void
+chttp_header_parse_response(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+
+	_header_parse(ctx, &_parse_response_status);
+}
+
+void
+chttp_header_parse_request(struct chttp_context *ctx)
+{
+	chttp_context_ok(ctx);
+
+	_header_parse(ctx, &_parse_request_url);
+}
+
 const char *
-chttp_get_header_pos(struct chttp_context *ctx, const char *name, size_t pos)
+chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos)
 {
 	struct chttp_dpage *dpage;
 	size_t name_len, start, mid, end;
@@ -508,9 +554,9 @@ chttp_get_header_pos(struct chttp_context *ctx, const char *name, size_t pos)
 }
 
 const char *
-chttp_get_header(struct chttp_context *ctx, const char *name)
+chttp_header_get(struct chttp_context *ctx, const char *name)
 {
 	chttp_context_ok(ctx);
 
-	return chttp_get_header_pos(ctx, name, 0);
+	return chttp_header_get_pos(ctx, name, 0);
 }

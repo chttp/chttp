@@ -158,7 +158,7 @@ _body_chunk_parse(struct chttp_context *ctx)
 }
 
 void
-chttp_body_length(struct chttp_context *ctx, int response)
+chttp_body_init(struct chttp_context *ctx, enum chttp_body_type type)
 {
 	const char *header = NULL;
 	char *len_end;
@@ -166,12 +166,13 @@ chttp_body_length(struct chttp_context *ctx, int response)
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_BODY);
 	assert_zero(ctx->chunked);
+	assert(type > CHTTP_BODY_NONE);
 
 	if (ctx->version == CHTTP_H_VERSION_1_0) {
 		ctx->close = 1;
 	}
 
-	header = chttp_get_header(ctx, "connection");
+	header = chttp_header_get(ctx, "connection");
 
 	if (header && !strcasecmp(header, "close")) {
 		ctx->close = 1;
@@ -179,7 +180,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 		// Default, do nothing
 	}
 
-	header = chttp_get_header(ctx, "content-encoding");
+	header = chttp_header_get(ctx, "content-encoding");
 
 	if (header && !strcasecmp(header, "gzip")) {
 		ctx->gzip = 1;
@@ -211,7 +212,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 		return;
 	}
 
-	header = chttp_get_header(ctx, "transfer-encoding");
+	header = chttp_header_get(ctx, "transfer-encoding");
 
 	if (header && !strcasecmp(header, "chunked")) {
 		ctx->chunked = 1;
@@ -219,7 +220,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 		return;
 	}
 
-	header = chttp_get_header(ctx, "content-length");
+	header = chttp_header_get(ctx, "content-length");
 
 	if (header) {
 		errno = 0;
@@ -238,7 +239,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 		return;
 	}
 
-	if (!response) {
+	if (type == CHTTP_BODY_REQUEST) {
 		ctx->state = CHTTP_STATE_IDLE;
 		return;
 	}
@@ -254,7 +255,7 @@ chttp_body_length(struct chttp_context *ctx, int response)
 }
 
 size_t
-chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_body_read_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	size_t start, ret_dpage, ret, len;
 
@@ -318,7 +319,7 @@ chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 			buf_len -= ret_dpage;
 
 			if (ctx->data_start.dpage) {
-				return ret_dpage + chttp_read_body_raw(ctx, buf, buf_len);
+				return ret_dpage + chttp_body_read_raw(ctx, buf, buf_len);
 			}
 		} else {
 			// Not enough room
@@ -385,14 +386,14 @@ chttp_read_body_raw(struct chttp_context *ctx, void *buf, size_t buf_len)
 	}
 
 	if (ctx->length) {
-		return ret + ret_dpage + chttp_read_body_raw(ctx, buf, buf_len);
+		return ret + ret_dpage + chttp_body_read_raw(ctx, buf, buf_len);
 	}
 
 	return ret + ret_dpage;
 }
 
 size_t
-chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_body_read(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	chttp_context_ok(ctx);
 	assert(ctx->state >= CHTTP_STATE_BODY);
@@ -404,11 +405,11 @@ chttp_get_body(struct chttp_context *ctx, void *buf, size_t buf_len)
 		return chttp_gzip_read_body(ctx, buf, buf_len);
 	}
 
-	return chttp_read_body_raw(ctx, buf, buf_len);
+	return chttp_body_read_raw(ctx, buf, buf_len);
 }
 
 void
-chttp_send_body(struct chttp_context *ctx, void *buf, size_t buf_len)
+chttp_body_send(struct chttp_context *ctx, void *buf, size_t buf_len)
 {
 	chttp_context_ok(ctx);
 	assert(ctx->state == CHTTP_STATE_SENT);

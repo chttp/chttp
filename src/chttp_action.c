@@ -17,7 +17,7 @@ _finalize_request(struct chttp_context *ctx)
 	if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
 		if(ctx->hostname.dpage) {
 			assert(ctx->hostname.length);
-			chttp_add_header(ctx, "Host",
+			chttp_header_add(ctx, "Host",
 				(char*)chttp_dpage_ptr_convert(ctx, &ctx->hostname));
 		} else {
 			chttp_ABORT("host header is missing");
@@ -26,7 +26,7 @@ _finalize_request(struct chttp_context *ctx)
 	}
 
 	if (ctx->gzip) {
-		chttp_add_header(ctx, "Accept-Encoding", "gzip");
+		chttp_header_add(ctx, "Accept-Encoding", "gzip");
 	}
 
 	chttp_dpage_append(ctx, "\r\n", 2);
@@ -55,7 +55,7 @@ chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int 
 		chttp_dpage_append_mark(ctx, host, strlen(host) + 1, &ctx->hostname);
 	} else if (ctx->state == CHTTP_STATE_INIT_HEADER) {
 		if (!ctx->has_host && ctx->version > CHTTP_H_VERSION_1_0) {
-			chttp_add_header(ctx, "Host", host);
+			chttp_header_add(ctx, "Host", host);
 			assert(ctx->has_host);
 		}
 	} else {
@@ -159,7 +159,7 @@ chttp_receive(struct chttp_context *ctx)
 			return;
 		}
 
-		chttp_parse_response(ctx);
+		chttp_header_parse_response(ctx);
 
 		if (ctx->error) {
 			return;
@@ -169,7 +169,7 @@ chttp_receive(struct chttp_context *ctx)
 	assert(ctx->state == CHTTP_STATE_BODY);
 	chttp_dpage_ok(ctx->data_end.dpage);
 
-	chttp_body_length(ctx, 1);
+	chttp_body_init(ctx, CHTTP_BODY_RESPONSE);
 
 	if (ctx->error) {
 		return;

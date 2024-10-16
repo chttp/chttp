@@ -219,7 +219,7 @@ chttp_zlib_read_body(struct chttp_context *ctx, unsigned char *output, size_t ou
 
 	assert(zlib->status == CHTTP_GZIP_DONE);
 
-	read = chttp_read_body_raw(ctx, zlib->buffer, zlib->buffer_len);
+	read = chttp_body_read_raw(ctx, zlib->buffer, zlib->buffer_len);
 
 	if (!read) {
 		return 0;
