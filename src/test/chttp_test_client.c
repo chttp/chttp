@@ -653,3 +653,4 @@ chttp_test_var_chttp_##name(struct chttp_test_context *ctx)			\
 }
 
 _CHTTP_FLAG_NAME(is_gzip, gzip)
+_CHTTP_FLAG_NAME(is_tls, addr.tls)

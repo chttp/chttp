@@ -109,6 +109,7 @@ CHTTP_TEST_CMD(chttp_take_error)
 CHTTP_TEST_CMD(chttp_reset)
 CHTTP_TEST_VAR(chttp_reused)
 CHTTP_TEST_VAR(chttp_is_gzip)
+CHTTP_TEST_VAR(chttp_is_tls)
 
 CHTTP_TEST_CMD(server_init)
 CHTTP_TEST_CMD(server_accept)

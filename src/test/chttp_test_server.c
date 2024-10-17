@@ -490,7 +490,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
 			chttp_error_msg(server->chttp));
 
-		server->chttp->state = CHTTP_STATE_DONE;
+		chttp_finish(server->chttp);
 		chttp_context_free(server->chttp);
 		server->chttp = NULL;
 	}
@@ -512,22 +512,29 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_header_parse_request(server->chttp);
 		chttp_test_ERROR(server->chttp->error, "*SERVER* error: %s",
 			chttp_error_msg(server->chttp));
+
+		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* got headers");
 	} while (server->chttp->state == CHTTP_STATE_HEADERS);
 
 	assert_zero(server->chttp->error);
 	assert(server->chttp->state == CHTTP_STATE_BODY);
 
-	chttp_body_init(server->chttp, CHTTP_BODY_REQUEST);
-
-	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
-		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
-		chttp_dpage_debug(server->chttp->dpage);
-	}
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* headers ready");
 
 	expect = chttp_header_get(server->chttp, "expect");
 
 	if (expect && !strcasecmp(expect, "100-continue")) {
 		chttp_tcp_send(&server->chttp->addr, "HTTP/1.1 100 Continue\r\n\r\n", 25);
+		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* 100 acked");
+	}
+
+	chttp_body_init(server->chttp, CHTTP_BODY_REQUEST);
+
+	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* body ready");
+
+	if (test->verbocity == CHTTP_LOG_VERY_VERBOSE) {
+		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* dpage dump");
+		chttp_dpage_debug(server->chttp->dpage);
 	}
 
 	if (server->chttp->state == CHTTP_STATE_IDLE) {
