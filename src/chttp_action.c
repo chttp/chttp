@@ -194,7 +194,10 @@ chttp_finish(struct chttp_context *ctx)
 	chttp_context_ok(ctx);
 
 	if (ctx->addr.state == CHTTP_ADDR_CONNECTED) {
-		if (ctx->close || ctx->error || ctx->state < CHTTP_STATE_IDLE) {
+		chttp_addr_ok(&ctx->addr);
+
+		if (ctx->close || ctx->error || ctx->state < CHTTP_STATE_IDLE ||
+		    ctx->addr.error) {
 			chttp_tcp_close(&ctx->addr);
 		} else {
 			chttp_tcp_pool_store(&ctx->addr);

@@ -123,7 +123,7 @@ void chttp_header_parse_response(struct chttp_context *ctx);
 void chttp_header_parse_request(struct chttp_context *ctx);
 const char *chttp_header_get(struct chttp_context *ctx, const char *name);
 const char *chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos);
-int chttp_find_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
+int chttp_header_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary);
 
 void chttp_connect(struct chttp_context *ctx, const char *host, size_t host_len, int port,

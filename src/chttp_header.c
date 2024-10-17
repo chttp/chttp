@@ -153,7 +153,7 @@ chttp_header_add(struct chttp_context *ctx, const char *name, const char *value)
  * equal to 0, match
  */
 int
-chttp_find_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
+chttp_header_endline(struct chttp_dpage *dpage, size_t start, size_t *mid, size_t *end,
 	int has_return, int *binary)
 {
 	chttp_dpage_ok(dpage);
@@ -229,7 +229,7 @@ chttp_header_delete(struct chttp_context *ctx, const char *name)
 		chttp_dpage_ok(dpage);
 
 		for (start = 0; start < dpage->offset; start++) {
-			error = chttp_find_endline(dpage, start, &mid, &end, 1, NULL);
+			error = chttp_header_endline(dpage, start, &mid, &end, 1, NULL);
 
 			if (error) {
 				assert(first);
@@ -400,7 +400,7 @@ _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 	start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
 
 	for (; start < dpage->offset; start++) {
-		error = chttp_find_endline(dpage, start, NULL, &end, 1, &binary);
+		error = chttp_header_endline(dpage, start, NULL, &end, 1, &binary);
 
 		// Incomplete line
 		if (error < 0) {
@@ -490,7 +490,7 @@ chttp_header_get_pos(struct chttp_context *ctx, const char *name, size_t pos)
 		chttp_dpage_ok(dpage);
 
 		for (start = 0; start < dpage->offset; start++) {
-			assert_zero(chttp_find_endline(dpage, start, &mid, &end, 0, NULL));
+			assert_zero(chttp_header_endline(dpage, start, &mid, &end, 0, NULL));
 
 			end--;
 

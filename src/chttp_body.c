@@ -27,7 +27,7 @@ _body_chunk_end(struct chttp_context *ctx)
 		chttp_dpage_ok(ctx->data_start.dpage);
 
 		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
-		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
+		error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
 
 		if (error > 0) {
 			chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
@@ -88,7 +88,7 @@ _body_chunk_start(struct chttp_context *ctx)
 		chttp_dpage_ok(ctx->data_start.dpage);
 
 		start = chttp_dpage_ptr_offset(ctx, &ctx->data_start);
-		error = chttp_find_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
+		error = chttp_header_endline(ctx->dpage_last, start, NULL, &end, 1, NULL);
 
 		if (error > 0) {
 			chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
