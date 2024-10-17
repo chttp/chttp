@@ -1,7 +1,8 @@
 chttp_test "Reuse and gzip"
 
-server_init
+gzip_or_skip
 
+server_init
 server_accept
 server_read_request
 server_method_match GET
