@@ -109,7 +109,7 @@ chttp_openssl_test_key(void *ctx_priv)
 	SSL_CTX *ctx;
 	BIO *bio;
 	X509 *cert;
-	RSA *key;
+	EVP_PKEY *key;
 	int ret;
 
 	assert(ctx_priv);
@@ -145,23 +145,23 @@ chttp_openssl_test_key(void *ctx_priv)
 		return 1;
 	}
 
-	key = PEM_read_bio_RSAPrivateKey(bio, NULL, NULL, NULL);
+	key = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
 
 	if (!key) {
 		BIO_free(bio);
 		return 1;
 	}
 
-	ret = SSL_CTX_use_RSAPrivateKey(ctx, key);
+	ret = SSL_CTX_use_PrivateKey(ctx, key);
 
 	if (ret != 1) {
 		BIO_free(bio);
-		RSA_free(key);
+		EVP_PKEY_free(key);
 		return 1;
 	}
 
 	BIO_free(bio);
-	RSA_free(key);
+	EVP_PKEY_free(key);
 
 	return 0;
 }
