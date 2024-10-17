@@ -204,11 +204,11 @@ chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_c
 	chttp_test_ERROR_string(cmd->params[0].value);
 	chttp_test_ERROR_string(cmd->params[1].value);
 
-	if (cmd->param_count == 3) {
+	if (cmd->param_count >= 3) {
 		chttp_test_ERROR_string(cmd->params[2].value);
-		chttp_test_ERROR(strcmp(cmd->params[2].value, "tls"), "invalid TLS param: %s",
-			cmd->params[2].value);
-		tls = 1;
+		if (!strcmp(cmd->params[2].value, "1")) {
+			tls = 1;
+		}
 	}
 
 	port = chttp_test_parse_long(cmd->params[1].value);

@@ -6,6 +6,7 @@
 #include "compress/chttp_gzip.h"
 #include "dns/chttp_dns.h"
 #include "test/chttp_test.h"
+#include "tls/chttp_tls.h"
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -46,6 +47,7 @@ struct chttp_test_server {
 	struct chttp_addr			addr;
 	char					ip_str[128];
 	char					port_str[16];
+	int					tls;
 
 	struct chttp_context			*chttp;
 
@@ -304,7 +306,7 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 	struct chttp_test_server *server;
 
 	assert(ctx);
-	chttp_test_ERROR(cmd->param_count > 1, "too many parameters");
+	chttp_test_ERROR(cmd->param_count > 2, "too many parameters");
 	chttp_test_ERROR(ctx->server != NULL, "server context exists");
 
 	server = malloc(sizeof(*server));
@@ -323,12 +325,21 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 	assert_zero(pthread_cond_init(&server->cmd_signal, NULL));
 	assert_zero(pthread_cond_init(&server->flush_signal, NULL));
 
-	if (cmd->param_count == 1) {
+	if (cmd->param_count >= 1) {
+		chttp_test_ERROR_string(cmd->params[0].value);
 		snprintf(server->ip_str, sizeof(server->ip_str), "%s", cmd->params[0].value);
 	} else {
 		snprintf(server->ip_str, sizeof(server->ip_str), "%s", _SERVER_IP_DEFAULT);
 	}
 	chttp_test_ERROR_string(server->ip_str);
+
+	if (cmd->param_count >= 2) {
+		chttp_test_ERROR_string(cmd->params[1].value);
+		if (!strcmp(cmd->params[1].value, "1")) {
+			server->tls = 1;
+			chttp_test_ERROR(!chttp_tls_enabled(), "TLS not enabled");
+		}
+	}
 
 	_server_LOCK(server);
 
@@ -343,8 +354,6 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 	_server_UNLOCK(server);
 
 	_server_init_socket(server);
-
-	// TODO tls support
 
 	ctx->server = server;
 
@@ -380,6 +389,19 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 	assert(server->addr.sock >= 0);
 
 	server->addr.state = CHTTP_ADDR_CONNECTED;
+
+	if (server->tls) {
+		server->addr.tls = 1;
+
+		chttp_tls_accept(&server->addr);
+
+		chttp_test_ERROR(server->addr.error, "TLS server error %d",
+			server->addr.error);
+
+		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* TLS established");
+	}
+
+	chttp_addr_connected(&server->addr);
 
 	chttp_sa_string(&server->addr.sa, remote, sizeof(remote), &remote_port);
 
@@ -431,6 +453,21 @@ chttp_test_var_server_port(struct chttp_test_context *ctx)
 	return server->port_str;
 }
 
+char *
+chttp_test_var_server_tls(struct chttp_test_context *ctx)
+{
+	struct chttp_test_server *server;
+
+	server = _server_context_ok(ctx);
+	assert(server->sock >= 0);
+
+	if (server->tls) {
+		return "1";
+	}
+
+	return "0";
+}
+
 void
 chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
@@ -473,7 +510,7 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 			"server read network error");
 
 		chttp_header_parse_request(server->chttp);
-		chttp_test_ERROR(server->chttp->error, "*SERVER* %s",
+		chttp_test_ERROR(server->chttp->error, "*SERVER* error: %s",
 			chttp_error_msg(server->chttp));
 	} while (server->chttp->state == CHTTP_STATE_HEADERS);
 

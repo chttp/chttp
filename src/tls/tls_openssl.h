@@ -15,6 +15,7 @@ struct chttp_addr;
 
 void chttp_openssl_free(void);
 void chttp_openssl_connect(struct chttp_addr *addr);
+void chttp_openssl_accept(struct chttp_addr *addr);
 void chttp_openssl_close(struct chttp_addr *addr);
 void chttp_openssl_write(struct chttp_addr *addr, const void *buf, size_t buf_len);
 size_t chttp_openssl_read(struct chttp_addr *addr, void *buf, size_t buf_len);

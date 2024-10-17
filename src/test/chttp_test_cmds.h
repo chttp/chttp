@@ -138,6 +138,7 @@ CHTTP_TEST_CMD(server_sleep_ms)
 CHTTP_TEST_CMD(server_flush_async)
 CHTTP_TEST_VAR(server_host)
 CHTTP_TEST_VAR(server_port)
+CHTTP_TEST_VAR(server_tls)
 
 CHTTP_TEST_CMD(random_range)
 CHTTP_TEST_VAR(random)

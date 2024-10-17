@@ -36,6 +36,17 @@ chttp_tls_connect(struct chttp_addr *addr)
 }
 
 void
+chttp_tls_accept(struct chttp_addr *addr)
+{
+#ifdef CHTTP_OPENSSL
+	chttp_openssl_accept(addr);
+#else
+	(void)addr;
+	chttp_ABORT("TLS not configured");
+#endif
+}
+
+void
 chttp_tls_close(struct chttp_addr *addr)
 {
 #ifdef CHTTP_OPENSSL

@@ -26,7 +26,7 @@ TCC=$(CC) -x c - -o $(NULL)
 # Detect openssl
 OPENSSL_C='\#include <openssl/ssl.h>\nint main() {SSL *ssl;}'
 OPENSSL_CFLAGS=-DCHTTP_OPENSSL
-OPENSSL_LIB=-lssl
+OPENSSL_LIB=-lssl -lcrypto
 OPENSSL=$(shell printf $(OPENSSL_C) | $(TCC) $(OPENSSL_LIB) $(TEST_TRUE))
 ifeq ($(OPENSSL),true)
 	CFLAGS+=$(OPENSSL_CFLAGS)
