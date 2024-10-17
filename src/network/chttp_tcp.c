@@ -286,7 +286,7 @@ chttp_tcp_close(struct chttp_addr *addr)
 
 	assert_zero(close(addr->sock));
 
-	if (addr->len) {
+	if (addr->resolved) {
 		addr->state = CHTTP_ADDR_RESOLVED;
 	} else  {
 		addr->state = CHTTP_ADDR_NONE;

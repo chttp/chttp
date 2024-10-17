@@ -31,6 +31,7 @@ struct chttp_addr {
 	int				poll_result;
 	short				poll_revents;
 
+	unsigned int			resolved:1;
 	unsigned int			nonblocking:1;
 	unsigned int			reused:1;
 	unsigned int			tls:1;

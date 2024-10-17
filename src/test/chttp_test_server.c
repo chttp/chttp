@@ -357,7 +357,6 @@ void
 chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
-	socklen_t len;
 	char remote[128] = {0};
 	int remote_port = -1;
 
@@ -375,9 +374,9 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 	assert(server->addr.state == CHTTP_ADDR_NONE);
 	assert(server->addr.sock == -1);
 
-	len = sizeof(server->addr.sa);
+	server->addr.len = sizeof(server->addr.sa);
 
-	server->addr.sock = accept(server->sock, &server->addr.sa, &len);
+	server->addr.sock = accept(server->sock, &server->addr.sa, &server->addr.len);
 	assert(server->addr.sock >= 0);
 
 	server->addr.state = CHTTP_ADDR_CONNECTED;

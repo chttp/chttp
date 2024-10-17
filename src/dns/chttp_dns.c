@@ -40,6 +40,7 @@ chttp_dns_copy(struct chttp_addr *addr_dest, struct sockaddr *sa, int port)
 	}
 
 	addr_dest->state = CHTTP_ADDR_RESOLVED;
+	addr_dest->resolved = 1;
 }
 
 int
