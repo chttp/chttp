@@ -28,9 +28,9 @@ struct chttp_addr {
 
 	socklen_t			len;
 	int				sock;
-	int				sock_port;
 	int				poll_result;
 	short				poll_revents;
+	int				listen_port;
 
 	unsigned int			resolved:1;
 	unsigned int			listen:1;

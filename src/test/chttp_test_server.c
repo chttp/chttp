@@ -4,7 +4,6 @@
  */
 
 #include "compress/chttp_gzip.h"
-#include "dns/chttp_dns.h"
 #include "test/chttp_test.h"
 #include "tls/chttp_tls.h"
 
@@ -267,11 +266,11 @@ _server_init_socket(struct chttp_test_server *server)
 		server->saddr.tls = 1;
 	}
 
-	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->saddr.sock_port);
+	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->saddr.listen_port);
 	assert((size_t)val < sizeof(server->port_str));
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
-		server->saddr.sock_port);
+		server->saddr.listen_port);
 }
 
 void
