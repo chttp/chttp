@@ -490,8 +490,8 @@ chttp_test_cmd_server_read_request(struct chttp_test_context *ctx, struct chttp_
 		chttp_test_ERROR(server->chttp->error, "server error detected (%s)",
 			chttp_error_msg(server->chttp));
 
-		chttp_finish(server->chttp);
 		chttp_context_free(server->chttp);
+
 		server->chttp = NULL;
 	}
 

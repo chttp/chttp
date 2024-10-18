@@ -103,7 +103,7 @@ const char *_TLS_OPENSSL_TEST_KEY =
 	"oWhrNJhyQz7ZyLqHAo8I9hht3AyzuaA=\n"
 	"-----END PRIVATE KEY-----\n";
 
-int
+void
 chttp_openssl_test_key(void *ctx_priv)
 {
 	SSL_CTX *ctx;
@@ -116,54 +116,28 @@ chttp_openssl_test_key(void *ctx_priv)
 	ctx = (SSL_CTX*)ctx_priv;
 
 	bio = BIO_new_mem_buf(_TLS_OPENSSL_TEST_CERT, -1);
-
-	if (!bio) {
-		return 1;
-	}
+	assert(bio);
 
 	cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
-
-	if (!cert) {
-		BIO_free(bio);
-		return 1;
-	}
+	assert(cert);
 
 	ret = SSL_CTX_use_certificate(ctx, cert);
-
-	if (ret != 1) {
-		BIO_free(bio);
-		X509_free(cert);
-		return 1;
-	}
+	assert(ret == 1);
 
 	BIO_free(bio);
 	X509_free(cert);
 
 	bio = BIO_new_mem_buf(_TLS_OPENSSL_TEST_KEY, -1);
-
-	if (!bio) {
-		return 1;
-	}
+	assert(bio);
 
 	key = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
-
-	if (!key) {
-		BIO_free(bio);
-		return 1;
-	}
+	assert(key);
 
 	ret = SSL_CTX_use_PrivateKey(ctx, key);
-
-	if (ret != 1) {
-		BIO_free(bio);
-		EVP_PKEY_free(key);
-		return 1;
-	}
+	assert(ret == 1);
 
 	BIO_free(bio);
 	EVP_PKEY_free(key);
-
-	return 0;
 }
 
 #endif /* CHTTP_OPENSSL */

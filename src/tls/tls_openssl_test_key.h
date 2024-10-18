@@ -8,7 +8,7 @@
 
 #ifdef CHTTP_OPENSSL
 
-int chttp_openssl_test_key(void *ctx_priv);
+void chttp_openssl_test_key(void *ctx_priv);
 
 #endif /* CHTTP_OPENSSL */
 

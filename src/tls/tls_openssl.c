@@ -66,7 +66,6 @@ static void
 _openssl_init(struct chttp_openssl_ctx *ctx)
 {
 	const SSL_METHOD *method = NULL;
-	int ret;
 
 	chttp_openssl_ctx_ok(ctx);
 	assert_zero(ctx->ssl_ctx);
@@ -96,16 +95,7 @@ _openssl_init(struct chttp_openssl_ctx *ctx)
 	// TODO set various client TLS settings
 
 	if (ctx->type == CHTTP_OPENSSL_SERVER) {
-		ret = chttp_openssl_test_key(ctx->ssl_ctx);
-
-		if (ret) {
-			ctx->failed = 1;
-
-			SSL_CTX_free(ctx->ssl_ctx);
-			ctx->ssl_ctx = NULL;
-
-			return;
-		}
+		chttp_openssl_test_key(ctx->ssl_ctx);
 	}
 
 	ctx->initialized = 1;
