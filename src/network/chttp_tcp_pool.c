@@ -243,6 +243,7 @@ chttp_tcp_pool_store(struct chttp_addr *addr)
 	chttp_tcp_pool_ok();
 	chttp_addr_connected(addr);
 	assert(addr->resolved);
+	assert_zero(addr->listen);
 
 	if (_TCP_POOL_AGE_SEC <= 0) {
 		chttp_tcp_close(addr);

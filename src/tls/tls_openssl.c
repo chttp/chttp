@@ -195,6 +195,8 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 			chttp_ABORT("bad openssl ctx type");
 	}
 
+	// TODO honor addr->timeout_connect_ms
+
 	ret = SSL_do_handshake(ssl);
 
 	if (ret != 1) {

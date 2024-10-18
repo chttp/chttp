@@ -42,7 +42,6 @@ struct chttp_test_server {
 	volatile int				started;
 	volatile int				stopped;
 
-	int					port;
 	struct chttp_addr			saddr;
 	struct chttp_addr			addr;
 	char					ip_str[128];
@@ -261,50 +260,18 @@ _server_init_socket(struct chttp_test_server *server)
 	_server_ok(server);
 	assert(server->saddr.sock == -1);
 
-	val = chttp_dns_resolve(&server->saddr, server->ip_str, strlen(server->ip_str), 0, 0);
-	chttp_test_ERROR(val, "server cannot resolve address %s", server->ip_str);
-
-	chttp_addr_resolved(&server->saddr);
-
-	server->saddr.sock = socket(server->saddr.sa.sa_family, SOCK_STREAM, 0);
-	assert(server->saddr.sock >= 0);
-
-	val = 1;
-	assert_zero(setsockopt(server->saddr.sock, SOL_SOCKET, SO_REUSEADDR,
-		&val, sizeof(val)));
-
-	assert_zero(bind(server->saddr.sock, &server->saddr.sa, server->saddr.len));
-	assert_zero(listen(server->saddr.sock, 0));
-
-	server->saddr.state = CHTTP_ADDR_CONNECTED;
-	server->saddr.resolved = 0;
+	val = chttp_tcp_listen(&server->saddr, server->ip_str, 0, 0);
+	chttp_test_ERROR(val || server->saddr.error, "*SERVER* server listen");
 
 	if (server->tls) {
 		server->saddr.tls = 1;
 	}
 
-	server->saddr.len = sizeof(server->saddr.sa6);
-
-	assert_zero(getsockname(server->saddr.sock, &server->saddr.sa, &server->saddr.len));
-
-	switch (server->saddr.sa.sa_family) {
-		case AF_INET:
-			server->port = ntohs(server->saddr.sa4.sin_port);
-			break;
-		case AF_INET6:
-			server->port = ntohs(server->saddr.sa6.sin6_port);
-			break;
-		default:
-			chttp_test_ERROR(1, "Invalid server socket family");
-	}
-
-	assert(server->port >= 0);
-
-	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->port);
+	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->saddr.sock_port);
 	assert((size_t)val < sizeof(server->port_str));
 
 	chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* socket port: %d",
-		server->port);
+		server->saddr.sock_port);
 }
 
 void
@@ -323,7 +290,6 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 
 	server->magic = _SERVER_MAGIC;
 	server->ctx = ctx;
-	server->port = -1;
 	chttp_addr_init(&server->saddr);
 	chttp_addr_init(&server->addr);
 	TAILQ_INIT(&server->cmd_list);
@@ -445,7 +411,8 @@ chttp_test_var_server_port(struct chttp_test_context *ctx)
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	assert(server->port >= 0);
+	chttp_addr_connected(&server->saddr);
+	chttp_test_ERROR_string(server->port_str);
 
 	return server->port_str;
 }

@@ -31,12 +31,13 @@ chttp_addr_move(struct chttp_addr *addr_dest, struct chttp_addr *addr)
 
 	chttp_addr_clone(addr_dest, addr);
 
+	addr->error = 0;
 	addr->sock = -1;
+	addr->listen = 0;
 	addr->nonblocking = 0;
 	addr->reused = 0;
 	addr->tls = 0;
 	addr->tls_priv = NULL;
-	addr->error = 0;
 
 	if (addr->resolved) {
 		addr->state = CHTTP_ADDR_RESOLVED;
@@ -51,18 +52,9 @@ chttp_addr_clone(struct chttp_addr *addr_dest, struct chttp_addr *addr)
 {
 	chttp_addr_ok(addr);
 
-	chttp_addr_init(addr_dest);
+	memcpy(addr_dest, addr, sizeof(*addr_dest));
 
-	addr_dest->state = addr->state;
-	addr_dest->len = addr->len;
-	addr_dest->sock = addr->sock;
-	addr_dest->nonblocking = addr->nonblocking;
-	addr_dest->reused = addr->reused;
-	addr_dest->tls = addr->tls;
-	addr_dest->tls_priv = addr->tls_priv;
-	addr_dest->resolved = addr->resolved;
-
-	memcpy(&addr_dest->sa, &addr->sa, addr->len);
+	chttp_addr_ok(addr_dest);
 }
 
 int

@@ -28,10 +28,12 @@ struct chttp_addr {
 
 	socklen_t			len;
 	int				sock;
+	int				sock_port;
 	int				poll_result;
 	short				poll_revents;
 
 	unsigned int			resolved:1;
+	unsigned int			listen:1;
 	unsigned int			nonblocking:1;
 	unsigned int			reused:1;
 	unsigned int			tls:1;
@@ -58,6 +60,7 @@ void chttp_addr_clone(struct chttp_addr *addr_dest, struct chttp_addr *addr);
 int chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2);
 void chttp_addr_connect(struct chttp_context *ctx);
 
+int chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_len);
 int chttp_tcp_connect(struct chttp_addr *addr);
 int chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr);
 void chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len);
