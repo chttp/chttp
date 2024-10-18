@@ -112,15 +112,5 @@ chttp_addr_connect(struct chttp_context *ctx)
 		return;
 	}
 
-	if (ctx->addr.tls) {
-		chttp_tls_connect(&ctx->addr);
-		chttp_tcp_error_check(ctx);
-
-		if (ctx->error) {
-			assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
-			return;
-		}
-	}
-
 	chttp_addr_connected(&ctx->addr);
 }

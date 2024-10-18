@@ -159,6 +159,15 @@ chttp_tcp_connect(struct chttp_addr *addr)
 
 	_tcp_set_timeouts(addr);
 
+	if (addr->tls) {
+		chttp_tls_connect(addr);
+
+		if (addr->error) {
+			assert(addr->state != CHTTP_ADDR_CONNECTED);
+			return 1;
+		}
+	}
+
 	chttp_addr_connected(addr);
 
 	return 0;
