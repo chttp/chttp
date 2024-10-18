@@ -104,7 +104,11 @@ chttp_addr_connect(struct chttp_context *ctx)
 	ret = chttp_tcp_connect(&ctx->addr);
 
 	if (ret) {
-		chttp_error(ctx, CHTTP_ERR_CONNECT);
+		assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
+		assert(ctx->addr.error);
+
+		chttp_error(ctx, ctx->addr.error);
+
 		return;
 	}
 
@@ -113,6 +117,7 @@ chttp_addr_connect(struct chttp_context *ctx)
 		chttp_tcp_error_check(ctx);
 
 		if (ctx->error) {
+			assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
 			return;
 		}
 	}

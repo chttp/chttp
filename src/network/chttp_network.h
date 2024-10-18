@@ -59,6 +59,7 @@ int chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2);
 void chttp_addr_connect(struct chttp_context *ctx);
 
 int chttp_tcp_connect(struct chttp_addr *addr);
+int chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr);
 void chttp_tcp_send(struct chttp_addr *addr, const void *buf, size_t buf_len);
 void chttp_tcp_read(struct chttp_context *ctx);
 size_t chttp_tcp_read_ctx(struct chttp_context *ctx, void *buf, size_t buf_len);

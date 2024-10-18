@@ -42,8 +42,8 @@ struct chttp_test_server {
 	volatile int				started;
 	volatile int				stopped;
 
-	int					sock;
 	int					port;
+	struct chttp_addr			saddr;
 	struct chttp_addr			addr;
 	char					ip_str[128];
 	char					port_str[16];
@@ -222,13 +222,17 @@ _server_finish(struct chttp_test_context *ctx)
 		server->chttp = NULL;
 	}
 
-	if (server->sock >= 0) {
-		assert_zero(close(server->sock));
+	if (server->saddr.state == CHTTP_ADDR_CONNECTED) {
+		chttp_tcp_close(&server->saddr);
 	}
+
+	assert(server->saddr.state == CHTTP_ADDR_NONE);
+	assert(server->saddr.sock == -1);
 
 	if (server->addr.state == CHTTP_ADDR_CONNECTED) {
 		chttp_tcp_close(&server->addr);
 	}
+
 	assert(server->addr.state == CHTTP_ADDR_NONE);
 	assert(server->addr.sock == -1);
 
@@ -252,47 +256,50 @@ _gzip_finish(struct chttp_test_context *ctx)
 static void
 _server_init_socket(struct chttp_test_server *server)
 {
-	struct chttp_addr caddr;
-	struct sockaddr_storage saddr;
-	struct sockaddr *paddr;
-	socklen_t len;
 	int val;
 
 	_server_ok(server);
-	assert(server->sock == -1);
+	assert(server->saddr.sock == -1);
 
-	val = chttp_dns_resolve(&caddr, server->ip_str, strlen(server->ip_str), 0, 0);
+	val = chttp_dns_resolve(&server->saddr, server->ip_str, strlen(server->ip_str), 0, 0);
 	chttp_test_ERROR(val, "server cannot resolve address %s", server->ip_str);
-	assert(caddr.magic == CHTTP_ADDR_MAGIC);
 
-	server->sock = socket(caddr.sa.sa_family, SOCK_STREAM, 0);
-	assert(server->sock >= 0);
+	chttp_addr_resolved(&server->saddr);
+
+	server->saddr.sock = socket(server->saddr.sa.sa_family, SOCK_STREAM, 0);
+	assert(server->saddr.sock >= 0);
 
 	val = 1;
-	assert_zero(setsockopt(server->sock, SOL_SOCKET, SO_REUSEADDR,
+	assert_zero(setsockopt(server->saddr.sock, SOL_SOCKET, SO_REUSEADDR,
 		&val, sizeof(val)));
 
-	assert_zero(bind(server->sock, &caddr.sa, caddr.len));
-	assert_zero(listen(server->sock, 0));
+	assert_zero(bind(server->saddr.sock, &server->saddr.sa, server->saddr.len));
+	assert_zero(listen(server->saddr.sock, 0));
 
-	paddr = (struct sockaddr*)&saddr;
-	len = sizeof(saddr);
+	server->saddr.state = CHTTP_ADDR_CONNECTED;
+	server->saddr.resolved = 0;
 
-	assert_zero(getsockname(server->sock, paddr, &len));
-	assert(paddr->sa_family == caddr.sa.sa_family);
+	if (server->tls) {
+		server->saddr.tls = 1;
+	}
 
-	switch (paddr->sa_family) {
+	server->saddr.len = sizeof(server->saddr.sa6);
+
+	assert_zero(getsockname(server->saddr.sock, &server->saddr.sa, &server->saddr.len));
+
+	switch (server->saddr.sa.sa_family) {
 		case AF_INET:
-			server->port = ntohs(((struct sockaddr_in*)paddr)->sin_port);
+			server->port = ntohs(server->saddr.sa4.sin_port);
 			break;
 		case AF_INET6:
-			server->port = ntohs(((struct sockaddr_in6*)paddr)->sin6_port);
+			server->port = ntohs(server->saddr.sa6.sin6_port);
 			break;
 		default:
 			chttp_test_ERROR(1, "Invalid server socket family");
 	}
 
 	assert(server->port >= 0);
+
 	val = snprintf(server->port_str, sizeof(server->port_str), "%d", server->port);
 	assert((size_t)val < sizeof(server->port_str));
 
@@ -316,8 +323,8 @@ chttp_test_cmd_server_init(struct chttp_test_context *ctx, struct chttp_test_cmd
 
 	server->magic = _SERVER_MAGIC;
 	server->ctx = ctx;
-	server->sock = -1;
 	server->port = -1;
+	chttp_addr_init(&server->saddr);
 	chttp_addr_init(&server->addr);
 	TAILQ_INIT(&server->cmd_list);
 	assert_zero(pthread_mutex_init(&server->cmd_lock, NULL));
@@ -367,11 +374,9 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 {
 	struct chttp_test_server *server;
 	char remote[128] = {0};
-	int remote_port = -1;
+	int ret, remote_port = -1;
 
 	server = _server_context_ok(ctx);
-	assert(server->sock >= 0);
-	assert(server->port >= 0);
 	chttp_test_ERROR_param_count(cmd, 0);
 
 	if (!cmd->async) {
@@ -379,25 +384,17 @@ chttp_test_cmd_server_accept(struct chttp_test_context *ctx, struct chttp_test_c
 		return;
 	}
 
+	chttp_addr_connected(&server->saddr);
 	chttp_addr_ok(&server->addr);
 	assert(server->addr.state == CHTTP_ADDR_NONE);
 	assert(server->addr.sock == -1);
 
-	server->addr.len = sizeof(server->addr.sa);
+	ret = chttp_tcp_accept(&server->addr, &server->saddr);
 
-	server->addr.sock = accept(server->sock, &server->addr.sa, &server->addr.len);
-	assert(server->addr.sock >= 0);
+	chttp_test_ERROR(ret || server->addr.error, "*SERVER* accept error %d",
+		server->addr.error);
 
-	server->addr.state = CHTTP_ADDR_CONNECTED;
-
-	if (server->tls) {
-		server->addr.tls = 1;
-
-		chttp_tls_accept(&server->addr);
-
-		chttp_test_ERROR(server->addr.error, "TLS server error %d",
-			server->addr.error);
-
+	if (server->addr.tls) {
 		chttp_test_log(server->ctx, CHTTP_LOG_VERY_VERBOSE, "*SERVER* TLS established");
 	}
 
@@ -436,7 +433,7 @@ chttp_test_var_server_host(struct chttp_test_context *ctx)
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	assert(server->sock >= 0);
+	chttp_addr_connected(&server->saddr);
 	chttp_test_ERROR_string(server->ip_str);
 
 	return server->ip_str;
@@ -459,7 +456,7 @@ chttp_test_var_server_tls(struct chttp_test_context *ctx)
 	struct chttp_test_server *server;
 
 	server = _server_context_ok(ctx);
-	assert(server->sock >= 0);
+	chttp_addr_connected(&server->saddr);
 
 	if (server->tls) {
 		return "1";

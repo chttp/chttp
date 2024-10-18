@@ -89,17 +89,38 @@ _tcp_poll_connected(struct chttp_addr *addr)
 	return 1;
 }
 
+void
+_tcp_set_timeouts(struct chttp_addr *addr)
+{
+	struct timeval timeout;
+
+	chttp_addr_connected(addr);
+
+	addr->time_start = chttp_get_time();
+
+	if (addr->timeout_transfer_ms > 0) {
+		timeout.tv_sec = addr->timeout_transfer_ms / 1000;
+		timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
+
+		(void)setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+			sizeof(timeout));
+		(void)setsockopt(addr->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+			sizeof(timeout));
+
+	}
+}
+
 int
 chttp_tcp_connect(struct chttp_addr *addr)
 {
 	int val, ret;
-	struct timeval timeout;
 
 	chttp_addr_resolved(addr);
 
 	addr->sock = socket(addr->sa.sa_family, SOCK_STREAM, 0);
 
 	if (addr->sock < 0) {
+		addr->error = CHTTP_ERR_CONNECT;
 		return 1;
 	}
 
@@ -109,7 +130,6 @@ chttp_tcp_connect(struct chttp_addr *addr)
 	(void)setsockopt(addr->sock, IPPROTO_TCP, TCP_FASTOPEN, &val, sizeof(val));
 
 	addr->state = CHTTP_ADDR_CONNECTED;
-	addr->time_start = chttp_get_time();
 
 	if (addr->timeout_connect_ms > 0) {
 		_tcp_set_nonblocking(addr);
@@ -121,9 +141,13 @@ chttp_tcp_connect(struct chttp_addr *addr)
 		ret = _tcp_poll_connected(addr);
 
 		if (ret <= 0) {
+			chttp_tcp_close(addr);
+			addr->error = CHTTP_ERR_CONNECT;
 			return 1;
 		}
 	} else if (val) {
+		chttp_tcp_close(addr);
+		addr->error = CHTTP_ERR_CONNECT;
 		return 1;
 	}
 
@@ -133,15 +157,42 @@ chttp_tcp_connect(struct chttp_addr *addr)
 
 	assert_zero(addr->nonblocking);
 
-	if (addr->timeout_transfer_ms > 0) {
-		timeout.tv_sec = addr->timeout_transfer_ms / 1000;
-		timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
+	_tcp_set_timeouts(addr);
 
-		(void)setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-			sizeof(timeout));
-		(void)setsockopt(addr->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
-			sizeof(timeout));
+	chttp_addr_connected(addr);
 
+	return 0;
+}
+
+int
+chttp_tcp_accept(struct chttp_addr *addr, struct chttp_addr *server_addr)
+{
+	chttp_addr_ok(addr);
+	assert(addr->sock == -1);
+	chttp_addr_connected(server_addr);
+
+	chttp_addr_init(addr);
+
+	addr->len = sizeof(addr->sa6);
+	addr->sock = accept(server_addr->sock, &addr->sa, &addr->len);
+
+	if (addr->sock < 0) {
+		return 1;
+	}
+
+	addr->state = CHTTP_ADDR_CONNECTED;
+
+	_tcp_set_timeouts(addr);
+
+	if (server_addr->tls) {
+		addr->tls = 1;
+
+		chttp_tls_accept(addr);
+
+		if (addr->error) {
+			assert(addr->state != CHTTP_ADDR_CONNECTED);
+			return 1;
+		}
 	}
 
 	return 0;
