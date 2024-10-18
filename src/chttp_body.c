@@ -71,7 +71,7 @@ _body_chunk_end(struct chttp_context *ctx)
 	return;
 }
 
-void
+static void
 _body_chunk_start(struct chttp_context *ctx)
 {
 	size_t start, end;
@@ -143,7 +143,7 @@ _body_chunk_start(struct chttp_context *ctx)
 	chttp_error(ctx, CHTTP_ERR_RESP_CHUNK);
 }
 
-void
+static void
 _body_chunk_parse(struct chttp_context *ctx)
 {
 	chttp_context_ok(ctx);

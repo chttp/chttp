@@ -73,36 +73,3 @@ chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2)
 
 	return memcmp(&a1->sa, &a2->sa, a1->len);
 }
-
-void
-chttp_addr_connect(struct chttp_context *ctx)
-{
-	int ret;
-
-	chttp_context_ok(ctx);
-	chttp_addr_resolved(&ctx->addr);
-
-	ctx->addr.error = 0;
-
-	if (!ctx->new_conn) {
-		ret = chttp_tcp_pool_lookup(&ctx->addr);
-
-		if (ret) {
-			chttp_addr_connected(&ctx->addr);
-			return;
-		}
-	}
-
-	ret = chttp_tcp_connect(&ctx->addr);
-
-	if (ret) {
-		assert(ctx->addr.state != CHTTP_ADDR_CONNECTED);
-		assert(ctx->addr.error);
-
-		chttp_error(ctx, ctx->addr.error);
-
-		return;
-	}
-
-	chttp_addr_connected(&ctx->addr);
-}

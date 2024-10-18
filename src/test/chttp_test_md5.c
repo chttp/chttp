@@ -246,7 +246,7 @@ chttp_test_md5_final(struct chttp_test_md5 *md5)
 	md5->ready = 1;
 }
 
-void
+static void
 _md5_store(struct chttp_test_md5 *md5, char *md5_buf)
 {
 	int len;

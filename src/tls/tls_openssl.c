@@ -116,7 +116,7 @@ _openssl_init_lock(struct chttp_openssl_ctx *ctx)
 	assert(ctx->initialized || ctx->failed);
 }
 
-void
+static void
 _openssl_free(struct chttp_openssl_ctx *ctx)
 {
 	chttp_openssl_ctx_ok(ctx);
@@ -144,7 +144,7 @@ chttp_openssl_free(void)
 	_openssl_free(&_OPENSSL_SERVER_CTX);
 }
 
-void
+static void
 _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 {
 	SSL *ssl;

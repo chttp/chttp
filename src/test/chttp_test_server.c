@@ -758,7 +758,7 @@ chttp_test_cmd_server_body_match(struct chttp_test_context *ctx, struct chttp_te
 	chttp_addr_connected(&server->addr);
 }
 
-void
+static void
 _server_send_buf(struct chttp_test_server *server, const void *buf, size_t len)
 {
 	_server_ok(server);
@@ -768,7 +768,7 @@ _server_send_buf(struct chttp_test_server *server, const void *buf, size_t len)
 	chttp_test_ERROR(server->addr.error, "server send error %d", server->addr.error);
 }
 
-void __chttp_attr_printf
+static void __chttp_attr_printf
 _server_send_printf(struct chttp_test_server *server, const char *fmt, ...)
 {
 	va_list ap;

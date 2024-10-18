@@ -58,7 +58,6 @@ void chttp_addr_reset(struct chttp_addr *addr);
 void chttp_addr_move(struct chttp_addr *addr_dest, struct chttp_addr *addr);
 void chttp_addr_clone(struct chttp_addr *addr_dest, struct chttp_addr *addr);
 int chttp_addr_cmp(const struct chttp_addr *a1, const struct chttp_addr *a2);
-void chttp_addr_connect(struct chttp_context *ctx);
 
 int chttp_tcp_listen(struct chttp_addr *addr, const char *ip, int port, int queue_len);
 int chttp_tcp_connect(struct chttp_addr *addr);

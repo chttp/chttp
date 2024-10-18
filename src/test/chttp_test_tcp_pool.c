@@ -35,7 +35,7 @@ _tcp_pool_finish(struct chttp_test_context *ctx)
 	ctx->tcp_pool = NULL;
 }
 
-void
+static void
 _tcp_pool_init(struct chttp_test_context *ctx)
 {
 	assert(ctx);

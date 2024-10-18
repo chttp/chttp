@@ -17,7 +17,7 @@
 
 void _tcp_set_timeouts(struct chttp_addr *addr);
 
-void
+static void
 _tcp_get_port(struct chttp_addr *addr)
 {
 	chttp_addr_connected(addr);

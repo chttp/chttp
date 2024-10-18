@@ -374,7 +374,7 @@ _parse_response_status(struct chttp_context *ctx, size_t start, size_t end)
 	return;
 }
 
-void
+static void
 _header_parse(struct chttp_context *ctx, chttp_parse_f *func)
 {
 	struct chttp_dpage *dpage;
