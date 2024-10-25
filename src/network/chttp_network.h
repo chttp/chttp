@@ -73,10 +73,6 @@ void chttp_tcp_close(struct chttp_addr *addr);
 void chttp_tcp_error(struct chttp_addr *addr, int error);
 void chttp_tcp_error_check(struct chttp_context *ctx);
 
-int chttp_tcp_pool_lookup(struct chttp_addr *addr);
-void chttp_tcp_pool_store(struct chttp_addr *addr);
-void chttp_tcp_pool_close(void);
-
 #define chttp_addr_ok(addr)						\
 	do {								\
 		assert(addr);						\

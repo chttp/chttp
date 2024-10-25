@@ -5,6 +5,7 @@
 
 #include "test/chttp_test.h"
 #include "compress/chttp_gzip.h"
+#include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
 
 #include <stdlib.h>

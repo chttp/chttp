@@ -6,6 +6,7 @@
 #include "chttp.h"
 #include "compress/chttp_gzip.h"
 #include "dns/chttp_dns.h"
+#include "network/chttp_tcp_pool.h"
 #include "tls/chttp_tls.h"
 
 static void

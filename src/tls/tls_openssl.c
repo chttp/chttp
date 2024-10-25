@@ -253,6 +253,8 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 		chttp_tcp_set_blocking(addr);
 	}
 
+	assert_zero(addr->nonblocking);
+
 	return;
 }
 
