@@ -10,6 +10,7 @@
 #ifdef CHTTP_OPENSSL
 
 #include <openssl/ssl.h>
+#include <poll.h>
 #include <pthread.h>
 
 enum chttp_openssl_type {
@@ -148,10 +149,12 @@ static void
 _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 {
 	SSL *ssl;
-	int ret;
+	int ret, ssl_ret, timeout_ms;
+	short events;
 
 	chttp_addr_connected(addr);
 	assert(addr->tls);
+	assert(addr->time_start);
 	assert_zero(addr->tls_priv);
 	assert_zero(addr->nonblocking);
 	chttp_openssl_ctx_ok(ctx);
@@ -195,13 +198,58 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 			chttp_ABORT("bad openssl ctx type");
 	}
 
-	// TODO honor addr->timeout_connect_ms
+	if (addr->timeout_connect_ms > 0) {
+		chttp_tcp_set_nonblocking(addr);
+	}
 
-	ret = SSL_do_handshake(ssl);
+	while (1) {
+		ret = SSL_do_handshake(ssl);
 
-	if (ret != 1) {
-		chttp_tcp_error(addr, CHTTP_ERR_TLS_HANDSHAKE);
-		return;
+		if (ret == 1) {
+			break;
+		} else if (ret == 0) {
+			chttp_tcp_error(addr, CHTTP_ERR_TLS_HANDSHAKE);
+			return;
+		}
+
+		assert(ret < 0);
+
+		events = 0;
+		ssl_ret = SSL_get_error(ssl, ret);
+
+		switch (ssl_ret) {
+			case SSL_ERROR_WANT_READ:
+				events = POLLRDNORM;
+				break;
+			case SSL_ERROR_WANT_WRITE:
+				events = POLLWRNORM;
+				break;
+			default:
+				chttp_tcp_error(addr, CHTTP_ERR_TLS_HANDSHAKE);
+				return;
+		}
+
+		assert(events);
+		assert(addr->timeout_connect_ms);
+
+		timeout_ms =  addr->timeout_connect_ms -
+			((chttp_get_time() - addr->time_start) * 1000);
+
+		if (timeout_ms <= 0) {
+			chttp_tcp_error(addr, CHTTP_ERR_TLS_HANDSHAKE);
+			return;
+		}
+
+		chttp_tcp_poll(addr, events, timeout_ms);
+
+		if (addr->poll_result <= 0) {
+			chttp_tcp_error(addr, CHTTP_ERR_TLS_HANDSHAKE);
+			return;
+		}
+	}
+
+	if (addr->nonblocking) {
+		chttp_tcp_set_blocking(addr);
 	}
 
 	return;
@@ -245,6 +293,7 @@ chttp_openssl_write(struct chttp_addr *addr, const void *buf, size_t buf_len)
 	int ret;
 
 	chttp_addr_connected(addr);
+	assert_zero(addr->nonblocking);
 	chttp_openssl_connected(addr, ssl);
 	assert(buf);
 	assert(buf_len);
@@ -267,6 +316,7 @@ chttp_openssl_read(struct chttp_addr *addr, void *buf, size_t buf_len)
 	int ret, ssl_ret;
 
 	chttp_addr_connected(addr);
+	assert_zero(addr->nonblocking);
 	chttp_openssl_connected(addr, ssl);
 	assert(buf);
 	assert(buf_len);
