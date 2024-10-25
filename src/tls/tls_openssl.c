@@ -225,6 +225,7 @@ _openssl_bind(struct chttp_addr *addr, struct chttp_openssl_ctx *ctx)
 				events = POLLWRNORM;
 				break;
 			default:
+				(void)events;
 				chttp_tcp_error(addr, CHTTP_ERR_TLS_HANDSHAKE);
 				return;
 		}
