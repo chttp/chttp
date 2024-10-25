@@ -60,13 +60,13 @@ struct chttp_tcp_pool {
 	struct chttp_pool_stats				stats;
 };
 
-RB_PROTOTYPE(chttp_tcp_pool_tree, chttp_tcp_pool_entry, tree_entry, _tcp_pool_cmp)
-
 extern struct chttp_tcp_pool _TCP_POOL;
 
 int chttp_tcp_pool_lookup(struct chttp_addr *addr);
 void chttp_tcp_pool_store(struct chttp_addr *addr);
 void chttp_tcp_pool_close(void);
+
+RB_PROTOTYPE(chttp_tcp_pool_tree, chttp_tcp_pool_entry, tree_entry, _tcp_pool_cmp)
 
 #define chttp_tcp_pool_ok()							\
 	do {									\

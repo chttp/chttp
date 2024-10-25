@@ -1,5 +1,7 @@
 chttp_test "TLS connection timeout"
 
+tls_or_skip
+
 server_init
 server_accept
 

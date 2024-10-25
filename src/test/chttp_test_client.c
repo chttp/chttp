@@ -217,6 +217,8 @@ chttp_test_cmd_chttp_connect(struct chttp_test_context *ctx, struct chttp_test_c
 
 	chttp_connect(ctx->chttp, cmd->params[0].value, cmd->params[0].len, port, tls);
 
+	chttp_test_ERROR(ctx->chttp->error, "connection failed: %s", chttp_error_msg(ctx->chttp));
+
 	chttp_sa_string(&ctx->chttp->addr.sa, name, sizeof(name), &outport);
 
 	chttp_test_log(ctx, CHTTP_LOG_VERBOSE, "lookup made to %s:%ld => %s:%d",
