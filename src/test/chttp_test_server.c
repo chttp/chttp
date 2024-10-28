@@ -1082,6 +1082,28 @@ chttp_test_cmd_server_send_raw(struct chttp_test_context *ctx, struct chttp_test
 }
 
 void
+chttp_test_cmd_server_send_raw_sock(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
+{
+	struct chttp_test_server *server;
+	ssize_t ret;
+
+	server = _server_context_ok(ctx);
+	chttp_test_ERROR_param_count(cmd, 1);
+
+	if (!cmd->async) {
+		_server_cmd_async(server, cmd);
+		return;
+	}
+
+	chttp_addr_connected(&server->addr);
+
+	chttp_test_unescape(&cmd->params[0]);
+
+	ret = send(server->addr.sock, cmd->params[0].value, cmd->params[0].len, MSG_NOSIGNAL);
+	assert(ret >= 0 && (size_t)ret == cmd->params[0].len);
+}
+
+void
 chttp_test_cmd_server_send_random_body(struct chttp_test_context *ctx, struct chttp_test_cmd *cmd)
 {
 	struct chttp_test_server *server;
