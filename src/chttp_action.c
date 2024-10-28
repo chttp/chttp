@@ -93,6 +93,9 @@ _make_connection(struct chttp_context *ctx)
 
 		if (ret) {
 			chttp_addr_connected(&ctx->addr);
+			assert(ctx->addr.reused);
+			assert_zero(ctx->addr.nonblocking);
+
 			return;
 		}
 	}
@@ -109,6 +112,7 @@ _make_connection(struct chttp_context *ctx)
 	}
 
 	chttp_addr_connected(&ctx->addr);
+	assert_zero(ctx->addr.nonblocking);
 }
 
 void

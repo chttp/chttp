@@ -99,16 +99,13 @@ _tcp_set_timeouts(struct chttp_addr *addr)
 
 	addr->time_start = chttp_get_time();
 
-	if (addr->timeout_transfer_ms > 0) {
-		timeout.tv_sec = addr->timeout_transfer_ms / 1000;
-		timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
+	timeout.tv_sec = addr->timeout_transfer_ms / 1000;
+	timeout.tv_usec = (addr->timeout_transfer_ms % 1000) * 1000;
 
-		(void)setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
-			sizeof(timeout));
-		(void)setsockopt(addr->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
-			sizeof(timeout));
-
-	}
+	(void)setsockopt(addr->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+		sizeof(timeout));
+	(void)setsockopt(addr->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+		sizeof(timeout));
 }
 
 int
